@@ -1,17 +1,16 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import SignInPage from "./components/SignInPage";
 import HomePage from "./components/HomePage";
-import Layout from "./components/Layout"; // Import Layout component
+import CreateFieldTicket from "./components/CreateFieldTicket"; // Assuming you've added this
+import Layout from "./components/Layout";
 import "./index.css";
+import FieldTicketEntry from "./components/FieldTicketEntry";
 
 function App() {
   return (
     <Routes>
-      {/* Direct route for SignInPage, without Layout */}
       <Route path="/" element={<SignInPage />} />
-
-      {/* Nested routes within Layout for pages requiring the header/nav */}
       <Route
         path="/home"
         element={
@@ -20,7 +19,23 @@ function App() {
           </Layout>
         }
       />
-      {/* You can add more protected routes here, wrapping them inside <Layout> as well */}
+      <Route
+        path="/create-field-ticket"
+        element={
+          <Layout>
+            <CreateFieldTicket />
+          </Layout>
+        }
+      />
+      <Route
+        path="/field-ticket-entry"
+        element={
+          <Layout>
+            <FieldTicketEntry />
+          </Layout>
+        }
+      />
+      {/* Add more routes as needed */}
     </Routes>
   );
 }
