@@ -1,66 +1,65 @@
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTickets } from "./TicketsContext"; // Adjust the path as needed
 
 function FieldTicketEntry() {
   const { state } = useLocation();
   const { ticketDate, lease, well, ticketType, ticketNumber } = state;
+  const { addTicket } = useTickets();
+
   const navigate = useNavigate();
 
-  const [items, setItems] = useState([
-    { id: 1, name: "ACID PUMP CHARGE", quantity: 0, unit: "", notes: "" },
-    { id: 2, name: "ACID (10%)", quantity: 0, unit: "", notes: "" },
-    // Additional items...
-    { id: 10, name: "WATER", quantity: 0, unit: "gal", notes: "" },
-    { id: 11, name: "WATER TRUCK", quantity: 0, unit: "", notes: "" },
-    {
-      id: 12,
-      name: "OPERATOR TRUCK MILEAGE",
-      quantity: 0,
-      unit: "miles",
-      notes: "",
-    },
-    // More items as needed...
-  ]);
-
-  const handleItemChange = (itemId, field, value) => {
-    setItems(
-      items.map((item) =>
-        item.id === itemId ? { ...item, [field]: value } : item
-      )
-    );
-  };
-
-  const formattedDate = ticketDate
-    ? new Date(ticketDate).toLocaleDateString()
-    : "N/A";
-
-  const handleFinalSubmit = () => {
-    console.log("Submitting:", {
-      ticketDate,
-      lease,
-      well,
-      ticketType,
-      ticketNumber,
-      items,
-    });
-
-    // // Reset states to their initial values
-    // setTicketDate(new Date()); // Reset to today or a specific date if needed
-    // setLease(""); // Reset lease
-    // setWell(""); // Reset well if it's part of this component's state
-    // setTicketType(""); // Reset ticket type
-    // setTicketNumber(undefined); // Reset ticket number
-
-    setItems([
-      // Reset items array to its initial state
+  const [formFields, setFormFields] = useState({
+    ticketDate: state?.ticketDate || "",
+    lease: state?.lease || "",
+    well: state?.well || "",
+    ticketType: state?.ticketType || "",
+    ticketNumber: state?.ticketNumber || "",
+    items: state?.items || [
       { id: 1, name: "ACID PUMP CHARGE", quantity: 0, unit: "", notes: "" },
       { id: 2, name: "ACID (10%)", quantity: 0, unit: "", notes: "" },
-      // Include all initial items here...
-    ]);
+      { id: 3, name: "WATER", quantity: 0, unit: "gal", notes: "" },
+      { id: 4, name: "WATER TRUCK", quantity: 0, unit: "", notes: "" },
+      {
+        id: 5,
+        name: "OPERATOR TRUCK MILEAGE",
+        quantity: 0,
+        unit: "miles",
+        notes: "",
+      },
+    ],
+  });
 
-    // Navigate back to the home page or the starting point of the form
-    navigate("/home");
+  const handleChange = (e, itemId) => {
+    const { name, value } = e.target;
+    if (itemId !== undefined) {
+      // Handling item-specific changes
+      setFormFields((prev) => ({
+        ...prev,
+        items: prev.items.map((item) =>
+          item.id === itemId ? { ...item, [name]: value } : item
+        ),
+      }));
+    } else {
+      // Handling changes to other form fields
+      setFormFields((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
+
+  // Handling form submission
+  const handleFinalSubmit = (e) => {
+    e.preventDefault(); // Prevent default form submission behavior
+    addTicket({ ...formFields, id: formFields.id || Date.now() });
+    navigate("/home"); // Navigate to the homepage after submission
+  };
+
+  // Preparing formatted date
+  const formattedDate = formFields.ticketDate
+    ? new Date(formFields.ticketDate).toLocaleDateString()
+    : "N/A";
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-900 p-6">
@@ -79,30 +78,30 @@ function FieldTicketEntry() {
             <p className="text-indigo-600">
               Lease:{" "}
               <span className="font-semibold text-gray-800">
-                {lease || "N/A"}
+                {formFields.lease || "N/A"}
               </span>
             </p>
             <p className="text-indigo-600">
               Well:{" "}
               <span className="font-semibold text-gray-800">
-                {state.well || "N/A"}
+                {formFields.well || "N/A"}
               </span>
             </p>
             <p className="text-indigo-600">
               Ticket Type:{" "}
               <span className="font-semibold text-gray-800">
-                {ticketType || "N/A"}
+                {formFields.ticketType || "N/A"}
               </span>
             </p>
             <p className="text-indigo-600">
               Ticket Number:{" "}
               <span className="font-semibold text-gray-800">
-                {ticketNumber || "N/A"}
+                {formFields.ticketNumber || "N/A"}
               </span>
             </p>
           </div>
 
-          {items.map((item, index) => (
+          {formFields.items.map((item, index) => (
             <div
               key={index}
               className="flex flex-col md:flex-row gap-6 items-center bg-gray-100 p-4 rounded-lg mb-4"
@@ -121,9 +120,7 @@ function FieldTicketEntry() {
                   type="number"
                   name="quantity"
                   value={item.quantity}
-                  onChange={(e) =>
-                    handleItemChange(item.id, "quantity", e.target.value)
-                  }
+                  onChange={(e) => handleChange(e, item.id)}
                   className="form-input w-24 px-4 py-2 rounded-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition"
                   placeholder="0"
                 />
@@ -134,9 +131,7 @@ function FieldTicketEntry() {
                   type="text"
                   name="notes"
                   value={item.notes}
-                  onChange={(e) =>
-                    handleItemChange(item.id, "notes", e.target.value)
-                  }
+                  onChange={(e) => handleChange(e, item.id)}
                   className="form-input w-full md:w-96 px-4 py-2 rounded-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition"
                   placeholder="Add notes"
                 />
@@ -157,5 +152,4 @@ function FieldTicketEntry() {
     </main>
   );
 }
-
 export default FieldTicketEntry;

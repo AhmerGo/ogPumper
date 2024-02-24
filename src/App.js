@@ -1,42 +1,47 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import SignInPage from "./components/SignInPage";
 import HomePage from "./components/HomePage";
 import CreateFieldTicket from "./components/CreateFieldTicket"; // Assuming you've added this
 import Layout from "./components/Layout";
 import "./index.css";
 import FieldTicketEntry from "./components/FieldTicketEntry";
+import { TicketsProvider } from "./components/TicketsContext";
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<SignInPage />} />
-      <Route
-        path="/home"
-        element={
-          <Layout>
-            <HomePage />
-          </Layout>
-        }
-      />
-      <Route
-        path="/create-field-ticket"
-        element={
-          <Layout>
-            <CreateFieldTicket />
-          </Layout>
-        }
-      />
-      <Route
-        path="/field-ticket-entry"
-        element={
-          <Layout>
-            <FieldTicketEntry />
-          </Layout>
-        }
-      />
-      {/* Add more routes as needed */}
-    </Routes>
+    <Router>
+      <TicketsProvider>
+        <Routes>
+          <Route path="/" element={<SignInPage />} />
+          <Route
+            path="/home"
+            element={
+              <Layout>
+                <HomePage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/create-field-ticket"
+            element={
+              <Layout>
+                <CreateFieldTicket />
+              </Layout>
+            }
+          />
+          <Route
+            path="/field-ticket-entry"
+            element={
+              <Layout>
+                <FieldTicketEntry />
+              </Layout>
+            }
+          />
+          {/* Add more routes as needed */}
+        </Routes>
+      </TicketsProvider>
+    </Router>
   );
 }
 
