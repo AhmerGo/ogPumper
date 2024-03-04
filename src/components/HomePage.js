@@ -1,10 +1,11 @@
 import React from "react";
-import { Link } from "react-router-dom"; // Add this line to import Link
+import { Link, useNavigate } from "react-router-dom"; // Add this line to import Link
 import { motion } from "framer-motion";
 import { useTickets } from "./TicketsContext"; // Adjust the path as needed
 
 function HomePage() {
   const { tickets } = useTickets();
+  const navigate = useNavigate(); // Get the navigate function
 
   const containerVariants = {
     hidden: { opacity: 0, scale: 0.95 },
@@ -13,6 +14,11 @@ function HomePage() {
       scale: 1,
       transition: { delay: 0.3, duration: 0.5 },
     },
+  };
+
+  const handleViewDetailsClick = () => {
+    const ticketToView = tickets[1];
+    navigate("/view-field-ticket", { state: { ...ticketToView } });
   };
 
   return (
@@ -77,16 +83,13 @@ function HomePage() {
                     {/* Uncomment below for a brief description if needed */}
                     {/* <p className="text-gray-400 mt-2 text-lg">Description or summary here</p> */}
                   </div>
-                  <Link
-                    to={{
-                      pathname: "/field-ticket-entry",
-                      state: { ...ticket }, // Passing the entire ticket object as navigation state
-                    }}
+                  <button
+                    onClick={handleViewDetailsClick}
                     className="text-lg text-pink-400 hover:text-pink-300 font-semibold py-2 px-4 rounded-lg border border-pink-500 hover:border-pink-400 transition duration-150 ease-in-out"
                     style={{ boxShadow: "0 2px 5px 0 rgba(233,30,99,0.48)" }}
                   >
                     View Details →
-                  </Link>
+                  </button>
                 </motion.li>
               ))}
             </ul>

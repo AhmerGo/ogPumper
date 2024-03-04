@@ -7,6 +7,7 @@ import Layout from "./components/Layout";
 import "./index.css";
 import FieldTicketEntry from "./components/FieldTicketEntry";
 import { TicketsProvider } from "./components/TicketsContext";
+import Summary from "./components/Summary";
 
 function App() {
   return (
@@ -30,6 +31,15 @@ function App() {
               </Layout>
             }
           />
+          <Route
+            path="/view-field-ticket"
+            element={
+              <Layout>
+                <Summary />
+              </Layout>
+            }
+          />
+
           <Route
             path="/field-ticket-entry"
             element={
