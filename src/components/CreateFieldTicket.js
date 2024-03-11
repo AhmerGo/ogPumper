@@ -1,32 +1,64 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
-
-// Import additional styles if needed
+import { useNavigate } from "react-router-dom";
 
 function CreateFieldTicket() {
-  const navigate = useNavigate(); // For navigation
-  const [ticketDate, setTicketDate] = useState(new Date()); // Set initial date to null
-  const [lease, setLease] = useState(""); // Initial value as empty string or null
-  const [well, setWell] = useState(""); // Initial value as empty string or null
-  const [ticketType, setTicketType] = useState(""); // Initial value as empty string or null
+  const navigate = useNavigate();
+  const [ticketDate, setTicketDate] = useState(new Date());
+  const [lease, setLease] = useState("");
+  const [well, setWell] = useState("");
+  const [ticketType, setTicketType] = useState("");
 
-  // Dummy data for dropdowns
-  const leases = ["Lease A", "Lease B", "Lease C"];
-  const wells = ["Well A", "Well B", "Well C"];
+  const [leases, setLeases] = useState([]);
+  const [wells, setWells] = useState([]);
   const ticketTypes = ["Type 1", "Type 2", "Type 3"];
 
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent default form submission behavior
+  useEffect(() => {
+    const fetchLeases = async () => {
+      try {
+        const response = await fetch(
+          "https://ogfieldticket.com/api/leases.php"
+        );
+        const data = await response.json();
+        console.log("Fetched leases:", data); // Add this line to check the fetched data
+        setLeases(data);
+      } catch (error) {
+        console.error("Error fetching leases:", error);
+      }
+    };
+    fetchLeases();
+  }, []);
 
-    // Basic form validation
+  useEffect(() => {
+    const fetchWells = async () => {
+      if (lease) {
+        try {
+          const response = await fetch(
+            `https://ogfieldticket.com/api/leases.php?lease=${lease}`
+          );
+          const data = await response.json();
+          setWells(data[0].Wells);
+        } catch (error) {
+          console.error("Error fetching wells:", error);
+        }
+      } else {
+        setWells([]);
+      }
+    };
+
+    fetchWells();
+  }, [lease]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
     if (!ticketDate || !lease || !well || !ticketType) {
       alert("Please complete all fields before submitting.");
       return;
     }
 
-    const ticketNumber = Math.floor(Math.random() * 10000); // Generate an arbitrary ticket number
+    const ticketNumber = Math.floor(Math.random() * 10000);
 
     navigate("/field-ticket-entry", {
       state: { ticketDate, lease, well, ticketType, ticketNumber },
@@ -36,8 +68,6 @@ function CreateFieldTicket() {
   return (
     <main className="flex-grow">
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-gray-900 p-4 relative overflow-hidden">
-        {/* Reuse HomePage background styles here */}
-        {/* Background and Blob animations */}
         <div className="absolute inset-0 animate-gradient-xy bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-30 mix-blend-soft-light"></div>
         <div className="absolute inset-0 animate-blob blob-1 bg-gradient-to-tr from-purple-400 via-pink-500 to-red-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-duration-200s"></div>
         <div className="absolute inset-0 animate-blob blob-2 bg-gradient-to-tl from-teal-400 via-blue-500 to-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-duration-300s"></div>
@@ -54,7 +84,6 @@ function CreateFieldTicket() {
               >
                 Ticket Date
               </label>
-
               <DatePicker
                 selected={ticketDate}
                 onChange={(date) => setTicketDate(date)}
@@ -75,16 +104,14 @@ function CreateFieldTicket() {
                 className="form-select w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
-                <option value="">Please select the lease.</option>{" "}
-                {/* Default option */}
+                <option value="">Please select the lease.</option>
                 {leases.map((lease) => (
-                  <option key={lease} value={lease}>
-                    {lease}
+                  <option key={lease.LeaseID} value={lease.LeaseID}>
+                    {lease.LeaseName}
                   </option>
                 ))}
               </select>
             </div>
-
             <div className="flex flex-col mb-4">
               <label
                 htmlFor="well"
@@ -98,11 +125,10 @@ function CreateFieldTicket() {
                 className="form-select w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
-                <option value="">Please select the well.</option>{" "}
-                {/* Default option for Well */}
+                <option value="">Please select the well.</option>
                 {wells.map((well) => (
-                  <option key={well} value={well}>
-                    {well}
+                  <option key={well.UniqID} value={well.WellID}>
+                    {well.WellID}
                   </option>
                 ))}
               </select>
@@ -121,8 +147,7 @@ function CreateFieldTicket() {
                 className="form-select w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
-                <option value="">Please select the ticket type.</option>{" "}
-                {/* Default option for Ticket Type */}
+                <option value="">Please select the ticket type.</option>
                 {ticketTypes.map((type) => (
                   <option key={type} value={type}>
                     {type}

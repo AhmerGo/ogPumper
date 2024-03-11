@@ -1,53 +1,74 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
-const Summary = () => {
+const ViewFieldTicket = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [ticket, setTicket] = useState(null);
+  const [formattedDate, setFormattedDate] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Initialize formFields state with placeholders or empty values
-  const [formFields, setFormFields] = useState({
-    ticketDate: "",
-    lease: "2",
-    well: "",
-    ticketType: "",
-    ticketNumber: "",
-    items: [],
-  });
-
-  // Update state when location.state changes
   useEffect(() => {
-    console.log(location.state); // Debugging line to see what you get here
-
     if (location.state) {
-      setFormFields({
-        ticketDate: location.state.ticketDate || "",
-        lease: location.state.lease || "",
-        well: location.state.well || "",
-        ticketType: location.state.ticketType || "",
-        ticketNumber: location.state.ticketNumber || "",
-        items: location.state.items || [],
-      });
+      setTicket(location.state);
+      formatDate(location.state.TicketDate);
     }
-  }, [location.state]); // Dependency on location.state
+  }, [location.state]);
 
-  // Logic to handle changes in form fields, especially for dynamic item updates
+  const formatDate = (dateString) => {
+    const options = { year: "numeric", month: "long", day: "numeric" };
+    const date = new Date(dateString);
+    setFormattedDate(date.toLocaleDateString(undefined, options));
+  };
+
   const handleChange = (e, itemId) => {
     const { name, value } = e.target;
-    setFormFields((prevState) => ({
-      ...prevState,
-      items: prevState.items.map((item) =>
-        item.id === itemId ? { ...item, [name]: value } : item
+    setTicket((prevTicket) => ({
+      ...prevTicket,
+      Items: prevTicket.Items.map((item) =>
+        item.TicketLine === itemId ? { ...item, [name]: value } : item
       ),
     }));
   };
 
-  // Placeholder for submission logic
-  const handleFinalSubmit = () => {
-    console.log("Submitting ticket", formFields);
+  const handleEditClick = () => {
+    setIsEditing(true);
   };
 
-  // Assuming a date formatting function or using the raw date
-  const formattedDate = formFields.ticketDate; // Implement actual date formatting as needed
+  const handleCancelClick = () => {
+    setIsEditing(false);
+    // Reset the ticket state to the original values
+    setTicket(location.state);
+  };
+
+  const handleSaveClick = async () => {
+    try {
+      const response = await fetch(
+        `https://ogfieldticket.com/api/tickets.php?ticket=${ticket.Ticket}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(ticket),
+        }
+      );
+
+      if (response.ok) {
+        // Update successful, navigate back to the ticket list
+        navigate("/home");
+      } else {
+        // Handle error scenario
+        console.error("Error updating ticket:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error updating ticket:", error);
+    }
+  };
+
+  if (!ticket) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-900 p-6">
@@ -66,74 +87,109 @@ const Summary = () => {
             <p className="text-indigo-600">
               Lease:{" "}
               <span className="font-semibold text-gray-800">
-                {formFields.lease || "N/A"}
+                {ticket.LeaseID || "N/A"}
               </span>
             </p>
             <p className="text-indigo-600">
               Well:{" "}
               <span className="font-semibold text-gray-800">
-                {formFields.well || "N/A"}
+                {ticket.WellID || "N/A"}
               </span>
             </p>
             <p className="text-indigo-600">
               Ticket Type:{" "}
               <span className="font-semibold text-gray-800">
-                {formFields.ticketType || "N/A"}
+                {ticket.JobTypeID || "N/A"}
               </span>
             </p>
             <p className="text-indigo-600">
               Ticket Number:{" "}
               <span className="font-semibold text-gray-800">
-                {formFields.ticketNumber || "N/A"}
+                {ticket.Ticket || "N/A"}
               </span>
             </p>
           </div>
-
-          {formFields.items.map((item, index) => (
-            <div
-              key={index}
-              className="flex flex-col md:flex-row gap-6 items-center bg-gray-100 p-4 rounded-lg mb-4"
-            >
-              <div className="flex-1">
-                <h4 className="text-lg font-semibold text-gray-700">
-                  {item.name}{" "}
-                  {item.unit && (
-                    <span className="text-sm text-gray-500">({item.unit})</span>
+          {ticket.Items &&
+            ticket.Items.map((item) => (
+              <div
+                key={item.TicketLine}
+                className="flex flex-col md:flex-row gap-6 items-center bg-gray-100 p-4 rounded-lg mb-4"
+              >
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-gray-700">
+                    {item.ItemDescription}{" "}
+                    {item.UOM && (
+                      <span className="text-sm text-gray-500">
+                        ({item.UOM})
+                      </span>
+                    )}
+                  </h4>
+                </div>
+                <div className="w-full md:w-auto flex gap-4 items-center">
+                  {isEditing ? (
+                    <>
+                      <label className="block text-gray-600 font-medium">
+                        Qty:
+                      </label>
+                      <input
+                        type="number"
+                        name="Quantity"
+                        value={item.Quantity}
+                        onChange={(e) => handleChange(e, item.TicketLine)}
+                        className="form-input w-24 px-4 py-2 rounded-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        placeholder="0"
+                      />
+                      <label className="block text-gray-600 font-medium">
+                        Notes:
+                      </label>
+                      <input
+                        type="text"
+                        name="Note"
+                        value={item.Note || ""}
+                        onChange={(e) => handleChange(e, item.TicketLine)}
+                        className="form-input w-full md:w-96 px-4 py-2 rounded-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                        placeholder="Add notes"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-gray-600">
+                        <span className="font-medium">Qty:</span>{" "}
+                        {item.Quantity}
+                      </p>
+                      <p className="text-gray-600">
+                        <span className="font-medium">Notes:</span>{" "}
+                        {item.Note || "N/A"}
+                      </p>
+                    </>
                   )}
-                </h4>
+                </div>
               </div>
-              <div className="w-full md:w-auto flex gap-4 items-center">
-                <label className="block text-gray-600 font-medium">Qty:</label>
-                <input
-                  type="number"
-                  name="quantity"
-                  value={item.quantity}
-                  onChange={(e) => handleChange(e, item.id)}
-                  className="form-input w-24 px-4 py-2 rounded-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                  placeholder="0"
-                />
-                <label className="block text-gray-600 font-medium">
-                  Notes:
-                </label>
-                <input
-                  type="text"
-                  name="notes"
-                  value={item.notes}
-                  onChange={(e) => handleChange(e, item.id)}
-                  className="form-input w-full md:w-96 px-4 py-2 rounded-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                  placeholder="Add notes"
-                />
-              </div>
-            </div>
-          ))}
-
+            ))}
           <div className="text-center mt-12">
-            <button
-              onClick={handleFinalSubmit}
-              className="text-lg px-10 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 shadow-lg shadow-purple-500/50 hover:shadow-indigo-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300"
-            >
-              Submit Ticket
-            </button>
+            {!isEditing ? (
+              <button
+                onClick={handleEditClick}
+                className="text-lg px-10 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 shadow-lg shadow-purple-500/50 hover:shadow-indigo-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300"
+              >
+                Edit Ticket
+              </button>
+            ) : (
+              <div className="flex justify-center space-x-4">
+                <button
+                  onClick={handleSaveClick}
+                  className="text-lg px-8 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 shadow-lg shadow-green-500/50 hover:shadow-green-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleCancelClick}
+                  className="text-lg px-8 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 shadow-lg shadow-red-500/50 hover:shadow-red-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -141,4 +197,4 @@ const Summary = () => {
   );
 };
 
-export default Summary;
+export default ViewFieldTicket;
