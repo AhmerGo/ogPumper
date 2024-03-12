@@ -12,7 +12,7 @@ function CreateFieldTicket() {
 
   const [leases, setLeases] = useState([]);
   const [wells, setWells] = useState([]);
-  const ticketTypes = ["Type 1", "Type 2", "Type 3"];
+  const [ticketTypes, setTicketTypes] = useState([]);
 
   useEffect(() => {
     const fetchLeases = async () => {
@@ -50,6 +50,20 @@ function CreateFieldTicket() {
     fetchWells();
   }, [lease]);
 
+  useEffect(() => {
+    const fetchTicketTypes = async () => {
+      try {
+        const response = await fetch("https://ogfieldticket.com/api/jobs.php");
+        const data = await response.json();
+        setTicketTypes(data);
+      } catch (error) {
+        console.error("Error fetching ticket types:", error);
+      }
+    };
+
+    fetchTicketTypes();
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -58,10 +72,23 @@ function CreateFieldTicket() {
       return;
     }
 
+    const selectedTicketType = ticketTypes.find(
+      (type) => type.JobTypeID === ticketType
+    );
+    const ticketTypeDescription = selectedTicketType
+      ? selectedTicketType.Description
+      : "";
+
     const ticketNumber = Math.floor(Math.random() * 10000);
 
     navigate("/field-ticket-entry", {
-      state: { ticketDate, lease, well, ticketType, ticketNumber },
+      state: {
+        ticketDate,
+        lease,
+        well,
+        ticketType: ticketTypeDescription,
+        ticketNumber,
+      },
     });
   };
 
@@ -149,8 +176,8 @@ function CreateFieldTicket() {
               >
                 <option value="">Please select the ticket type.</option>
                 {ticketTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                  <option key={type.JobTypeID} value={type.JobTypeID}>
+                    {type.Description}
                   </option>
                 ))}
               </select>

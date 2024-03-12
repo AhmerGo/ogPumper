@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useTickets } from "./TicketsContext"; // Adjust the path as needed
 
 function FieldTicketEntry() {
   const { state } = useLocation();
-  const { ticketDate, lease, well, ticketType, ticketNumber } = state;
-  const { addTicket } = useTickets();
+  const { ticketType } = state;
 
   const navigate = useNavigate();
 
@@ -15,48 +13,62 @@ function FieldTicketEntry() {
     well: state?.well || "",
     ticketType: state?.ticketType || "",
     ticketNumber: state?.ticketNumber || "",
-    items: state?.items || [
-      { id: 1, name: "ACID PUMP CHARGE", quantity: 0, unit: "", notes: "" },
-      { id: 2, name: "ACID (10%)", quantity: 0, unit: "", notes: "" },
-      { id: 3, name: "WATER", quantity: 0, unit: "gal", notes: "" },
-      { id: 4, name: "WATER TRUCK", quantity: 0, unit: "", notes: "" },
-      {
-        id: 5,
-        name: "OPERATOR TRUCK MILEAGE",
-        quantity: 0,
-        unit: "miles",
-        notes: "",
-      },
-    ],
   });
+
+  const [items, setItems] = useState([]);
+  const [ticketTypes, setTicketTypes] = useState([]);
+
+  useEffect(() => {
+    const fetchTicketTypes = async () => {
+      try {
+        const response = await fetch("https://ogfieldticket.com/api/jobs.php");
+        const data = await response.json();
+        setTicketTypes(data);
+        setItems(
+          data.find((type) => type.Description === ticketType)?.Items || []
+        );
+      } catch (error) {
+        console.error("Error fetching ticket types:", error);
+      }
+    };
+
+    fetchTicketTypes();
+  }, [ticketType]);
 
   const handleChange = (e, itemId) => {
     const { name, value } = e.target;
-    if (itemId !== undefined) {
-      // Handling item-specific changes
-      setFormFields((prev) => ({
-        ...prev,
-        items: prev.items.map((item) =>
-          item.id === itemId ? { ...item, [name]: value } : item
-        ),
-      }));
-    } else {
-      // Handling changes to other form fields
-      setFormFields((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+    setItems((prevItems) =>
+      prevItems.map((item) =>
+        item.JobItemID === itemId ? { ...item, [name]: value } : item
+      )
+    );
+  };
+
+  const handleFinalSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(
+        "https://ogfieldticket.com/api/tickets.php",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ ...formFields, items }),
+        }
+      );
+
+      if (response.ok) {
+        navigate("/home");
+      } else {
+        console.error("Error submitting ticket:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error submitting ticket:", error);
     }
   };
 
-  // Handling form submission
-  const handleFinalSubmit = (e) => {
-    e.preventDefault(); // Prevent default form submission behavior
-    addTicket({ ...formFields, id: formFields.id || Date.now() });
-    navigate("/home"); // Navigate to the homepage after submission
-  };
-
-  // Preparing formatted date
   const formattedDate = formFields.ticketDate
     ? new Date(formFields.ticketDate).toLocaleDateString()
     : "N/A";
@@ -101,16 +113,16 @@ function FieldTicketEntry() {
             </p>
           </div>
 
-          {formFields.items.map((item, index) => (
+          {items.map((item, index) => (
             <div
               key={index}
               className="flex flex-col md:flex-row gap-6 items-center bg-gray-100 p-4 rounded-lg mb-4"
             >
               <div className="flex-1">
                 <h4 className="text-lg font-semibold text-gray-700">
-                  {item.name}{" "}
-                  {item.unit && (
-                    <span className="text-sm text-gray-500">({item.unit})</span>
+                  {item.ItemDescription}{" "}
+                  {item.UOM && (
+                    <span className="text-sm text-gray-500">({item.UOM})</span>
                   )}
                 </h4>
               </div>
@@ -119,8 +131,8 @@ function FieldTicketEntry() {
                 <input
                   type="number"
                   name="quantity"
-                  value={item.quantity}
-                  onChange={(e) => handleChange(e, item.id)}
+                  value={item.quantity || 0}
+                  onChange={(e) => handleChange(e, item.JobItemID)}
                   className="form-input w-24 px-4 py-2 rounded-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition"
                   placeholder="0"
                 />
@@ -130,8 +142,8 @@ function FieldTicketEntry() {
                 <input
                   type="text"
                   name="notes"
-                  value={item.notes}
-                  onChange={(e) => handleChange(e, item.id)}
+                  value={item.notes || ""}
+                  onChange={(e) => handleChange(e, item.JobItemID)}
                   className="form-input w-full md:w-96 px-4 py-2 rounded-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition"
                   placeholder="Add notes"
                 />
@@ -152,4 +164,5 @@ function FieldTicketEntry() {
     </main>
   );
 }
+
 export default FieldTicketEntry;

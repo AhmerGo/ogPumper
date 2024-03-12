@@ -14,7 +14,14 @@ function HomePage() {
         const response = await fetch(
           "https://ogfieldticket.com/api/tickets.php"
         );
-        const data = await response.json();
+        let data = await response.json();
+
+        // Assuming TicketDate is in a format that can be directly compared,
+        // otherwise, you might need to parse it into a Date object first.
+        data = data.sort(
+          (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
+        );
+
         setTickets(data);
       } catch (error) {
         console.error("Error fetching tickets:", error);
