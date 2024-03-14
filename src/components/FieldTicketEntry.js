@@ -11,7 +11,7 @@ function FieldTicketEntry() {
     ticketDate: state?.ticketDate || "",
     lease: state?.lease || "",
     well: state?.well || "",
-    ticketType: ticketType || "",
+    ticketType: state?.ticketType || "",
     ticketNumber: "",
   });
 
@@ -70,6 +70,14 @@ function FieldTicketEntry() {
     e.preventDefault();
 
     try {
+      // Find the selected ticket type object based on the ticket type description
+      const selectedTicketType = ticketTypes.find(
+        (type) => type.Description === formFields.ticketType
+      );
+
+      // Get the job type ID from the selected ticket type object
+      const jobTypeID = selectedTicketType ? selectedTicketType.JobTypeID : "";
+
       const response = await fetch(
         "https://ogfieldticket.com/api/tickets.php",
         {
@@ -77,7 +85,11 @@ function FieldTicketEntry() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ ...formFields, items }),
+          body: JSON.stringify({
+            ...formFields,
+            JobTypeID: jobTypeID, // Include the job type ID in the request body
+            items,
+          }),
         }
       );
 

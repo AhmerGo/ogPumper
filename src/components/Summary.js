@@ -66,6 +66,27 @@ const ViewFieldTicket = () => {
     }
   };
 
+  const handleDeleteClick = async () => {
+    try {
+      const response = await fetch(
+        `https://ogfieldticket.com/api/tickets.php?ticket=${ticket.Ticket}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (response.ok) {
+        // Deletion successful, navigate back to the ticket list
+        navigate("/home");
+      } else {
+        // Handle error scenario
+        console.error("Error deleting ticket:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error deleting ticket:", error);
+    }
+  };
+
   if (!ticket) {
     return <div>Loading...</div>;
   }
@@ -73,6 +94,26 @@ const ViewFieldTicket = () => {
   return (
     <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-cyan-500 to-blue-900 p-6">
       <div className="w-full max-w-6xl mx-auto bg-white/90 backdrop-blur-md rounded-xl shadow-2xl overflow-hidden">
+        <button
+          onClick={() => navigate("/home")}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 focus:outline-none"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+
         <div className="px-10 py-8">
           <h2 className="text-4xl font-extrabold text-gray-800 mb-10 text-center">
             Field Ticket Entry Summary
@@ -99,7 +140,7 @@ const ViewFieldTicket = () => {
             <p className="text-indigo-600">
               Ticket Type:{" "}
               <span className="font-semibold text-gray-800">
-                {ticket.JobTypeID || "N/A"}
+                {ticket.JobDescription || "N/A"}
               </span>
             </p>
             <p className="text-indigo-600">
@@ -188,6 +229,12 @@ const ViewFieldTicket = () => {
                 >
                   Cancel
                 </button>
+                <button
+                  onClick={handleDeleteClick}
+                  className="text-lg px-8 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 shadow-lg shadow-red-500/50 hover:shadow-red-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300"
+                >
+                  Delete
+                </button>
               </div>
             )}
           </div>
@@ -196,5 +243,4 @@ const ViewFieldTicket = () => {
     </main>
   );
 };
-
 export default ViewFieldTicket;
