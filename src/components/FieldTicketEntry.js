@@ -11,12 +11,34 @@ function FieldTicketEntry() {
     ticketDate: state?.ticketDate || "",
     lease: state?.lease || "",
     well: state?.well || "",
-    ticketType: state?.ticketType || "",
-    ticketNumber: state?.ticketNumber || "",
+    ticketType: ticketType || "",
+    ticketNumber: "",
   });
 
   const [items, setItems] = useState([]);
   const [ticketTypes, setTicketTypes] = useState([]);
+
+  useEffect(() => {
+    const fetchHighestTicketNumber = async () => {
+      try {
+        const response = await fetch(
+          "https://ogfieldticket.com/api/tickets.php"
+        );
+        const data = await response.json();
+        const highestTicketNumber = Math.max(
+          ...data.map((ticket) => parseInt(ticket.Ticket))
+        );
+        setFormFields((prevFields) => ({
+          ...prevFields,
+          ticketNumber: (highestTicketNumber + 1).toString(),
+        }));
+      } catch (error) {
+        console.error("Error fetching highest ticket number:", error);
+      }
+    };
+
+    fetchHighestTicketNumber();
+  }, []);
 
   useEffect(() => {
     const fetchTicketTypes = async () => {
