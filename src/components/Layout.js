@@ -1,7 +1,14 @@
 import React from "react";
 import Footer from "./Footer"; // Import the Footer component
+import { useNavigate } from "react-router-dom";
 
 function Layout({ children }) {
+  let navigate = useNavigate();
+
+  function handleHome() {
+    navigate("/home"); // Navigate to the HomePage upon sign in
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       {/* Premium Gradient Navbar */}
@@ -11,13 +18,20 @@ function Layout({ children }) {
 
         <div className="container mx-auto flex justify-between items-center relative">
           {/* Company Name with Enhanced Typography */}
-          <a
+          {/* <a
             href="/home"
             className="z-10 text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-l from-blue-200 to-white hover:from-blue-300 hover:to-teal-100 transition-colors duration-300 ease-in-out"
           >
             ogPumperDemo
-          </a>
+          </a> */}
 
+          <button
+            onClick={handleHome}
+            className="z-10 text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-l from-blue-200 to-white hover:from-blue-300 hover:to-teal-100 transition-colors duration-300 ease-in-out"
+            type="button"
+          >
+            ogPumperDemo
+          </button>
           {/* Navigation Tabs with 3D Effects and Hover Animations */}
           <div className="flex space-x-3 z-10">
             <a
