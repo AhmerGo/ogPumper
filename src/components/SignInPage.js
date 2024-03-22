@@ -5,15 +5,35 @@ import logo from "../assets/logo.jpg"; // Ensure your logo path is correct
 function SignInPage() {
   let navigate = useNavigate();
 
-  function handleSignIn() {
-    navigate("/home"); // Navigate to the HomePage upon sign in
+  async function handleSignIn(e) {
+    navigate("/home");
+
+    // e.preventDefault();
+    // const username = document.getElementById("username").value;
+    // const password = document.getElementById("password").value;
+
+    // try {
+    //   const response = await fetch("http://your-server-url/signin.php", {
+    //     username,
+    //     password,
+    //   });
+
+    //   if (response.data.success) {
+    //     navigate("/home");
+    //   } else {
+    //     alert("Invalid username or password");
+    //   }
+    // } catch (error) {
+    //   console.error("Error during sign-in:", error);
+    //   alert("An error occurred during sign-in. Please try again.");
+    // }
   }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-r from-purple-600 to-blue-500">
       <div className="bg-white/90 backdrop-blur-md shadow-xl rounded-lg px-10 pt-8 pb-10 mb-4 flex flex-col items-center">
         <img src={logo} className="w-32 mb-6" alt="logo" />
-        <form className="w-full max-w-sm" onSubmit={(e) => e.preventDefault()}>
+        <form className="w-full max-w-sm" onSubmit={handleSignIn}>
           <div className="mb-4">
             <label
               className="block text-gray-700 text-sm font-bold mb-2"

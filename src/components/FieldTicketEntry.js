@@ -102,7 +102,6 @@ function FieldTicketEntry() {
       console.error("Error submitting ticket:", error);
     }
   };
-
   const formattedDate = formFields.ticketDate
     ? new Date(formFields.ticketDate).toLocaleDateString()
     : "N/A";

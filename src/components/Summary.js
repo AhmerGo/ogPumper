@@ -54,6 +54,7 @@ const ViewFieldTicket = () => {
         }
       );
 
+      console.log(JSON.stringify(ticket));
       if (response.ok) {
         // Update successful, navigate back to the ticket list
         navigate("/home");
