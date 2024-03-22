@@ -106,12 +106,10 @@ function HomePage() {
                     <h3 className="text-2xl md:text-3xl font-bold underline decoration-gray-500 decoration-4 underline-offset-8">
                       Ticket: {ticket.Ticket}
                     </h3>
-                    <p className="text-gray-400 mt-2 text-lg">
-                      Lease ID: {ticket.LeaseID}
-                    </p>
-                    <p className="text-gray-400 mt-1 text-lg">
-                      Well ID: {ticket.WellID}
-                    </p>
+                    <div className="text-gray-400 mt-2 text-lg">
+                      <span>Lease ID: {ticket.LeaseID}</span>
+                      <span className="ml-4">Well ID: {ticket.WellID}</span>
+                    </div>
                     <p className="text-gray-400 mt-1 text-lg">
                       Ticket Date: {ticket.TicketDate}
                     </p>

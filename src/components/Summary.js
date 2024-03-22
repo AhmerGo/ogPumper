@@ -1,12 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
+const ConfirmationModal = ({ isOpen, onConfirm, onCancel }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">Confirmation</h2>
+        <p className="mb-6 text-gray-600">
+          Are you sure you want to delete this ticket?
+        </p>
+        <div className="flex justify-end">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 mr-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 rounded-md hover:bg-gradient-to-l focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ViewFieldTicket = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [ticket, setTicket] = useState(null);
   const [formattedDate, setFormattedDate] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
     if (location.state) {
@@ -67,7 +97,11 @@ const ViewFieldTicket = () => {
     }
   };
 
-  const handleDeleteClick = async () => {
+  const handleDeleteClick = () => {
+    setShowConfirmation(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
       const response = await fetch(
         `https://ogfieldticket.com/api/tickets.php?ticket=${ticket.Ticket}`,
@@ -86,6 +120,10 @@ const ViewFieldTicket = () => {
     } catch (error) {
       console.error("Error deleting ticket:", error);
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowConfirmation(false);
   };
 
   if (!ticket) {
@@ -241,7 +279,14 @@ const ViewFieldTicket = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </main>
   );
 };
+
 export default ViewFieldTicket;
