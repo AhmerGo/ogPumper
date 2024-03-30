@@ -21,7 +21,7 @@ function SignInPage() {
     e.preventDefault();
     try {
       const response = await fetch(
-        "http://ogfieldticket.com/api/login_api.php",
+        "https://ogfieldticket.com/api/login_api.php",
         {
           method: "POST",
           headers: {
