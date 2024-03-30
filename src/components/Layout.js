@@ -146,7 +146,7 @@ function Layout({ children }) {
           <span>OgFieldDemo</span>
         </Logo>
         <NavItems>
-          <NavItem onClick={() => navigate("/profile")} theme={theme}>
+          <NavItem onClick={() => navigate("/home")} theme={theme}>
             <span className="material-symbols-outlined">account_circle</span>
           </NavItem>
           <ThemeToggleButton onClick={handleThemeToggle} spinning={spinning}>
