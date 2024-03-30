@@ -6,13 +6,13 @@ import CreateFieldTicket from "./components/CreateFieldTicket"; // Assuming you'
 import Layout from "./components/Layout";
 import "./index.css";
 import FieldTicketEntry from "./components/FieldTicketEntry";
-import { TicketsProvider } from "./components/TicketsContext";
+import { ThemeProvider } from "./components/ThemeContext";
 import Summary from "./components/Summary";
 
 function App() {
   return (
     <Router>
-      <TicketsProvider>
+      <ThemeProvider>
         <Routes>
           <Route path="/" element={<SignInPage />} />
           <Route
@@ -50,7 +50,7 @@ function App() {
           />
           {/* Add more routes as needed */}
         </Routes>
-      </TicketsProvider>
+      </ThemeProvider>
     </Router>
   );
 }

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 function HomePage() {
   const [tickets, setTickets] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [ticketsPerPage] = useState(5); // You can adjust the number of tickets per page as needed
+  const [ticketsPerPage] = useState(5);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -16,8 +16,6 @@ function HomePage() {
         );
         let data = await response.json();
 
-        // Assuming TicketDate is in a format that can be directly compared,
-        // otherwise, you might need to parse it into a Date object first.
         data = data.sort(
           (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
         );
@@ -35,12 +33,10 @@ function HomePage() {
     navigate("/view-field-ticket", { state: ticket });
   };
 
-  // Calculate the currently displayed tickets
   const indexOfLastTicket = currentPage * ticketsPerPage;
   const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
   const currentTickets = tickets.slice(indexOfFirstTicket, indexOfLastTicket);
 
-  // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
@@ -66,19 +62,27 @@ function HomePage() {
           <div className="w-full max-w-4xl mx-auto bg-opacity-90 rounded-xl shadow-2xl overflow-hidden">
             <div className="bg-gradient-to-r from-gray-700 to-gray-800 p-6 text-center relative overflow-hidden">
               <motion.h2
-                className="text-4xl font-bold text-white"
+                className="text-4xl md:text-3xl font-bold text-white"
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.5 }}
               >
                 Ticket Dashboard
               </motion.h2>
-              <p className="text-gray-400 mt-2">
-                Streamline your workflow with precision
-              </p>
+              <div className="my-6 mx-auto w-full max-w-xl px-4">
+                <div className="bg-gray-700 rounded-full h-2.5 dark:bg-gray-700">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full"
+                    style={{ width: `75%` }}
+                  ></div>
+                </div>
+                <p className="text-gray-400 text-center mt-2 text-base md:text-sm">
+                  75% of monthly ticket goal achieved
+                </p>
+              </div>
               <Link
                 to="/create-field-ticket"
-                className="mt-4 inline-flex items-center justify-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition ease-in-out duration-150"
+                className="mt-4 inline-flex items-center justify-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition ease-in-out duration-150 text-base md:text-sm"
               >
                 <svg
                   className="w-6 h-6 mr-2"
@@ -98,28 +102,34 @@ function HomePage() {
               {currentTickets.map((ticket) => (
                 <motion.li
                   key={ticket.Ticket}
-                  className="flex justify-between items-center p-4 md:p-6 bg-gray-800 text-white rounded-lg m-2 shadow-lg transform hover:scale-105 transition duration-500 ease-in-out"
+                  className="flex flex-col md:flex-row justify-between items-center p-4 md:p-6 bg-gray-800 text-white rounded-lg m-2 shadow-lg transform hover:scale-105 transition duration-500 ease-in-out"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <div>
-                    <h3 className="text-2xl md:text-3xl font-bold underline decoration-gray-500 decoration-4 underline-offset-8">
+                  <div
+                    className="flex-grow cursor-pointer mb-4 md:mb-0"
+                    onClick={() => handleViewDetailsClick(ticket)}
+                  >
+                    <h3 className="text-xl md:text-2xl font-bold underline decoration-gray-500 decoration-4 underline-offset-8">
                       Ticket: {ticket.Ticket}
                     </h3>
-                    <div className="text-gray-400 mt-2 text-lg">
-                      <span>Lease ID: {ticket.LeaseID}</span>
-                      <span className="ml-4">Well ID: {ticket.WellID}</span>
+                    <div className="text-gray-400 mt-2 text-base md:text-lg">
+                      <span>Lease: {ticket.LeaseName}</span>
+                      <span className="ml-4">Well: {ticket.WellID}</span>
                     </div>
-                    <p className="text-gray-400 mt-1 text-lg">
+                    <p className="text-gray-400 mt-1 text-base md:text-lg">
                       Ticket Date: {ticket.TicketDate}
                     </p>
-                    <p className="text-gray-400 mt-1 text-lg">
+                    <p className="text-gray-400 mt-1 text-base md:text-lg">
                       Job Description: {ticket.JobDescription}
                     </p>
                   </div>
                   <button
-                    onClick={() => handleViewDetailsClick(ticket)}
-                    className="text-lg text-gray-500 hover:text-gray-400 font-semibold py-2 px-4 rounded-lg border border-gray-600 hover:border-gray-500 transition duration-150 ease-in-out"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewDetailsClick(ticket);
+                    }}
+                    className="text-base md:text-lg text-gray-500 hover:text-gray-400 font-semibold py-2 px-4 rounded-lg border border-gray-600 hover:border-gray-500 transition duration-150 ease-in-out cursor-pointer"
                     style={{ boxShadow: "0 2px 5px 0 rgba(156,163,175,0.48)" }}
                   >
                     View Details →
@@ -127,6 +137,7 @@ function HomePage() {
                 </motion.li>
               ))}
             </ul>
+
             <div className="py-4 flex justify-center items-center">
               {Array.from(
                 Array(Math.ceil(tickets.length / ticketsPerPage)).keys()
@@ -136,7 +147,7 @@ function HomePage() {
                   onClick={() => paginate(number + 1)}
                   className={`mx-2 px-4 py-2 ${
                     currentPage === number + 1 ? "bg-gray-700" : "bg-gray-600"
-                  } text-white rounded hover:bg-gray-700 focus:outline-none`}
+                  } text-white rounded hover:bg-gray-700 focus:outline-none text-base md:text-sm`}
                 >
                   {number + 1}
                 </button>
@@ -183,6 +194,34 @@ function HomePage() {
           }
           66% {
             transform: translate(-20%, 20%) scale(0.8);
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .text-4xl {
+            font-size: 2rem;
+          }
+
+          .text-2xl {
+            font-size: 1.5rem;
+          }
+
+          .text-lg {
+            font-size: 1.125rem;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .text-4xl {
+            font-size: 1.75rem;
+          }
+
+          .text-2xl {
+            font-size: 1.25rem;
+          }
+
+          .text-lg {
+            font-size: 1rem;
           }
         }
       `}</style>
