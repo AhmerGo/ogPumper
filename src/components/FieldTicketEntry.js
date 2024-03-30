@@ -15,6 +15,7 @@ function FieldTicketEntry() {
     well: state?.well || "",
     ticketType: state?.ticketType || "",
     ticketNumber: "",
+    note: "",
   });
 
   const [items, setItems] = useState([]);
@@ -78,31 +79,34 @@ function FieldTicketEntry() {
 
   const handleChange = (e, itemId) => {
     const { name, value } = e.target;
-    setItems((prevItems) =>
-      prevItems.map((item) =>
-        item.JobItemID === itemId ? { ...item, [name]: value } : item
-      )
-    );
+    if (name === "note") {
+      setFormFields((prevFields) => ({
+        ...prevFields,
+        [name]: value,
+      }));
+    } else {
+      setItems((prevItems) =>
+        prevItems.map((item) =>
+          item.JobItemID === itemId ? { ...item, [name]: value } : item
+        )
+      );
+    }
   };
 
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // Find the selected ticket type object based on the ticket type description
       const selectedTicketType = ticketTypes.find(
         (type) => type.Description === formFields.ticketType
       );
 
-      // Get the job type ID from the selected ticket type object
       const jobTypeID = selectedTicketType ? selectedTicketType.JobTypeID : "";
 
-      // Find the selected lease object based on the lease name
       const selectedLease = leases.find(
         (lease) => lease.LeaseName === formFields.lease
       );
 
-      // Get the lease ID from the selected lease object
       const leaseID = selectedLease ? selectedLease.LeaseID : "";
 
       const response = await fetch(
@@ -114,9 +118,10 @@ function FieldTicketEntry() {
           },
           body: JSON.stringify({
             ...formFields,
-            lease: leaseID, // Replace the lease name with the lease ID
+            lease: leaseID,
             JobTypeID: jobTypeID,
             items,
+            note: formFields.note,
           }),
         }
       );
@@ -239,24 +244,27 @@ function FieldTicketEntry() {
                   }`}
                   placeholder="0"
                 />
-                <label className="block font-medium transition-colors duration-500">
-                  Notes:
-                </label>
-                <input
-                  type="text"
-                  name="notes"
-                  value={item.notes || ""}
-                  onChange={(e) => handleChange(e, item.JobItemID)}
-                  className={`form-input w-full md:w-96 px-4 py-2 rounded-md transition-colors duration-500 ${
-                    theme === "dark"
-                      ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
-                      : "border border-gray-300 focus:ring-gray-500"
-                  }`}
-                  placeholder="Add notes"
-                />
               </div>
             </div>
           ))}
+
+          <div className="mb-8">
+            <label className="block font-medium transition-colors duration-500">
+              Note:
+            </label>
+            <textarea
+              name="note"
+              value={formFields.note || ""}
+              onChange={(e) => handleChange(e)}
+              className={`form-textarea w-full px-4 py-2 rounded-md transition-colors duration-500 ${
+                theme === "dark"
+                  ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
+                  : "border border-gray-300 focus:ring-gray-500"
+              }`}
+              placeholder="Add a note"
+              rows={4}
+            ></textarea>
+          </div>
 
           <div className="text-center mt-12">
             <button

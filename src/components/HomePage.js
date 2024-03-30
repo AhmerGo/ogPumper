@@ -1,12 +1,114 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
+import { useTheme } from "./ThemeContext";
+import { useSpring, useTrail, animated, config } from "react-spring";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useUserRole } from "./UserContext";
+
+import {
+  faTasks,
+  faMapMarkerAlt,
+  faCalendarAlt,
+  faBriefcase,
+} from "@fortawesome/free-solid-svg-icons";
+
+function TicketItem({ ticket, index, theme, onClick }) {
+  const [hoverAnimation, setHoverAnimation] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 10 }, // Adjust for desired speed
+  }));
+
+  return (
+    <animated.li
+      className={`flex flex-col md:flex-row justify-between items-center p-6 ${
+        index % 2 === 0
+          ? theme === "dark"
+            ? "bg-gray-800 text-white"
+            : "bg-white text-gray-800"
+          : theme === "dark"
+          ? "bg-gray-700 text-white"
+          : "bg-gray-100 text-gray-800"
+      } rounded-lg m-4 shadow-lg cursor-pointer`}
+      style={{
+        transform: hoverAnimation.scale.interpolate((s) => `scale(${s})`),
+      }}
+      onMouseEnter={() => setHoverAnimation({ scale: 1.05 })}
+      onMouseLeave={() => setHoverAnimation({ scale: 1 })}
+      onClick={onClick}
+    >
+      {" "}
+      <div className="flex-grow mb-4 md:mb-0">
+        <h3 className="text-2xl md:text-3xl font-bold mb-2">
+          Ticket: {ticket.Ticket}
+        </h3>
+        <div className="text-gray-500 mt-2 text-lg md:text-xl flex flex-col md:flex-row md:items-center">
+          <span className="flex items-center mb-1 md:mb-0 md:mr-4">
+            <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-2" />
+            Lease: {ticket.LeaseName}
+          </span>
+        </div>
+        <p className="text-gray-500 mt-1 text-lg md:text-xl flex items-center">
+          <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
+          {ticket.TicketDate}
+        </p>
+        <p className="text-gray-500 mt-1 text-lg md:text-xl flex items-center">
+          <FontAwesomeIcon icon={faBriefcase} className="mr-2" />
+          Job: {ticket.JobDescription}
+        </p>
+      </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        className="text-lg md:text-xl text-primary-500 hover:text-primary-600 font-semibold py-2 px-4 rounded-lg border border-primary-500 hover:border-primary-600 transition duration-150 ease-in-out"
+      >
+        View Details →
+      </button>
+    </animated.li>
+  );
+}
 
 function HomePage() {
   const [tickets, setTickets] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [ticketsPerPage] = useState(5);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const { userRole } = useUserRole();
+
+  const [buttonAnimation, setButtonAnimation] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 300, friction: 10 }, // Adjust for desired responsiveness
+  }));
+
+  const pageAnimation = useSpring({
+    from: { opacity: 0, scale: 0.95, y: -20 },
+    to: { opacity: 1, scale: 1, y: 0 },
+    config: config.gentle,
+  });
+
+  const dashboardAnimation = useSpring({
+    from: { opacity: 0, y: -50 },
+    to: { opacity: 1, y: 0 },
+    config: config.gentle,
+  });
+
+  const ticketAnimation = useTrail(ticketsPerPage, {
+    from: { opacity: 0, y: 50 },
+    to: { opacity: 1, y: 0 },
+    config: config.stiff,
+  });
+
+  const paginationAnimation = useTrail(
+    Math.ceil(tickets.length / ticketsPerPage),
+    {
+      from: { opacity: 0, scale: 0.8 },
+      to: { opacity: 1, scale: 1 },
+      config: config.stiff,
+    }
+  );
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -14,215 +116,161 @@ function HomePage() {
         const response = await fetch(
           "https://ogfieldticket.com/api/tickets.php"
         );
-        let data = await response.json();
+        const data = await response.json();
+        let filteredTickets = data;
 
-        data = data.sort(
-          (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
+        if (userRole === "P") {
+          filteredTickets = data.filter((ticket) => ticket.Billed !== "Y");
+        }
+
+        setTickets(
+          filteredTickets.sort(
+            (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
+          )
         );
-
-        setTickets(data);
+        setLoading(false);
       } catch (error) {
         console.error("Error fetching tickets:", error);
+        setLoading(false);
       }
     };
 
     fetchTickets();
-  }, []);
+  }, [userRole]);
 
   const handleViewDetailsClick = (ticket) => {
     navigate("/view-field-ticket", { state: ticket });
   };
 
-  const indexOfLastTicket = currentPage * ticketsPerPage;
-  const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
-  const currentTickets = tickets.slice(indexOfFirstTicket, indexOfLastTicket);
-
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <>
-      <div className="relative min-h-screen bg-gradient-to-br from-gray-800 to-gray-900 p-4 overflow-hidden">
-        <div className="absolute inset-0 animate-gradient-xy bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900 opacity-20 mix-blend-soft-light"></div>
-        <div className="absolute inset-0 animate-blob blob-1 bg-gradient-to-tr from-gray-600 via-gray-700 to-gray-800 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-duration-200s"></div>
-        <div className="absolute inset-0 animate-blob blob-2 bg-gradient-to-tl from-gray-500 via-gray-600 to-gray-700 rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-duration-300s"></div>
-
-        <motion.div
-          className="relative min-h-screen flex flex-col justify-start items-center pt-20"
-          initial="hidden"
-          animate="visible"
-          variants={{
-            hidden: { opacity: 0, scale: 0.95 },
-            visible: {
-              opacity: 1,
-              scale: 1,
-              transition: { delay: 0.3, duration: 0.5 },
-            },
-          }}
-        >
-          <div className="w-full max-w-4xl mx-auto bg-opacity-90 rounded-xl shadow-2xl overflow-hidden">
-            <div className="bg-gradient-to-r from-gray-700 to-gray-800 p-6 text-center relative overflow-hidden">
-              <motion.h2
-                className="text-4xl md:text-3xl font-bold text-white"
-                initial={{ y: -20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                Ticket Dashboard
-              </motion.h2>
-              <div className="my-6 mx-auto w-full max-w-xl px-4">
-                <div className="bg-gray-700 rounded-full h-2.5 dark:bg-gray-700">
-                  <div
-                    className="bg-blue-600 h-2.5 rounded-full"
-                    style={{ width: `75%` }}
-                  ></div>
-                </div>
-                <p className="text-gray-400 text-center mt-2 text-base md:text-sm">
-                  75% of monthly ticket goal achieved
-                </p>
-              </div>
-              <Link
-                to="/create-field-ticket"
-                className="mt-4 inline-flex items-center justify-center bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition ease-in-out duration-150 text-base md:text-sm"
-              >
-                <svg
-                  className="w-6 h-6 mr-2"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Create Ticket
-              </Link>
+      <div
+        className={`min-h-screen ${
+          theme === "dark" ? "bg-gray-900" : "bg-gray-100"
+        }`}
+      >
+        <div
+          className={`fixed top-0 left-0 w-full h-full ${
+            theme === "dark"
+              ? "bg-gradient-to-br from-gray-900 to-gray-800"
+              : "bg-gradient-to-br from-gray-100 to-gray-200"
+          } opacity-50 z-0`}
+        ></div>
+        <div className="container mx-auto px-4 py-8 relative z-10">
+          {loading ? (
+            <div className="flex justify-center items-center h-screen">
+              <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
             </div>
-            <ul className="divide-y divide-gray-300">
-              {currentTickets.map((ticket) => (
-                <motion.li
-                  key={ticket.Ticket}
-                  className="flex flex-col md:flex-row justify-between items-center p-4 md:p-6 bg-gray-800 text-white rounded-lg m-2 shadow-lg transform hover:scale-105 transition duration-500 ease-in-out"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+          ) : (
+            <animated.div
+              className="flex flex-col justify-start items-center pt-10"
+              style={{
+                opacity: pageAnimation.opacity,
+                transform: pageAnimation.scale.interpolate(
+                  (s) => `scale(${s})`
+                ),
+              }}
+            >
+              <div
+                className={`w-full max-w-4xl mx-auto rounded-xl shadow-2xl overflow-hidden ${
+                  theme === "dark"
+                    ? "bg-gradient-to-r from-gray-800 to-gray-900"
+                    : "bg-gradient-to-r from-white to-gray-100"
+                }`}
+              >
+                <animated.div
+                  className={`p-6 text-center relative overflow-hidden shadow-md ${
+                    theme === "dark"
+                      ? "bg-gradient-to-r from-blue-900 to-indigo-900"
+                      : "bg-gradient-to-r from-blue-500 to-indigo-500"
+                  }`}
+                  style={dashboardAnimation}
                 >
-                  <div
-                    className="flex-grow cursor-pointer mb-4 md:mb-0"
-                    onClick={() => handleViewDetailsClick(ticket)}
+                  <h2
+                    className={`text-4xl md:text-3xl font-bold mb-6 ${
+                      theme === "dark" ? "text-white" : "text-white"
+                    }`}
                   >
-                    <h3 className="text-xl md:text-2xl font-bold underline decoration-gray-500 decoration-4 underline-offset-8">
-                      Ticket: {ticket.Ticket}
-                    </h3>
-                    <div className="text-gray-400 mt-2 text-base md:text-lg">
-                      <span>Lease: {ticket.LeaseName}</span>
-                      <span className="ml-4">Well: {ticket.WellID}</span>
-                    </div>
-                    <p className="text-gray-400 mt-1 text-base md:text-lg">
-                      Ticket Date: {ticket.TicketDate}
-                    </p>
-                    <p className="text-gray-400 mt-1 text-base md:text-lg">
-                      Job Description: {ticket.JobDescription}
-                    </p>
+                    Ticket Dashboard
+                  </h2>
+                  <div className="text-center my-6 mx-auto w-full max-w-xl px-4">
+                    <FontAwesomeIcon
+                      icon={faTasks}
+                      size="3x"
+                      className={`inline-block mb-4 animate-bounce ${
+                        theme === "dark" ? "text-blue-200" : "text-blue-100"
+                      }`}
+                      style={{ transform: "rotate(-10deg)" }}
+                    />
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleViewDetailsClick(ticket);
-                    }}
-                    className="text-base md:text-lg text-gray-500 hover:text-gray-400 font-semibold py-2 px-4 rounded-lg border border-gray-600 hover:border-gray-500 transition duration-150 ease-in-out cursor-pointer"
-                    style={{ boxShadow: "0 2px 5px 0 rgba(156,163,175,0.48)" }}
+                  <Link
+                    to="/create-field-ticket"
+                    className={`inline-flex items-center justify-center font-bold py-3 px-6 rounded-full shadow-lg transition duration-200 ease-in-out pop-effect ${
+                      theme === "dark"
+                        ? "bg-blue-600 hover:bg-blue-700 text-white"
+                        : "bg-white hover:bg-gray-100 text-blue-600"
+                    }`}
                   >
-                    View Details →
-                  </button>
-                </motion.li>
-              ))}
-            </ul>
+                    <span className="material-symbols-outlined mr-2">
+                      playlist_add
+                    </span>
+                    Create New Ticket
+                  </Link>
+                </animated.div>
 
-            <div className="py-4 flex justify-center items-center">
-              {Array.from(
-                Array(Math.ceil(tickets.length / ticketsPerPage)).keys()
-              ).map((number) => (
-                <button
-                  key={number}
-                  onClick={() => paginate(number + 1)}
-                  className={`mx-2 px-4 py-2 ${
-                    currentPage === number + 1 ? "bg-gray-700" : "bg-gray-600"
-                  } text-white rounded hover:bg-gray-700 focus:outline-none text-base md:text-sm`}
+                <ul
+                  className={`divide-y ${
+                    theme === "dark" ? "divide-gray-700" : "divide-gray-300"
+                  }`}
                 >
-                  {number + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+                  {ticketAnimation.map((props, index) => {
+                    const ticket =
+                      tickets[(currentPage - 1) * ticketsPerPage + index];
+                    if (!ticket) return null;
+                    return (
+                      <TicketItem
+                        key={ticket.Ticket}
+                        ticket={ticket}
+                        index={index}
+                        theme={theme}
+                        onClick={() => handleViewDetailsClick(ticket)}
+                      />
+                    );
+                  })}
+                </ul>
+
+                <div className="py-6 flex justify-center items-center">
+                  {paginationAnimation.map((props, number) => (
+                    <animated.button
+                      key={number}
+                      onClick={() => paginate(number + 1)}
+                      className={`mx-2 px-4 py-2 rounded-full focus:outline-none text-base md:text-sm shadow-md transition duration-150 ease-in-out ${
+                        currentPage === number + 1
+                          ? theme === "dark"
+                            ? "bg-blue-600 text-white"
+                            : "bg-blue-500 text-white"
+                          : theme === "dark"
+                          ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                      style={props}
+                    >
+                      {number + 1}
+                    </animated.button>
+                  ))}
+                </div>
+              </div>
+            </animated.div>
+          )}
+        </div>
       </div>
 
       <style jsx>{`
-        .animate-gradient-xy {
-          animation: gradient-xy 15s ease infinite;
-        }
-        .animate-blob {
-          animation: blob 30s infinite;
-        }
-        .blob-1,
-        .blob-2 {
-          animation-name: blob;
-        }
-        .blob-1 {
-          animation-duration: 30s;
-        }
-        .blob-2 {
-          animation-duration: 45s;
-          animation-delay: 5s;
-        }
-        @keyframes gradient-xy {
-          0%,
-          100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-        @keyframes blob {
-          0%,
-          100% {
-            transform: translate(0%, 0%) scale(1);
-          }
-          33% {
-            transform: translate(30%, -50%) scale(1.2);
-          }
-          66% {
-            transform: translate(-20%, 20%) scale(0.8);
-          }
-        }
-
-        @media (max-width: 1024px) {
-          .text-4xl {
-            font-size: 2rem;
-          }
-
-          .text-2xl {
-            font-size: 1.5rem;
-          }
-
-          .text-lg {
-            font-size: 1.125rem;
-          }
-        }
-
-        @media (max-width: 768px) {
-          .text-4xl {
-            font-size: 1.75rem;
-          }
-
-          .text-2xl {
-            font-size: 1.25rem;
-          }
-
-          .text-lg {
-            font-size: 1rem;
-          }
+        .pop-effect:hover {
+          transform: scale(1.05);
+          transition: transform 0.2s ease-in-out;
         }
       `}</style>
     </>

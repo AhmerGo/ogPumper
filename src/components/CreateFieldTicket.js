@@ -3,6 +3,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
+import { useSpring, animated } from "react-spring";
 
 function CreateFieldTicket() {
   const navigate = useNavigate();
@@ -15,6 +16,19 @@ function CreateFieldTicket() {
   const [leases, setLeases] = useState([]);
   const [wells, setWells] = useState([]);
   const [ticketTypes, setTicketTypes] = useState([]);
+
+  const pageAnimation = useSpring({
+    from: { opacity: 0, y: 50 },
+    to: { opacity: 1, y: 0 },
+    config: { mass: 1, tension: 280, friction: 25 },
+  });
+
+  const blobAnimation = useSpring({
+    loop: true,
+    from: { scale: 1 },
+    to: [{ scale: 1.2 }, { scale: 1 }],
+    config: { mass: 1, tension: 180, friction: 12 },
+  });
 
   useEffect(() => {
     const fetchLeases = async () => {
@@ -98,7 +112,13 @@ function CreateFieldTicket() {
   };
 
   return (
-    <main className="flex-grow">
+    <animated.main
+      style={{
+        opacity: pageAnimation.opacity,
+        transform: pageAnimation.y.interpolate((y) => `translateY(${y}px)`),
+      }}
+      className="flex-grow"
+    >
       <div
         className={`min-h-screen flex items-center justify-center transition-colors duration-500 ${
           theme === "dark"
@@ -113,27 +133,45 @@ function CreateFieldTicket() {
               : "bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400"
           } opacity-20 mix-blend-soft-light`}
         ></div>
-        <div
+        <animated.div
+          style={{
+            transform: blobAnimation.scale.interpolate(
+              (scale) => `scale(${scale})`
+            ),
+          }}
           className={`absolute inset-0 animate-blob blob-1 transition-colors duration-500 ${
             theme === "dark"
               ? "bg-gradient-to-tr from-gray-600 via-gray-700 to-gray-800"
               : "bg-gradient-to-tr from-gray-300 via-gray-400 to-gray-500"
           } rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-duration-200s`}
-        ></div>
-        <div
+        ></animated.div>
+        <animated.div
+          style={{
+            transform: blobAnimation.scale.interpolate(
+              (scale) => `scale(${scale})`
+            ),
+          }}
           className={`absolute inset-0 animate-blob blob-2 transition-colors duration-500 ${
             theme === "dark"
               ? "bg-gradient-to-tl from-gray-500 via-gray-600 to-gray-700"
               : "bg-gradient-to-tl from-gray-200 via-gray-300 to-gray-400"
           } rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-duration-300s`}
-        ></div>
+        ></animated.div>
 
-        <div
+        <animated.div
+          style={{
+            opacity: pageAnimation.opacity,
+          }}
           className={`z-20 max-w-4xl w-full space-y-8 text-center transition-colors duration-500 ${
             theme === "dark" ? "bg-gray-900" : "bg-white"
           } bg-opacity-90 backdrop-filter backdrop-blur-lg rounded-3xl shadow-xl p-10`}
         >
-          <h2
+          <animated.h2
+            style={{
+              transform: pageAnimation.y.interpolate(
+                (y) => `translateY(${y / 2}px)`
+              ),
+            }}
             className={`text-4xl font-bold text-transparent bg-clip-text transition-colors duration-500 ${
               theme === "dark"
                 ? "bg-gradient-to-br from-gray-300 to-gray-400"
@@ -141,7 +179,7 @@ function CreateFieldTicket() {
             }`}
           >
             Create Field Ticket
-          </h2>
+          </animated.h2>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col mb-4">
               <label
@@ -249,8 +287,14 @@ function CreateFieldTicket() {
               </select>
             </div>
 
-            <button
+            <animated.button
               type="submit"
+              style={{
+                opacity: pageAnimation.opacity,
+                transform: pageAnimation.y.interpolate(
+                  (y) => `translateY(${y / 3}px)`
+                ),
+              }}
               className={`inline-flex items-center justify-center w-full py-3 px-6 font-bold rounded-lg focus:outline-none transition-colors duration-500 ${
                 theme === "dark"
                   ? "bg-gradient-to-br from-gray-600 to-gray-700 hover:bg-gradient-to-bl text-gray-100 focus:ring-4 focus:ring-gray-500"
@@ -258,11 +302,11 @@ function CreateFieldTicket() {
               }`}
             >
               Submit
-            </button>
+            </animated.button>
           </form>
-        </div>
+        </animated.div>
       </div>
-    </main>
+    </animated.main>
   );
 }
 

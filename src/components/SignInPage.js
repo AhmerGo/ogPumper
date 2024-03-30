@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import logo from "../assets/logo.jpg";
 import Particles from "react-tsparticles";
+import { useUserRole } from "./UserContext";
 
 function SignInPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const { setUserRole } = useUserRole();
 
   const formAnimation = useSpring({
     opacity: 1,
@@ -31,19 +33,19 @@ function SignInPage() {
         }
       );
       const data = await response.json();
-      if (data.success) {
-        // Store user information in local storage or state management solution
-        localStorage.setItem("user", JSON.stringify(data.user));
+      const { success, message, user } = data;
+      if (success) {
+        setUserRole(user.Role);
+        localStorage.setItem("userRole", user.Role);
         navigate("/home");
       } else {
-        setError(data.message);
+        setError(message);
       }
     } catch (error) {
       console.error("Error signing in:", error);
       setError("An error occurred while signing in.");
     }
   }
-
   return (
     <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200">
       <Particles

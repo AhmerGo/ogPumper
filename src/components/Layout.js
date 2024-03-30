@@ -1,85 +1,165 @@
-// Layout.js
-import React from "react";
+import { React, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
-import { useTheme } from "./ThemeContext";
+import styled, { css } from "styled-components";
+import { useTheme } from "./ThemeContext"; // Adjust the import path as needed
+import { useUserRole } from "./UserContext";
+
+// Define your NavBarContainer with a gradient and shadow for a modern look
+const NavBarContainer = styled(animated.nav)`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+  position: fixed; /* Changed from sticky to fixed for consistent stickiness */
+  top: 0;
+  z-index: 1000;
+  transition: all 0.3s ease;
+
+  ${({ theme }) =>
+    theme === "dark" &&
+    css`
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+    `}
+`;
+
+// Logo now includes a custom SVG for a more unique and artsy title
+const Logo = styled.div`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+
+  svg {
+    height: 40px; /* Adjust based on your logo */
+    fill: currentColor; /* Adjusts based on theme */
+  }
+
+  span {
+    font-weight: 600;
+    font-size: 1.5rem;
+    margin-left: 0.5rem;
+    background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  &:hover {
+    transform: translateY(-2px); /* Subtle hover effect */
+  }
+`;
+
+const NavItems = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+
+  .material-symbols-outlined {
+    font-size: 24px;
+    cursor: pointer;
+    &:hover {
+      color: #ddd; // Lighten the icon on hover for interactivity
+    }
+  }
+`;
+
+// Styling for navigation items, including Material Icons
+const NavItem = styled(animated.div)`
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+  }
+
+  .material-symbols-outlined {
+    font-size: 24px;
+    color: inherit; /* Ensures icon color matches the theme */
+  }
+`;
+
+const ThemeToggleButton = styled(NavItem)`
+  transition: transform 0.5s ease;
+
+  ${({ spinning }) =>
+    spinning &&
+    css`
+      animation: spin 0.4s linear;
+    `}
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+`;
 
 function Layout({ children }) {
   let navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { setUserRole } = useUserRole();
+  const [spinning, setSpinning] = useState(false);
 
-  function handleSignOut() {
-    console.log("User signed out");
+  const handleSignOut = () => {
+    localStorage.removeItem("userRole");
+    setUserRole("");
     navigate("/");
-  }
+  };
+
+  const handleThemeToggle = () => {
+    setSpinning(true);
+    setTimeout(() => {
+      setSpinning(false);
+      toggleTheme();
+    }, 1000);
+  };
 
   const navBarAnimation = useSpring({
-    backgroundColor: theme === "dark" ? "#1f2937" : "#ffffff",
-    color: theme === "dark" ? "#d1d5db" : "#1f2937",
-    config: { mass: 1, tension: 200, friction: 20 },
-  });
-
-  const toggleButtonAnimation = useSpring({
-    backgroundColor: theme === "dark" ? "#4b5563" : "#e5e7eb",
-    color: theme === "dark" ? "#f9fafb" : "#374151",
-    transform: `rotate(${theme === "dark" ? "0deg" : "180deg"})`,
-    config: { mass: 1, tension: 300, friction: 20 },
-  });
-
-  const signOutButtonAnimation = useSpring({
-    backgroundColor: theme === "dark" ? "#374151" : "#e5e7eb",
-    color: theme === "dark" ? "#f9fafb" : "#374151",
-    config: { mass: 1, tension: 200, friction: 20 },
+    from: { opacity: 0 },
+    to: { opacity: 1 },
   });
 
   return (
     <div
-      className={`min-h-screen flex flex-col transition-colors duration-500 ${
+      className={
         theme === "dark"
           ? "bg-gray-900 text-gray-100"
           : "bg-gray-50 text-gray-900"
-      }`}
+      }
     >
-      <animated.nav
-        style={navBarAnimation}
-        className="flex justify-between items-center px-4 py-2 lg:px-16 lg:py-4 shadow-lg transition-colors duration-500"
-        aria-label="Navigation bar"
-      >
-        <h1
-          className="text-2xl lg:text-3xl font-extrabold cursor-pointer transition duration-500 hover:text-indigo-500 dark:hover:text-indigo-400 text-shadow"
-          onClick={() => navigate("/home")}
-        >
-          OgFieldDemo
-        </h1>
-        <div className="flex items-center">
-          <animated.button
-            style={toggleButtonAnimation}
-            onClick={toggleTheme}
-            className="mr-2 lg:mr-4 flex items-center justify-center w-8 h-8 lg:w-12 lg:h-12 rounded-full shadow-inner cursor-pointer transition-all duration-500 relative overflow-hidden"
-            aria-label="Toggle Dark Mode"
-          >
-            <span className="material-icons-outlined">
-              {theme === "dark" ? "dark_mode" : "wb_sunny"}
+      <NavBarContainer style={navBarAnimation} theme={theme}>
+        <Logo onClick={() => navigate("/home")} theme={theme}>
+          {/* Insert your custom SVG logo here */}
+          <span>OgFieldDemo</span>
+        </Logo>
+        <NavItems>
+          <NavItem onClick={() => navigate("/profile")} theme={theme}>
+            <span className="material-symbols-outlined">account_circle</span>
+          </NavItem>
+          <ThemeToggleButton onClick={handleThemeToggle} spinning={spinning}>
+            <span className="material-symbols-outlined">
+              {theme === "dark" ? "dark_mode" : "light_mode"}
             </span>
-            <span
-              className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400 via-red-500 to-purple-600 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-              aria-hidden="true"
-            ></span>
-          </animated.button>
-          <animated.button
-            style={signOutButtonAnimation}
-            onClick={handleSignOut}
-            className="flex items-center justify-center px-2 py-1 lg:px-3 lg:py-2 rounded-md bg-transparent border border-transparent hover:border-gray-300 dark:hover:border-gray-500 transition duration-300"
-          >
-            <span className="material-icons-outlined text-lg lg:mr-2">
-              exit_to_app
-            </span>
-            <span className="hidden lg:inline font-medium">Sign Out</span>
-          </animated.button>
-        </div>
-      </animated.nav>
-      <main className="flex-grow">{children}</main>
-      {/* Your Footer Component */}
+          </ThemeToggleButton>
+          <NavItem onClick={handleSignOut} theme={theme}>
+            <span className="material-symbols-outlined">logout</span>
+          </NavItem>
+        </NavItems>
+      </NavBarContainer>
+      <main style={{ paddingTop: "4rem" }}>{children}</main>
     </div>
   );
 }
