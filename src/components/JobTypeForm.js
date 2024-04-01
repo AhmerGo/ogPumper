@@ -43,7 +43,7 @@ const JobListPage = () => {
     config: { tension: 300, friction: 20 },
   });
   const jobAnimation = useSpring({
-    from: { opacity: 0, transform: "translateY(30px)" },
+    from: { opacity: 0, transform: "translateY(20px)" },
     to: { opacity: 1, transform: "translateY(0)" },
   });
 
@@ -308,7 +308,36 @@ const ItemsAnimation = ({
     const { name, value } = e.target;
     setItemEdits((prev) => ({ ...prev, [name]: value }));
   };
+  const handleDeleteItem = (itemId) => {
+    console.log(itemId);
+    console.log(
+      `https://ogfieldticket.com/api/jobs.php?itemID=${itemId.JobItemID}`
+    );
 
+    const data = {
+      JobItemID: itemId.JobItemID,
+      ItemDescription: itemId.ItemDescription,
+    };
+    console.log(data);
+
+    fetch(`https://ogfieldticket.com/api/jobs.php?itemID=${itemId.JobItemID}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    })
+      .then((response) => {
+        if (response.ok) {
+          onDeleteItem(itemId);
+        } else {
+          throw new Error("Error deleting item");
+        }
+      })
+      .catch((error) => {
+        console.error("Error deleting item:", error);
+      });
+  };
   const finalizeEdit = async (items, setTicketTypes) => {
     try {
       await axios.patch(
@@ -480,7 +509,7 @@ const ItemsAnimation = ({
                 />
                 <FontAwesomeIcon
                   icon={faTrashAlt}
-                  onClick={() => onDeleteItem(item.ItemID)}
+                  onClick={() => handleDeleteItem(item)}
                   className={`cursor-pointer ${
                     theme === "dark" ? "text-white" : "text-gray-800"
                   }`}
