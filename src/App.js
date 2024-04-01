@@ -8,6 +8,8 @@ import "./index.css";
 import FieldTicketEntry from "./components/FieldTicketEntry";
 import { ThemeProvider } from "./components/ThemeContext";
 import Summary from "./components/Summary";
+import JobForm from "./components/JobTypeForm";
+
 import { UserProvider } from "./components/UserContext";
 
 function App() {
@@ -46,6 +48,14 @@ function App() {
               element={
                 <Layout>
                   <FieldTicketEntry />
+                </Layout>
+              }
+            />
+            <Route
+              path="/job-form"
+              element={
+                <Layout>
+                  <JobForm />
                 </Layout>
               }
             />

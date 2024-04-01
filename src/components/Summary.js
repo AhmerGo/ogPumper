@@ -13,9 +13,9 @@ const ConfirmationModal = ({
 }) => {
   const { theme } = useTheme();
   const modalAnimation = useSpring({
-    transform: isOpen ? "scale(1)" : "scale(0.5)",
+    transform: isOpen ? "scale(1)" : "scale(0.95)",
     opacity: isOpen ? 1 : 0,
-    config: { mass: 1, tension: 280, friction: 25 },
+    config: { mass: 1, tension: 280, friction: 30 },
   });
 
   if (!isOpen) return null;
@@ -23,20 +23,22 @@ const ConfirmationModal = ({
   return (
     <animated.div
       style={modalAnimation}
-      className={`fixed inset-0 z-50 flex items-center justify-center ${
+      className={`fixed inset-0 z-50 flex items-center justify-center px-4 py-6 ${
         theme === "dark"
-          ? "bg-black bg-opacity-50"
-          : "bg-gray-500 bg-opacity-50"
+          ? "bg-black bg-opacity-60"
+          : "bg-gray-500 bg-opacity-60"
       }`}
     >
       <div
-        className={`${
+        className={`rounded-lg p-6 w-full max-w-md mx-auto ${
           theme === "dark" ? "bg-gray-800" : "bg-white"
-        } rounded-lg shadow-lg p-6 w-96`}
+        } shadow-lg border ${
+          theme === "dark" ? "border-gray-700" : "border-gray-200"
+        }`}
       >
         <h2
-          className={`text-2xl font-bold mb-4 ${
-            theme === "dark" ? "text-gray-200" : "text-gray-800"
+          className={`text-xl font-semibold mb-4 ${
+            theme === "dark" ? "text-white" : "text-gray-900"
           }`}
         >
           Confirmation
@@ -51,17 +53,20 @@ const ConfirmationModal = ({
         <div className="flex justify-end">
           <button
             onClick={onCancel}
-            className={`px-4 py-2 mr-2 text-sm font-medium ${
-              theme === "dark"
-                ? "text-gray-400 bg-gray-700 border border-gray-600 hover:bg-gray-600"
-                : "text-gray-700 bg-gray-200 border border-gray-300 hover:bg-gray-300"
-            } rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-400`}
+            className="px-4 py-2 text-sm font-medium rounded-md focus:outline-none transition ease-in-out duration-150"
+            style={{
+              background: theme === "dark" ? "#374151" : "#d1d5db",
+              color: theme === "dark" ? "#d1d5db" : "#374151",
+            }}
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-500 rounded-md hover:bg-gradient-to-l focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            className="px-4 py-2 text-sm font-medium text-white rounded-md focus:outline-none transition ease-in-out duration-150 ml-2"
+            style={{
+              backgroundImage: "linear-gradient(45deg, #10B981, #3B82F6)",
+            }}
           >
             {actionButtonLabel}
           </button>
@@ -281,347 +286,510 @@ const ViewFieldTicket = () => {
   }
 
   return (
-    <animated.main
-      style={backgroundAnimation}
-      className="min-h-screen flex items-center justify-center p-6 transition-colors duration-500"
-    >
-      <animated.div
-        style={ticketSummaryAnimation}
-        className="w-full max-w-6xl mx-auto backdrop-blur-md rounded-xl shadow-2xl overflow-hidden transition-colors duration-500"
+    <>
+      <animated.main
+        style={backgroundAnimation}
+        className="min-h-screen flex items-center justify-center p-6
+        transition-colors duration-500"
       >
-        <animated.div style={fadeAnimation} className="px-10 py-8">
-          <h2
-            className={`text-4xl font-extrabold ${
-              theme === "dark" ? "text-gray-200" : "text-gray-800"
-            } mb-10 text-center`}
-          >
-            Field Ticket Entry Summary
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-lg mb-8 items-center">
-            <div className="flex flex-col justify-center items-center">
-              <animated.p
-                style={itemAnimation}
-                className={`text-center ${
-                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                }`}
-              >
-                Date:{" "}
-                <span
-                  className={
-                    theme === "dark"
-                      ? "font-semibold text-gray-300"
-                      : "font-semibold text-gray-700"
-                  }
-                >
-                  {formattedDate}
-                </span>
-              </animated.p>
-            </div>
-            <div className="flex flex-col justify-center items-center">
-              <animated.p
-                style={itemAnimation}
-                className={`text-center ${
-                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                }`}
-              >
-                Lease:{" "}
-                <span
-                  className={
-                    theme === "dark"
-                      ? "font-semibold text-gray-300"
-                      : "font-semibold text-gray-700"
-                  }
-                >
-                  {ticket.LeaseName || "N/A"}
-                </span>
-              </animated.p>
-            </div>
-            <div className="flex flex-col justify-center items-center">
-              <animated.p
-                style={itemAnimation}
-                className={`text-center ${
-                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                }`}
-              >
-                Well:{" "}
-                <span
-                  className={
-                    theme === "dark"
-                      ? "font-semibold text-gray-300"
-                      : "font-semibold text-gray-700"
-                  }
-                >
-                  {ticket.WellID || "N/A"}
-                </span>
-              </animated.p>
-            </div>
-            <div className="flex flex-col justify-center items-center">
-              <animated.p
-                style={itemAnimation}
-                className={`text-center ${
-                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                }`}
-              >
-                Ticket Type:{" "}
-                <span
-                  className={
-                    theme === "dark"
-                      ? "font-semibold text-gray-300"
-                      : "font-semibold text-gray-700"
-                  }
-                >
-                  {ticket.JobDescription || "N/A"}
-                </span>
-              </animated.p>
-            </div>
-            <div className="flex flex-col justify-center items-center">
-              <animated.p
-                style={itemAnimation}
-                className={`text-center ${
-                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                }`}
-              >
-                Ticket Number:{" "}
-                <span
-                  className={
-                    theme === "dark"
-                      ? "font-semibold text-gray-300"
-                      : "font-semibold text-gray-700"
-                  }
-                >
-                  {ticket.Ticket || "N/A"}
-                </span>
-              </animated.p>
-            </div>
-            <div className="flex flex-col justify-center items-center">
-              <animated.p
-                style={itemAnimation}
-                className={`text-center ${
-                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                }`}
-              >
-                Billed:{" "}
-                <span
-                  className={
-                    theme === "dark"
-                      ? "font-semibold text-gray-300"
-                      : "font-semibold text-gray-700"
-                  }
-                >
-                  {ticket.Billed || "N/A"}
-                </span>
-              </animated.p>
-            </div>
-          </div>
-          {ticket.Items &&
-            ticket.Items.map((item) => (
-              <animated.div
-                key={item.TicketLine}
-                style={itemAnimation}
-                className={`flex flex-col md:flex-row justify-between gap-6 items-center ${
-                  theme === "dark" ? "bg-gray-700" : "bg-gray-200"
-                } p-4 rounded-lg mb-4`}
-              >
-                <div className="flex-1">
-                  <h4
-                    className={`text-lg font-semibold ${
-                      theme === "dark" ? "text-gray-200" : "text-gray-800"
-                    }`}
-                  >
-                    {item.ItemDescription}{" "}
-                    {item.UOM && (
+        <animated.div
+          style={ticketSummaryAnimation}
+          className="w-full max-w-6xl mx-auto backdrop-blur-md rounded-xl shadow-2xl overflow-hidden transition-colors duration-500"
+        >
+          <animated.div style={fadeAnimation} className="px-10 py-8">
+            <h2
+              className={`text-4xl font-extrabold ${
+                theme === "dark" ? "text-gray-200" : "text-gray-800"
+              } mb-10 text-center`}
+            >
+              Field Ticket Entry Summary
+            </h2>
+            <div className="px-4 mb-8">
+              {/* Desktop layout */}
+              <div className="hidden sm:block">
+                {/* Row 1: Date and Lease */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-lg mb-8 items-center">
+                  <div className="flex flex-col justify-center items-center">
+                    <animated.p
+                      style={itemAnimation}
+                      className={`text-center ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      }`}
+                    >
+                      Date:{" "}
                       <span
                         className={
                           theme === "dark"
-                            ? "text-sm text-gray-400"
-                            : "text-sm text-gray-600"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
                         }
                       >
-                        ({item.UOM})
+                        {formattedDate}
                       </span>
-                    )}
-                  </h4>
-                </div>
-
-                {/* Adjusted container with ml-4 for slight rightward shift */}
-                <div className="flex flex-1 items-center gap-4 ml-400">
-                  <div className="flex-grow min-w-0">
-                    <p
-                      className={`whitespace-nowrap ${
-                        theme === "dark" ? "text-gray-400" : "text-gray-600"
+                    </animated.p>
+                  </div>
+                  <div className="flex flex-col justify-center items-center">
+                    <animated.p
+                      style={itemAnimation}
+                      className={`text-center ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
                       }`}
                     >
-                      <span className="font-medium">Total Cost:</span> $
-                      {item.totalCost}
+                      Lease:{" "}
+                      <span
+                        className={
+                          theme === "dark"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
+                        }
+                      >
+                        {ticket.LeaseName || "N/A"}
+                      </span>
+                    </animated.p>
+                  </div>
+                  <div className="flex flex-col justify-center items-center">
+                    <animated.p
+                      style={itemAnimation}
+                      className={`text-center ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      }`}
+                    >
+                      Well:{" "}
+                      <span
+                        className={
+                          theme === "dark"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
+                        }
+                      >
+                        {ticket.WellID || "N/A"}
+                      </span>
+                    </animated.p>
+                  </div>
+                  <div className="flex flex-col justify-center items-center">
+                    <animated.p
+                      style={itemAnimation}
+                      className={`text-center ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      }`}
+                    >
+                      Ticket Type:{" "}
+                      <span
+                        className={
+                          theme === "dark"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
+                        }
+                      >
+                        {ticket.JobDescription || "N/A"}
+                      </span>
+                    </animated.p>
+                  </div>
+                  <div className="flex flex-col justify-center items-center">
+                    <animated.p
+                      style={itemAnimation}
+                      className={`text-center ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      }`}
+                    >
+                      Ticket Number:{" "}
+                      <span
+                        className={
+                          theme === "dark"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
+                        }
+                      >
+                        {ticket.Ticket || "N/A"}
+                      </span>
+                    </animated.p>
+                  </div>
+                  <div className="flex flex-col justify-center items-center">
+                    <animated.p
+                      style={itemAnimation}
+                      className={`text-center ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      }`}
+                    >
+                      Billed:{" "}
+                      <span
+                        className={
+                          theme === "dark"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
+                        }
+                      >
+                        {ticket.Billed || "N/A"}
+                      </span>
+                    </animated.p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mobile layout */}
+              <div className="sm:hidden">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Date Section */}
+                  <div className="flex flex-col items-center">
+                    <p
+                      className={`font-bold ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      } text-center`}
+                    >
+                      Date
                     </p>
+                    <span
+                      className={`block text-center ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {formattedDate}
+                    </span>
+                  </div>
+                  {/* Lease Section */}
+                  <div className="flex flex-col items-center">
+                    <p
+                      className={`font-bold ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      } text-center`}
+                    >
+                      Lease
+                    </p>
+                    <span
+                      className={`block text-center ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {ticket.LeaseName || "N/A"}
+                    </span>
+                  </div>
+                  {/* Well Section */}
+                  <div className="flex flex-col items-center">
+                    <p
+                      className={`font-bold ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      } text-center`}
+                    >
+                      Well
+                    </p>
+                    <span
+                      className={`block text-center ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {ticket.WellID || "N/A"}
+                    </span>
+                  </div>
+                  {/* Ticket Type Section */}
+                  <div className="flex flex-col items-center">
+                    <p
+                      className={`font-bold ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      } text-center`}
+                    >
+                      Ticket Type
+                    </p>
+                    <span
+                      className={`block text-center ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {ticket.JobDescription || "N/A"}
+                    </span>
+                  </div>
+                  {/* Ticket Number Section */}
+                  <div className="flex flex-col items-center">
+                    <p
+                      className={`font-bold ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      } text-center`}
+                    >
+                      Ticket Number
+                    </p>
+                    <span
+                      className={`block text-center ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {ticket.Ticket || "N/A"}
+                    </span>
+                  </div>
+                  {/* Billed Section */}
+                  <div className="flex flex-col items-center">
+                    <p
+                      className={`font-bold ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      } text-center`}
+                    >
+                      Billed
+                    </p>
+                    <span
+                      className={`block text-center ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {ticket.Billed || "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>{" "}
+            {ticket.Items &&
+              ticket.Items.map((item) => (
+                <animated.div
+                  key={item.TicketLine}
+                  style={itemAnimation}
+                  className={`flex flex-col md:flex-row justify-between gap-6 items-center ${
+                    theme === "dark" ? "bg-gray-700" : "bg-gray-200"
+                  } p-4 rounded-lg mb-4`}
+                >
+                  <div className="flex-1">
+                    <h4
+                      className={`text-lg font-semibold ${
+                        theme === "dark" ? "text-gray-200" : "text-gray-800"
+                      }`}
+                    >
+                      {item.ItemDescription}{" "}
+                      {item.UOM && (
+                        <span
+                          className={
+                            theme === "dark"
+                              ? "text-sm text-gray-400"
+                              : "text-sm text-gray-600"
+                          }
+                        >
+                          ({item.UOM})
+                        </span>
+                      )}
+                    </h4>
                   </div>
 
-                  <div className="flex-shrink-0">
-                    {isEditing ? (
-                      <>
-                        <label
-                          className={`block ${
-                            theme === "dark" ? "text-gray-400" : "text-gray-600"
-                          } font-medium`}
-                        >
-                          Qty:
-                        </label>
-                        <input
-                          type="number"
-                          name="Quantity"
-                          value={item.Quantity}
-                          onChange={(e) => handleChange(e, item.TicketLine)}
-                          className={`form-input w-24 px-4 py-2 rounded-md border ${
-                            theme === "dark"
-                              ? "border-gray-600 bg-gray-800 text-gray-300"
-                              : "border-gray-400 bg-white text-gray-700"
-                          } focus:ring-indigo-400 focus:border-indigo-400 transition`}
-                          placeholder="0"
-                        />
-                      </>
-                    ) : (
+                  {/* Adjusted container with ml-4 for slight rightward shift */}
+                  <div className="flex flex-1 items-center gap-4 ml-400">
+                    <div className="flex-grow min-w-0">
                       <p
                         className={`whitespace-nowrap ${
                           theme === "dark" ? "text-gray-400" : "text-gray-600"
                         }`}
                       >
-                        <span className="font-medium">Qty:</span>{" "}
-                        {item.Quantity}
+                        <span className="font-medium">Total Cost:</span> $
+                        {item.totalCost}
                       </p>
-                    )}
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      {isEditing ? (
+                        <>
+                          <label
+                            className={`block ${
+                              theme === "dark"
+                                ? "text-gray-400"
+                                : "text-gray-600"
+                            } font-medium`}
+                          >
+                            Qty:
+                          </label>
+                          <input
+                            type="number"
+                            name="Quantity"
+                            value={item.Quantity}
+                            onChange={(e) => handleChange(e, item.TicketLine)}
+                            className={`form-input w-24 px-4 py-2 rounded-md border ${
+                              theme === "dark"
+                                ? "border-gray-600 bg-gray-800 text-gray-300"
+                                : "border-gray-400 bg-white text-gray-700"
+                            } focus:ring-indigo-400 focus:border-indigo-400 transition`}
+                            placeholder="0"
+                          />
+                        </>
+                      ) : (
+                        <p
+                          className={`whitespace-nowrap ${
+                            theme === "dark" ? "text-gray-400" : "text-gray-600"
+                          }`}
+                        >
+                          <span className="font-medium">Qty:</span>{" "}
+                          {item.Quantity}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </animated.div>
+              ))}
+            {!isEditing && fieldNote && (
+              <animated.div
+                style={itemAnimation}
+                className={`mb-8 p-6 rounded-lg shadow-lg ${
+                  theme === "dark"
+                    ? "bg-gradient-to-r from-gray-800 to-gray-900"
+                    : "bg-gradient-to-r from-gray-100 to-gray-200"
+                }`}
+              >
+                <h4
+                  className={`text-2xl font-bold mb-4 ${
+                    theme === "dark" ? "text-gray-200" : "text-gray-800"
+                  }`}
+                >
+                  Note
+                </h4>
+                <p
+                  className={`text-lg leading-relaxed ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {fieldNote}
+                </p>
+              </animated.div>
+            )}
+            {isEditing && (
+              <animated.div style={itemAnimation} className="mb-8">
+                <h4
+                  className={`text-2xl font-bold mb-4 ${
+                    theme === "dark" ? "text-gray-200" : "text-gray-800"
+                  }`}
+                >
+                  Edit Note
+                </h4>
+                <div className="relative">
+                  <textarea
+                    value={fieldNote}
+                    onChange={handleFieldNoteChange}
+                    className={`form-textarea w-full px-4 py-3 pr-12 rounded-lg border-2 ${
+                      theme === "dark"
+                        ? "border-indigo-600 bg-gray-800 text-gray-200"
+                        : "border-indigo-400 bg-white text-gray-800"
+                    } focus:ring-indigo-500 focus:border-indigo-500 transition resize-none`}
+                    placeholder="Add a note"
+                    rows={6}
+                  ></textarea>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      className={`h-6 w-6 ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      }`}
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18.303 4.742a.75.75 0 01.022 1.06l-4.25 4.25a.75.75 0 01-1.06 0L12 9.06l-1.015 1.015a.75.75 0 01-1.06 0l-4.25-4.25a.75.75 0 111.06-1.06L10 7.94l1.015-1.015a.75.75 0 011.06 0L14 8.94l4.243-4.243a.75.75 0 011.06-.022z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   </div>
                 </div>
               </animated.div>
-            ))}
-          {!isEditing && fieldNote && (
-            <animated.div
-              style={itemAnimation}
-              className={`mb-8 p-6 rounded-lg shadow-lg ${
-                theme === "dark"
-                  ? "bg-gradient-to-r from-gray-800 to-gray-900"
-                  : "bg-gradient-to-r from-gray-100 to-gray-200"
-              }`}
-            >
-              <h4
-                className={`text-2xl font-bold mb-4 ${
-                  theme === "dark" ? "text-gray-200" : "text-gray-800"
-                }`}
-              >
-                Note
-              </h4>
-              <p
-                className={`text-lg leading-relaxed ${
-                  theme === "dark" ? "text-gray-300" : "text-gray-700"
-                }`}
-              >
-                {fieldNote}
-              </p>
-            </animated.div>
-          )}
-          {isEditing && (
-            <animated.div style={itemAnimation} className="mb-8">
-              <h4
-                className={`text-2xl font-bold mb-4 ${
-                  theme === "dark" ? "text-gray-200" : "text-gray-800"
-                }`}
-              >
-                Edit Note
-              </h4>
-              <div className="relative">
-                <textarea
-                  value={fieldNote}
-                  onChange={handleFieldNoteChange}
-                  className={`form-textarea w-full px-4 py-3 pr-12 rounded-lg border-2 ${
-                    theme === "dark"
-                      ? "border-indigo-600 bg-gray-800 text-gray-200"
-                      : "border-indigo-400 bg-white text-gray-800"
-                  } focus:ring-indigo-500 focus:border-indigo-500 transition resize-none`}
-                  placeholder="Add a note"
-                  rows={6}
-                ></textarea>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    className={`h-6 w-6 ${
-                      theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+            )}{" "}
+            <animated.div style={buttonAnimation} className="text-center mt-12">
+              {!isEditing ? (
+                <>
+                  <button
+                    onClick={handleEditClick}
+                    className={`px-4 py-2 font-semibold rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${
+                      theme === "dark"
+                        ? "bg-indigo-600 hover:bg-indigo-700 text-gray-200"
+                        : "bg-indigo-500 hover:bg-indigo-600 text-white"
                     }`}
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M18.303 4.742a.75.75 0 01.022 1.06l-4.25 4.25a.75.75 0 01-1.06 0L12 9.06l-1.015 1.015a.75.75 0 01-1.06 0l-4.25-4.25a.75.75 0 111.06-1.06L10 7.94l1.015-1.015a.75.75 0 011.06 0L14 8.94l4.243-4.243a.75.75 0 011.06-.022z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </animated.div>
-          )}{" "}
-          <animated.div style={buttonAnimation} className="text-center mt-12">
-            {!isEditing ? (
-              <>
-                <button
-                  onClick={handleEditClick}
-                  className="text-lg px-10 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-purple-300 dark:focus:ring-purple-800 shadow-lg shadow-purple-500/50 hover:shadow-indigo-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300 mr-4"
-                >
-                  Edit Ticket
-                </button>
-                {console.log("User Role:", userRole)}
-                {console.log("asd", ticket)}
+                    Edit Ticket
+                  </button>
 
-                {userRole !== "P" ||
-                  (ticket.Billed == "Y" && (
+                  {userRole.userRole !== "P" && ticket.Billed !== "Y" && (
                     <button
                       onClick={handleBillClick}
-                      className="text-lg px-10 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 shadow-lg shadow-green-500/50 hover:shadow-green-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300"
+                      className={`ml-4 px-4 py-2 font-semibold rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${
+                        theme === "dark"
+                          ? "bg-green-600 hover:bg-green-700 text-gray-200"
+                          : "bg-green-500 hover:bg-green-600 text-white"
+                      }`}
                     >
                       Bill
                     </button>
-                  ))}
-              </>
-            ) : (
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={handleSaveClick}
-                  className="text-lg px-8 py-3 bg-gradient-to-r from-green-600 to-green-500 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800 shadow-lg shadow-green-500/50 hover:shadow-green-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={handleCancelClick}
-                  className="text-lg px-8 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 shadow-lg shadow-red-500/50 hover:shadow-red-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteClick}
-                  className="text-lg px-8 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:bg-gradient-to-l focus:outline-none focus:ring-4 focus:ring-red-300 dark:focus:ring-red-800 shadow-lg shadow-red-500/50 hover:shadow-red-500/50 text-white font-semibold rounded-full transition-all ease-in-out duration-300"
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-          </animated.div>{" "}
+                  )}
+                </>
+              ) : (
+                <div className="flex justify-center flex-wrap gap-2 sm:space-x-4 sm:flex-nowrap">
+                  <button
+                    onClick={handleSaveClick}
+                    className={`text-lg px-4 sm:px-8 py-2 sm:py-3 ${
+                      theme === "dark"
+                        ? "bg-gradient-to-r from-green-700 to-green-600 hover:bg-gradient-to-l focus:ring-green-800 text-white"
+                        : "bg-gradient-to-r from-green-500 to-green-400 hover:bg-gradient-to-l focus:ring-green-300 text-white"
+                    } shadow-lg ${
+                      theme === "dark"
+                        ? "shadow-green-800/50"
+                        : "shadow-green-500/50"
+                    } hover:shadow-green-500/50 font-semibold rounded-full transition-all ease-in-out duration-300`}
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={handleCancelClick}
+                    className={`text-lg px-4 sm:px-8 py-2 sm:py-3 ${
+                      theme === "dark"
+                        ? "bg-gradient-to-r from-red-700 to-red-600 hover:bg-gradient-to-l focus:ring-red-800 text-white"
+                        : "bg-gradient-to-r from-red-500 to-red-400 hover:bg-gradient-to-l focus:ring-red-300 text-gray-800"
+                    } shadow-lg ${
+                      theme === "dark"
+                        ? "shadow-red-800/50"
+                        : "shadow-red-500/50"
+                    } hover:shadow-red-500/50 font-semibold rounded-full transition-all ease-in-out duration-300`}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteClick}
+                    className={`text-lg px-4 sm:px-8 py-2 sm:py-3 ${
+                      theme === "dark"
+                        ? "bg-gradient-to-r from-red-700 to-red-600 hover:bg-gradient-to-l focus:ring-red-800 text-white"
+                        : "bg-gradient-to-r from-red-500 to-red-400 hover:bg-gradient-to-l focus:ring-red-300 text-gray-800"
+                    } shadow-lg ${
+                      theme === "dark"
+                        ? "shadow-red-800/50"
+                        : "shadow-red-500/50"
+                    } hover:shadow-red-500/50 font-semibold rounded-full transition-all ease-in-out duration-300`}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </animated.div>{" "}
+          </animated.div>
         </animated.div>
-      </animated.div>
+        <ConfirmationModal
+          isOpen={showConfirmation}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+          confirmationQuestion="Are you sure you want to delete this ticket?"
+          actionButtonLabel="Delete"
+        />
+        <ConfirmationModal
+          isOpen={showBillingConfirmation}
+          onConfirm={handleBillConfirm}
+          onCancel={handleBillCancel}
+          confirmationQuestion="Are you sure you want to bill this ticket?"
+          actionButtonLabel="Bill"
+        />
+      </animated.main>
 
-      <ConfirmationModal
-        isOpen={showConfirmation}
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        confirmationQuestion="Are you sure you want to delete this ticket?"
-        actionButtonLabel="Delete"
-      />
-
-      <ConfirmationModal
-        isOpen={showBillingConfirmation}
-        onConfirm={handleBillConfirm}
-        onCancel={handleBillCancel}
-        confirmationQuestion="Are you sure you want to bill this ticket?"
-        actionButtonLabel="Bill"
-      />
-    </animated.main>
+      <style jsx>{`
+        :root {
+          --btn-bg-light: #f0f0f0; /* Light theme button background */
+          --btn-text-light: #333; /* Light theme button text */
+          --btn-bg-dark: #333; /* Dark theme button background */
+          --btn-text-dark: #f0f0f0; /* Dark theme button text */
+        }
+        .dark-theme {
+          --btn-bg: var(--btn-bg-dark);
+          --btn-text: var(--btn-text-dark);
+        }
+        .light-theme {
+          --btn-bg: var(--btn-bg-light);
+          --btn-text: var(--btn-text-light);
+        }
+      `}</style>
+    </>
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
+import { useSpring, animated } from "react-spring";
 
 function FieldTicketEntry() {
   const { state } = useLocation();
@@ -93,6 +94,12 @@ function FieldTicketEntry() {
     }
   };
 
+  const animationProps = useSpring({
+    from: { opacity: 0, transform: "translateY(50px)" },
+    to: { opacity: 1, transform: "translateY(0)" },
+    config: { duration: 500 },
+  });
+
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
 
@@ -141,7 +148,8 @@ function FieldTicketEntry() {
     : "N/A";
 
   return (
-    <main
+    <animated.main
+      style={animationProps}
       className={`min-h-screen flex items-center justify-center transition-colors duration-500 ${
         theme === "dark"
           ? "bg-gradient-to-br from-gray-800 to-gray-900"
@@ -177,49 +185,206 @@ function FieldTicketEntry() {
             : "bg-white/90 text-gray-800"
         } backdrop-blur-md rounded-xl shadow-2xl overflow-hidden z-10`}
       >
-        <div className="px-10 py-8">
-          <h2 className="text-4xl font-extrabold mb-10 text-center transition-colors duration-500">
+        <div className="px-6 py-8 md:px-12 md:py-16">
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-8 md:mb-10 text-center transition-colors duration-500">
             Field Ticket
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-lg mb-8 transition-colors duration-500">
-            <p>
-              Date: <span className="font-semibold">{formattedDate}</span>
-            </p>
-            <p>
-              Lease:{" "}
-              <span className="font-semibold">{formFields.lease || "N/A"}</span>
-            </p>
-            <p>
-              Well:{" "}
-              <span className="font-semibold">{formFields.well || "N/A"}</span>
-            </p>
-            <p>
-              Ticket Type:{" "}
-              <span className="font-semibold">
-                {formFields.ticketType || "N/A"}
-              </span>
-            </p>
-            <p>
-              Ticket Number:{" "}
-              <span className="font-semibold">
-                {formFields.ticketNumber || "N/A"}
-              </span>
-            </p>
+          {/* Desktop layout */}
+          <div className="hidden sm:grid grid-cols-3 gap-8 mb-8 items-center text-center">
+            <div>
+              <p
+                className={`text-lg ${
+                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                }`}
+              >
+                Date:{" "}
+                <span
+                  className={
+                    theme === "dark"
+                      ? "font-semibold text-gray-300"
+                      : "font-semibold text-gray-700"
+                  }
+                >
+                  {formattedDate}
+                </span>
+              </p>
+            </div>
+            <div>
+              <p
+                className={`text-lg ${
+                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                }`}
+              >
+                Lease:{" "}
+                <span
+                  className={
+                    theme === "dark"
+                      ? "font-semibold text-gray-300"
+                      : "font-semibold text-gray-700"
+                  }
+                >
+                  {formFields.lease || "N/A"}
+                </span>
+              </p>
+            </div>
+            <div>
+              <p
+                className={`text-lg ${
+                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                }`}
+              >
+                Well:{" "}
+                <span
+                  className={
+                    theme === "dark"
+                      ? "font-semibold text-gray-300"
+                      : "font-semibold text-gray-700"
+                  }
+                >
+                  {formFields.well || "N/A"}
+                </span>
+              </p>
+            </div>
+            <div>
+              <p
+                className={`text-lg ${
+                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                }`}
+              >
+                Ticket Type:{" "}
+                <span
+                  className={
+                    theme === "dark"
+                      ? "font-semibold text-gray-300"
+                      : "font-semibold text-gray-700"
+                  }
+                >
+                  {formFields.ticketType || "N/A"}
+                </span>
+              </p>
+            </div>
+            <div>
+              <p
+                className={`text-lg ${
+                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                }`}
+              >
+                Ticket Number:{" "}
+                <span
+                  className={
+                    theme === "dark"
+                      ? "font-semibold text-gray-300"
+                      : "font-semibold text-gray-700"
+                  }
+                >
+                  {formFields.ticketNumber || "N/A"}
+                </span>
+              </p>
+            </div>
           </div>
-
+          {/* Mobile layout */}
+          <div className="sm:hidden">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Date Section */}
+              <div className="flex flex-col items-center">
+                <p
+                  className={`font-bold ${
+                    theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                  } text-center`}
+                >
+                  Date
+                </p>
+                <span
+                  className={`block text-center ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {formattedDate}
+                </span>
+              </div>
+              {/* Lease Section */}
+              <div className="flex flex-col items-center">
+                <p
+                  className={`font-bold ${
+                    theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                  } text-center`}
+                >
+                  Lease
+                </p>
+                <span
+                  className={`block text-center ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {formFields.lease || "N/A"}
+                </span>
+              </div>
+              {/* Well Section */}
+              <div className="flex flex-col items-center">
+                <p
+                  className={`font-bold ${
+                    theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                  } text-center`}
+                >
+                  Well
+                </p>
+                <span
+                  className={`block text-center ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {formFields.well || "N/A"}
+                </span>
+              </div>
+              {/* Ticket Type Section */}
+              <div className="flex flex-col items-center">
+                <p
+                  className={`font-bold ${
+                    theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                  } text-center`}
+                >
+                  Ticket Type
+                </p>
+                <span
+                  className={`block text-center ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {formFields.ticketType || "N/A"}
+                </span>
+              </div>
+              {/* Ticket Number Section */}
+              <div className="flex flex-col items-center">
+                <p
+                  className={`font-bold ${
+                    theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                  } text-center`}
+                >
+                  Ticket Number
+                </p>
+                <span
+                  className={`block text-center ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {formFields.ticketNumber || "N/A"}
+                </span>
+              </div>
+            </div>
+          </div>
           {items.map((item, index) => (
             <div
               key={index}
-              className={`flex flex-col md:flex-row gap-6 items-center transition-colors duration-500 ${
+              className={`md:flex md:items-center md:justify-between ${
                 theme === "dark" ? "bg-gray-700" : "bg-gray-100"
-              } p-4 rounded-lg mb-4`}
+              } p-4 md:p-6 rounded-lg mb-4 md:mb-8`}
             >
-              <div className="flex-1">
-                <h4 className="text-lg font-semibold transition-colors duration-500">
+              <div className="mb-4 md:mb-0 text-center md:text-left">
+                <h4 className="text-xl md:text-2xl font-semibold transition-colors duration-500">
                   {item.ItemDescription}{" "}
                   {item.UOM && (
                     <span
-                      className={`text-sm ${
+                      className={`text-sm md:text-base ${
                         theme === "dark" ? "text-gray-300" : "text-gray-500"
                       }`}
                     >
@@ -228,8 +393,8 @@ function FieldTicketEntry() {
                   )}
                 </h4>
               </div>
-              <div className="w-full md:w-auto flex gap-4 items-center">
-                <label className="block font-medium transition-colors duration-500">
+              <div className="flex items-center justify-center md:justify-end">
+                <label className="block font-medium transition-colors duration-500 mr-4">
                   Qty:
                 </label>
                 <input
@@ -246,10 +411,9 @@ function FieldTicketEntry() {
                 />
               </div>
             </div>
-          ))}
-
-          <div className="mb-8">
-            <label className="block font-medium transition-colors duration-500">
+          ))}{" "}
+          <div className="mb-8 md:mb-16">
+            <label className="block font-medium transition-colors duration-500 mb-2">
               Note:
             </label>
             <textarea
@@ -261,15 +425,13 @@ function FieldTicketEntry() {
                   ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
                   : "border border-gray-300 focus:ring-gray-500"
               }`}
-              placeholder="Add a note"
               rows={4}
             ></textarea>
           </div>
-
-          <div className="text-center mt-12">
+          <div className="text-center">
             <button
               onClick={handleFinalSubmit}
-              className={`text-lg px-10 py-3 focus:outline-none focus:ring-4 shadow-lg shadow-gray-500/50 hover:shadow-gray-600/50 font-semibold rounded-full transition-all ease-in-out duration-300 ${
+              className={`text-xl md:text-2xl px-12 py-4 focus:outline-none focus:ring-4 shadow-lg shadow-gray-500/50 hover:shadow-gray-600/50 font-semibold rounded-full transition-all ease-in-out duration-300 ${
                 theme === "dark"
                   ? "bg-gradient-to-r from-gray-600 to-gray-700 hover:bg-gradient-to-l focus:ring-gray-500 text-gray-100"
                   : "bg-gradient-to-r from-gray-200 to-gray-300 hover:bg-gradient-to-l focus:ring-gray-300 text-gray-800"
@@ -280,8 +442,7 @@ function FieldTicketEntry() {
           </div>
         </div>
       </div>
-    </main>
+    </animated.main>
   );
 }
-
 export default FieldTicketEntry;

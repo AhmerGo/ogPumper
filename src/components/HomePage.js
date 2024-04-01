@@ -10,6 +10,8 @@ import {
   faMapMarkerAlt,
   faCalendarAlt,
   faBriefcase,
+  faPlus,
+  faEdit,
 } from "@fortawesome/free-solid-svg-icons";
 
 function TicketItem({ ticket, index, theme, onClick }) {
@@ -36,25 +38,34 @@ function TicketItem({ ticket, index, theme, onClick }) {
       onMouseLeave={() => setHoverAnimation({ scale: 1 })}
       onClick={onClick}
     >
-      {" "}
       <div className="flex-grow mb-4 md:mb-0">
-        <h3 className="text-2xl md:text-3xl font-bold mb-2">
+        <h3 className="text-2xl md:text-3xl font-bold mb-2 text-center md:text-left">
           Ticket: {ticket.Ticket}
         </h3>
-        <div className="text-gray-500 mt-2 text-lg md:text-xl flex flex-col md:flex-row md:items-center">
-          <span className="flex items-center mb-1 md:mb-0 md:mr-4">
-            <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-2" />
-            Lease: {ticket.LeaseName}
-          </span>
+        <div className="text-gray-500 mt-2 text-lg md:text-xl">
+          <div className="flex items-center justify-center md:justify-start">
+            <FontAwesomeIcon
+              icon={faMapMarkerAlt}
+              className="mr-2"
+              fixedWidth
+            />
+            <span>Lease: {ticket.LeaseName}</span>
+          </div>
+          <div className="flex items-center justify-center md:justify-start">
+            <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" fixedWidth />
+            <span>
+              {new Date(ticket.TicketDate).toLocaleDateString("en-US", {
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+          <div className="flex items-center justify-center md:justify-start">
+            <FontAwesomeIcon icon={faBriefcase} className="mr-2" fixedWidth />
+            <span>Job: {ticket.JobDescription}</span>
+          </div>
         </div>
-        <p className="text-gray-500 mt-1 text-lg md:text-xl flex items-center">
-          <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" />
-          {ticket.TicketDate}
-        </p>
-        <p className="text-gray-500 mt-1 text-lg md:text-xl flex items-center">
-          <FontAwesomeIcon icon={faBriefcase} className="mr-2" />
-          Job: {ticket.JobDescription}
-        </p>
       </div>
       <button
         onClick={(e) => {
@@ -68,7 +79,6 @@ function TicketItem({ ticket, index, theme, onClick }) {
     </animated.li>
   );
 }
-
 function HomePage() {
   const [tickets, setTickets] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -205,21 +215,31 @@ function HomePage() {
                       style={{ transform: "rotate(-10deg)" }}
                     />
                   </div>
-                  <Link
-                    to="/create-field-ticket"
-                    className={`inline-flex items-center justify-center font-bold py-3 px-6 rounded-full shadow-lg transition duration-200 ease-in-out pop-effect ${
-                      theme === "dark"
-                        ? "bg-blue-600 hover:bg-blue-700 text-white"
-                        : "bg-white hover:bg-gray-100 text-blue-600"
-                    }`}
-                  >
-                    <span className="material-symbols-outlined mr-2">
-                      playlist_add
-                    </span>
-                    Create New Ticket
-                  </Link>
+                  <div className="flex justify-center space-x-4">
+                    <Link
+                      to="/create-field-ticket"
+                      className={`inline-flex items-center justify-center font-bold py-3 px-6 rounded-full shadow-lg transition duration-200 ease-in-out pop-effect ${
+                        theme === "dark"
+                          ? "bg-blue-600 hover:bg-blue-700 text-white"
+                          : "bg-white hover:bg-gray-100 text-blue-600"
+                      }`}
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                      Create New Ticket
+                    </Link>
+                    <Link
+                      to="/job-form"
+                      className={`inline-flex items-center justify-center font-bold py-3 px-6 rounded-full shadow-lg transition duration-200 ease-in-out pop-effect ${
+                        theme === "dark"
+                          ? "bg-green-600 hover:bg-green-700 text-white"
+                          : "bg-white hover:bg-gray-100 text-green-600"
+                      }`}
+                    >
+                      <FontAwesomeIcon icon={faEdit} className="mr-2" />
+                      Edit Jobs
+                    </Link>
+                  </div>
                 </animated.div>
-
                 <ul
                   className={`divide-y ${
                     theme === "dark" ? "divide-gray-700" : "divide-gray-300"
