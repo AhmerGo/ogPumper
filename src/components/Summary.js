@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import { useTheme } from "./ThemeContext";
-import { useUserRole } from "./UserContext";
+import { useUser } from "./UserContext";
 
 const ConfirmationModal = ({
   isOpen,
@@ -86,7 +86,7 @@ const ViewFieldTicket = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showBillingConfirmation, setShowBillingConfirmation] = useState(false);
   const [fieldNote, setFieldNote] = useState("");
-  const userRole = useUserRole();
+  const { userRole, userID } = useUser();
   const [itemCosts, setItemCosts] = useState({});
 
   const fadeAnimation = useSpring({
@@ -132,6 +132,7 @@ const ViewFieldTicket = () => {
 
   useEffect(() => {
     const fetchItemCosts = async () => {
+      console.log(userRole);
       // Early return if ticket or ticket.JobTypeID is not available.
       if (!ticket || !ticket.JobTypeID) {
         console.log("Ticket or JobTypeID not available");
@@ -405,23 +406,27 @@ const ViewFieldTicket = () => {
                     </animated.p>
                   </div>
                   <div className="flex flex-col justify-center items-center">
-                    <animated.p
-                      style={itemAnimation}
-                      className={`text-center ${
-                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      }`}
-                    >
-                      Billed:{" "}
-                      <span
-                        className={
+                    {userRole !== "P" && (
+                      <animated.p
+                        style={itemAnimation}
+                        className={`text-center ${
                           theme === "dark"
-                            ? "font-semibold text-gray-300"
-                            : "font-semibold text-gray-700"
-                        }
+                            ? "text-indigo-400"
+                            : "text-indigo-600"
+                        }`}
                       >
-                        {ticket.Billed || "N/A"}
-                      </span>
-                    </animated.p>
+                        Billed:{" "}
+                        <span
+                          className={
+                            theme === "dark"
+                              ? "font-semibold text-gray-300"
+                              : "font-semibold text-gray-700"
+                          }
+                        >
+                          {ticket.Billed || "N/A"}
+                        </span>
+                      </animated.p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -541,11 +546,11 @@ const ViewFieldTicket = () => {
                   style={itemAnimation}
                   className={`flex flex-col md:flex-row justify-between gap-6 items-center ${
                     theme === "dark" ? "bg-gray-700" : "bg-gray-200"
-                  } p-4 rounded-lg mb-4`}
+                  } p-6 rounded-lg mb-4`}
                 >
                   <div className="flex-1">
                     <h4
-                      className={`text-lg font-semibold ${
+                      className={`text-xl font-semibold ${
                         theme === "dark" ? "text-gray-200" : "text-gray-800"
                       }`}
                     >
@@ -563,21 +568,24 @@ const ViewFieldTicket = () => {
                       )}
                     </h4>
                   </div>
-
-                  {/* Adjusted container with ml-4 for slight rightward shift */}
-                  <div className="flex flex-1 items-center gap-4 ml-400">
-                    <div className="flex-grow min-w-0">
-                      <p
-                        className={`whitespace-nowrap ${
-                          theme === "dark" ? "text-gray-400" : "text-gray-600"
-                        }`}
-                      >
-                        <span className="font-medium">Total Cost:</span> $
-                        {item.totalCost}
-                      </p>
-                    </div>
-
-                    <div className="flex-shrink-0">
+                  <div className="flex flex-1 items-center justify-end gap-4">
+                    {userRole !== "P" && (
+                      <div className="flex-grow min-w-0">
+                        <p
+                          className={`whitespace-nowrap ${
+                            theme === "dark" ? "text-gray-400" : "text-gray-600"
+                          }`}
+                        >
+                          <span className="font-medium">Total Cost:</span> $
+                          {item.totalCost}
+                        </p>
+                      </div>
+                    )}
+                    <div
+                      className={`flex-shrink-0 ${
+                        userRole.userRole === "P" ? "ml-auto" : ""
+                      }`}
+                    >
                       {isEditing ? (
                         <>
                           <label
@@ -585,7 +593,7 @@ const ViewFieldTicket = () => {
                               theme === "dark"
                                 ? "text-gray-400"
                                 : "text-gray-600"
-                            } font-medium`}
+                            } font-medium text-lg`}
                           >
                             Qty:
                           </label>
@@ -594,7 +602,7 @@ const ViewFieldTicket = () => {
                             name="Quantity"
                             value={item.Quantity}
                             onChange={(e) => handleChange(e, item.TicketLine)}
-                            className={`form-input w-24 px-4 py-2 rounded-md border ${
+                            className={`form-input w-32 px-4 py-2 rounded-md border text-lg ${
                               theme === "dark"
                                 ? "border-gray-600 bg-gray-800 text-gray-300"
                                 : "border-gray-400 bg-white text-gray-700"
@@ -604,7 +612,7 @@ const ViewFieldTicket = () => {
                         </>
                       ) : (
                         <p
-                          className={`whitespace-nowrap ${
+                          className={`whitespace-nowrap text-lg ${
                             theme === "dark" ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
@@ -615,32 +623,7 @@ const ViewFieldTicket = () => {
                     </div>
                   </div>
                 </animated.div>
-              ))}
-            {!isEditing && fieldNote && (
-              <animated.div
-                style={itemAnimation}
-                className={`mb-8 p-6 rounded-lg shadow-lg ${
-                  theme === "dark"
-                    ? "bg-gradient-to-r from-gray-800 to-gray-900"
-                    : "bg-gradient-to-r from-gray-100 to-gray-200"
-                }`}
-              >
-                <h4
-                  className={`text-2xl font-bold mb-4 ${
-                    theme === "dark" ? "text-gray-200" : "text-gray-800"
-                  }`}
-                >
-                  Note
-                </h4>
-                <p
-                  className={`text-lg leading-relaxed ${
-                    theme === "dark" ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  {fieldNote}
-                </p>
-              </animated.div>
-            )}
+              ))}{" "}
             {isEditing && (
               <animated.div style={itemAnimation} className="mb-8">
                 <h4
@@ -695,7 +678,7 @@ const ViewFieldTicket = () => {
                     Edit Ticket
                   </button>
 
-                  {userRole.userRole !== "P" && ticket.Billed !== "Y" && (
+                  {userRole !== "P" && ticket.Billed !== "Y" && (
                     <button
                       onClick={handleBillClick}
                       className={`ml-4 px-4 py-2 font-semibold rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${

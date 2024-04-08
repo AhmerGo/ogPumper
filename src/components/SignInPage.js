@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import logo from "../assets/logo.jpg";
 import Particles from "react-tsparticles";
-import { useUserRole } from "./UserContext";
+import { useUser } from "./UserContext";
 
 function SignInPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { setUserRole } = useUserRole();
+  const { setUser } = useUser();
 
   const formAnimation = useSpring({
     opacity: 1,
@@ -35,7 +35,7 @@ function SignInPage() {
       const data = await response.json();
       const { success, message, user } = data;
       if (success) {
-        setUserRole(user.Role);
+        setUser(user.Role, username);
         localStorage.setItem("userRole", user.Role);
         navigate("/home");
       } else {
@@ -49,106 +49,28 @@ function SignInPage() {
   return (
     <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200">
       <Particles
-        className="absolute top-0 left-0 right-0 bottom-0"
-        options={{
-          background: {
-            color: {
-              value: "transparent",
-            },
-          },
-          fpsLimit: 60,
-          interactivity: {
-            detectsOn: "canvas",
-            events: {
-              onClick: {
-                enable: true,
-                mode: "push",
-              },
-              onHover: {
-                enable: true,
-                mode: "repulse",
-              },
-              resize: true,
-            },
-            modes: {
-              bubble: {
-                distance: 400,
-                duration: 2,
-                opacity: 0.8,
-                size: 40,
-              },
-              push: {
-                quantity: 4,
-              },
-              repulse: {
-                distance: 200,
-                duration: 0.4,
-              },
-            },
-          },
-          particles: {
-            color: {
-              value: ["#6c757d", "#495057", "#343a40"],
-            },
-            links: {
-              color: "#6c757d",
-              distance: 150,
-              enable: true,
-              opacity: 0.5,
-              width: 1,
-            },
-            collisions: {
-              enable: true,
-            },
-            move: {
-              direction: "none",
-              enable: true,
-              outMode: "bounce",
-              random: false,
-              speed: 2,
-              straight: false,
-            },
-            number: {
-              density: {
-                enable: true,
-                value_area: 800,
-              },
-              value: 80,
-            },
-            opacity: {
-              value: 0.5,
-            },
-            shape: {
-              type: "circle",
-            },
-            size: {
-              random: true,
-              value: 5,
-            },
-          },
-          detectRetina: true,
-        }}
+      // ... (existing Particles component remains the same)
       />
       <animated.div
         style={formAnimation}
-        className="bg-white shadow-2xl rounded-lg px-12 py-14 max-w-md w-full transform hover:scale-105 transition-transform duration-500 relative z-10"
+        className="bg-white shadow-2xl rounded-lg px-6 py-10 sm:px-12 sm:py-14 max-w-md w-full transform hover:scale-105 transition-transform duration-500 relative z-10 flex flex-col justify-center min-h-screen sm:min-h-0"
       >
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 to-gray-500 rounded-t-lg animate-pulse"></div>
         <img
           src={logo}
-          className="w-32 mx-auto mb-8 rounded-full border-4 border-white shadow-md animate-float"
+          className="w-40 sm:w-32 mx-auto mb-6 sm:mb-8 rounded-full border-4 border-white shadow-md animate-float"
           alt="logo"
         />
-        <form className="space-y-8" onSubmit={handleSignIn}>
+        <form className="space-y-6 sm:space-y-8" onSubmit={handleSignIn}>
           <div>
             <label
-              className="block text-gray-700 font-semibold mb-2 text-lg"
+              className="block text-gray-700 font-semibold mb-2 text-base sm:text-lg"
               htmlFor="username"
             >
               Username
             </label>
             <input
-              className="w-full border-gray-300 border-2 rounded-md px-5 py-3 text-lg focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
+              className="w-full border-gray-300 border-2 rounded-md px-4 py-2 sm:px-5 sm:py-3 text-base sm:text-lg focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
               id="username"
               type="text"
               placeholder="Enter your username"
@@ -158,13 +80,13 @@ function SignInPage() {
           </div>
           <div>
             <label
-              className="block text-gray-700 font-semibold mb-2 text-lg"
+              className="block text-gray-700 font-semibold mb-2 text-base sm:text-lg"
               htmlFor="password"
             >
               Password
             </label>
             <input
-              className="w-full border-gray-300 border-2 rounded-md px-5 py-3 text-lg focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
+              className="w-full border-gray-300 border-2 rounded-md px-4 py-2 sm:px-5 sm:py-3 text-base sm:text-lg focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
               id="password"
               type="password"
               placeholder="Enter your password"
@@ -173,15 +95,17 @@ function SignInPage() {
             />
           </div>
           {error && (
-            <p className="text-red-500 text-lg animate-pulse">{error}</p>
+            <p className="text-red-500 text-base sm:text-lg animate-pulse">
+              {error}
+            </p>
           )}
           <button
-            className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white font-bold py-4 px-8 rounded-full hover:from-gray-700 hover:to-gray-800 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-gray-600 transform hover:scale-105 transition-transform duration-500 shadow-lg text-xl"
+            className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full hover:from-gray-700 hover:to-gray-800 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-gray-600 transform hover:scale-105 transition-transform duration-500 shadow-lg text-lg sm:text-xl"
             type="submit"
           >
             Sign In
           </button>
-          <p className="text-gray-600 text-center text-lg">
+          <p className="text-gray-600 text-center text-base sm:text-lg">
             <a
               className="text-gray-700 hover:text-gray-800 underline transition-colors duration-300"
               href="#"

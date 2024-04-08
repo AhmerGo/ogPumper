@@ -30,6 +30,9 @@ function CreateFieldTicket() {
     config: { mass: 1, tension: 180, friction: 12 },
   });
 
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Adjust this if you want the end of today as the limit
+
   useEffect(() => {
     const fetchLeases = async () => {
       try {
@@ -71,6 +74,7 @@ function CreateFieldTicket() {
       try {
         const response = await fetch("https://ogfieldticket.com/api/jobs.php");
         const data = await response.json();
+        console.log(data);
         setTicketTypes(data);
       } catch (error) {
         console.error("Error fetching ticket types:", error);
@@ -94,6 +98,9 @@ function CreateFieldTicket() {
     const ticketTypeDescription = selectedTicketType
       ? selectedTicketType.Description
       : "";
+    const noteDefault = selectedTicketType
+      ? selectedTicketType.NoteDefault
+      : "";
 
     const selectedLease = leases.find((l) => l.LeaseID === lease);
     const leaseName = selectedLease ? selectedLease.LeaseName : "";
@@ -107,10 +114,10 @@ function CreateFieldTicket() {
         well,
         ticketType: ticketTypeDescription,
         ticketNumber,
+        noteDefault,
       },
     });
   };
-
   return (
     <animated.main
       style={{
@@ -133,32 +140,22 @@ function CreateFieldTicket() {
               : "bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400"
           } opacity-20 mix-blend-soft-light`}
         ></div>
-        <animated.div
-          style={{
-            transform: blobAnimation.scale.interpolate(
-              (scale) => `scale(${scale})`
-            ),
-          }}
-          className={`absolute inset-0 animate-blob blob-1 transition-colors duration-500 ${
+        <div
+          className={`absolute inset-0 transition-colors duration-500 ${
             theme === "dark"
               ? "bg-gradient-to-tr from-gray-600 via-gray-700 to-gray-800"
               : "bg-gradient-to-tr from-gray-300 via-gray-400 to-gray-500"
-          } rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-duration-200s`}
-        ></animated.div>
-        <animated.div
-          style={{
-            transform: blobAnimation.scale.interpolate(
-              (scale) => `scale(${scale})`
-            ),
-          }}
-          className={`absolute inset-0 animate-blob blob-2 transition-colors duration-500 ${
+          } rounded-full mix-blend-multiply filter blur-xl opacity-50`}
+        ></div>
+        <div
+          className={`absolute inset-0 transition-colors duration-500 ${
             theme === "dark"
               ? "bg-gradient-to-tl from-gray-500 via-gray-600 to-gray-700"
               : "bg-gradient-to-tl from-gray-200 via-gray-300 to-gray-400"
-          } rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-duration-300s`}
-        ></animated.div>
+          } rounded-full mix-blend-multiply filter blur-xl opacity-50`}
+        ></div>
 
-        <animated.div
+        <div
           style={{
             opacity: pageAnimation.opacity,
           }}
@@ -193,6 +190,7 @@ function CreateFieldTicket() {
               <DatePicker
                 selected={ticketDate}
                 onChange={(date) => setTicketDate(date)}
+                maxDate={today} // This restricts users from selecting a date beyond today
                 className={`form-input w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 transition-colors duration-500 ${
                   theme === "dark"
                     ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
@@ -304,7 +302,7 @@ function CreateFieldTicket() {
               Submit
             </animated.button>
           </form>
-        </animated.div>
+        </div>
       </div>
     </animated.main>
   );

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import { useSpring, useTrail, animated, config } from "react-spring";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useUserRole } from "./UserContext";
+import { useUser } from "./UserContext";
 
 import {
   faTasks,
@@ -19,6 +19,15 @@ function TicketItem({ ticket, index, theme, onClick }) {
     scale: 1,
     config: { tension: 300, friction: 10 }, // Adjust for desired speed
   }));
+
+  const [year, month, day] = ticket.TicketDate.split("-");
+  const localDate = new Date(year, month - 1, day); // months are 0-indexed in JavaScript Date
+
+  const formattedDate = localDate.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
     <animated.li
@@ -53,13 +62,8 @@ function TicketItem({ ticket, index, theme, onClick }) {
           </div>
           <div className="flex items-center justify-center md:justify-start">
             <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" fixedWidth />
-            <span>
-              {new Date(ticket.TicketDate).toLocaleDateString("en-US", {
-                month: "long",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </span>
+            {/* Display the corrected formattedDate */}
+            <span>Date: {formattedDate}</span>
           </div>
           <div className="flex items-center justify-center md:justify-start">
             <FontAwesomeIcon icon={faBriefcase} className="mr-2" fixedWidth />
@@ -86,8 +90,7 @@ function HomePage() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const { userRole } = useUserRole();
-
+  const { userRole, userID } = useUser();
   const [buttonAnimation, setButtonAnimation] = useSpring(() => ({
     scale: 1,
     config: { tension: 300, friction: 10 }, // Adjust for desired responsiveness
@@ -123,6 +126,8 @@ function HomePage() {
   useEffect(() => {
     const fetchTickets = async () => {
       try {
+        console.log(userRole + "  and " + userID);
+
         const response = await fetch(
           "https://ogfieldticket.com/api/tickets.php"
         );
@@ -130,7 +135,9 @@ function HomePage() {
         let filteredTickets = data;
 
         if (userRole === "P") {
-          filteredTickets = data.filter((ticket) => ticket.Billed !== "Y");
+          filteredTickets = data.filter(
+            (ticket) => ticket.Billed !== "Y" && ticket.UserID === userID
+          );
         }
 
         setTickets(
@@ -205,7 +212,8 @@ function HomePage() {
                   >
                     Ticket Dashboard
                   </h2>
-                  <div className="text-center my-6 mx-auto w-full max-w-xl px-4">
+                  <div className="h-16"></div> {/* Added empty space */}
+                  {/* <div className="text-center my-6 mx-auto w-full max-w-xl px-4">
                     <FontAwesomeIcon
                       icon={faTasks}
                       size="3x"
@@ -214,7 +222,7 @@ function HomePage() {
                       }`}
                       style={{ transform: "rotate(-10deg)" }}
                     />
-                  </div>
+                  </div> */}
                   <div className="flex justify-center space-x-4">
                     <Link
                       to="/create-field-ticket"
@@ -227,17 +235,20 @@ function HomePage() {
                       <FontAwesomeIcon icon={faPlus} className="mr-2" />
                       Create New Ticket
                     </Link>
-                    <Link
-                      to="/job-form"
-                      className={`inline-flex items-center justify-center font-bold py-3 px-6 rounded-full shadow-lg transition duration-200 ease-in-out pop-effect ${
-                        theme === "dark"
-                          ? "bg-green-600 hover:bg-green-700 text-white"
-                          : "bg-white hover:bg-gray-100 text-green-600"
-                      }`}
-                    >
-                      <FontAwesomeIcon icon={faEdit} className="mr-2" />
-                      Edit Jobs
-                    </Link>
+
+                    {userRole !== "P" && (
+                      <Link
+                        to="/job-form"
+                        className={`inline-flex items-center justify-center font-bold py-3 px-6 rounded-full shadow-lg transition duration-200 ease-in-out pop-effect ${
+                          theme === "dark"
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "bg-white hover:bg-gray-100 text-green-600"
+                        }`}
+                      >
+                        <FontAwesomeIcon icon={faEdit} className="mr-2" />
+                        Edit Jobs
+                      </Link>
+                    )}
                   </div>
                 </animated.div>
                 <ul

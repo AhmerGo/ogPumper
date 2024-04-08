@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import { useSpring, animated } from "react-spring";
+import { useUser } from "./UserContext";
 
 function FieldTicketEntry() {
   const { state } = useLocation();
   const { ticketType } = state;
   const { theme } = useTheme();
+  const { userRole, userID } = useUser();
 
   const navigate = useNavigate();
 
@@ -16,7 +18,7 @@ function FieldTicketEntry() {
     well: state?.well || "",
     ticketType: state?.ticketType || "",
     ticketNumber: "",
-    note: "",
+    note: state?.noteDefault || "",
   });
 
   const [items, setItems] = useState([]);
@@ -24,6 +26,7 @@ function FieldTicketEntry() {
   const [leases, setLeases] = useState([]);
 
   useEffect(() => {
+    console.log(state);
     const fetchHighestTicketNumber = async () => {
       try {
         const response = await fetch(
@@ -127,6 +130,7 @@ function FieldTicketEntry() {
             ...formFields,
             lease: leaseID,
             JobTypeID: jobTypeID,
+            userID: userID,
             items,
             note: formFields.note,
           }),

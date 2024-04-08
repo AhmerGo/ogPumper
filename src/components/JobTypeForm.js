@@ -10,6 +10,7 @@ import {
   faTrashAlt,
   faSave,
   faTimes,
+  faTasks,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "./ThemeContext";
 import Modal from "react-modal";
@@ -22,6 +23,9 @@ const JobListPage = () => {
   const [activeJobId, setActiveJobId] = useState(null);
   const { theme, toggleTheme } = useTheme();
   const [showTextBox, setShowTextBox] = useState(false);
+  const [showNoteBox, setShowNoteBox] = useState(false);
+  const [jobDescription, setJobDescription] = useState("");
+  const [note, setNote] = useState("");
 
   const fetchTicketTypes = async () => {
     try {
@@ -37,14 +41,24 @@ const JobListPage = () => {
     fetchTicketTypes();
   }, []);
 
+  const toggleNoteBox = () => {
+    setShowNoteBox(!showNoteBox);
+  };
+
   const titleAnimation = useSpring({
     from: { opacity: 0, transform: "translateY(-10px)" },
     to: { opacity: 1, transform: "translateY(0)" },
     config: { tension: 300, friction: 20 },
   });
+
   const jobAnimation = useSpring({
     from: { opacity: 0, transform: "translateY(20px)" },
     to: { opacity: 1, transform: "translateY(0)" },
+  });
+
+  const noteBoxAnimation = useSpring({
+    opacity: showNoteBox ? 1 : 0,
+    transform: showNoteBox ? "translateY(0)" : "translateY(-20px)",
   });
 
   const expandAnimation = useSpring({
@@ -66,6 +80,7 @@ const JobListPage = () => {
 
   const toggleTextBox = () => {
     setShowTextBox(!showTextBox);
+    setJobDescription("");
   };
 
   const toggleJob = (jobId) => {
@@ -113,6 +128,8 @@ const JobListPage = () => {
   const handleKeyPress = async (event) => {
     if (event.key === "Enter") {
       const jobDescription = event.target.value;
+      const noteDefault = showNoteBox ? note : "";
+      console.log(noteDefault);
 
       try {
         const response = await fetch("https://ogfieldticket.com/api/jobs.php", {
@@ -120,10 +137,14 @@ const JobListPage = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ jobDescription }),
+          body: JSON.stringify({ jobDescription, noteDefault }),
         });
+
         if (response.ok) {
           event.target.value = "";
+          if (showNoteBox) {
+            event.target.nextSibling.value = "";
+          }
           fetchTicketTypes();
         } else {
           console.error("Error adding new job:", response.statusText);
@@ -131,12 +152,15 @@ const JobListPage = () => {
       } catch (error) {
         console.error("Error adding new job:", error);
       }
+
       setShowTextBox(false);
+      setShowNoteBox(false);
     }
   };
 
   const addItem = async (jobTypeId, newItem) => {
     try {
+      console.log(JSON.stringify({ ...newItem, job_type_id: jobTypeId }));
       const response = await fetch(
         "https://ogfieldticket.com/api/jobitem.php",
         {
@@ -169,7 +193,7 @@ const JobListPage = () => {
           style={titleAnimation}
           className="text-center py-10 relative"
         >
-          <h1 className="text-5xl font-extrabold mb-5">Job Listings</h1>
+          <h1 className="text-5xl font-extrabold mb-5">Job Types</h1>
           <div className="absolute top-0 right-0 p-4">
             <animated.div className="flex items-center" style={buttonAnimation}>
               <animated.button
@@ -185,13 +209,14 @@ const JobListPage = () => {
                   className={`h-8 w-8 transition-transform duration-300 ${
                     showTextBox ? "rotate-45" : ""
                   }`}
+                  onClick={() => setShowNoteBox(false)}
                 />
               </animated.button>
               <animated.div
                 style={textBoxAnimation}
                 className={`absolute p-4 rounded-lg shadow-sm transition-all duration-300 ${
                   theme === "dark" ? "bg-gray-800" : "bg-white"
-                } left-full top-0 mt-[-11px] ml-2`}
+                } left-full top-0 mt-[-11px] ml-2 flex items-center`}
               >
                 <input
                   type="text"
@@ -201,10 +226,41 @@ const JobListPage = () => {
                       ? "bg-gray-700 text-white"
                       : "bg-gray-100 text-black"
                   }`}
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
                   onKeyPress={handleKeyPress}
                 />
+                <label className="flex items-center ml-4">
+                  <input
+                    type="checkbox"
+                    checked={showNoteBox}
+                    onChange={toggleNoteBox}
+                    className="mr-2"
+                  />
+                  <FontAwesomeIcon icon={faTasks} className="text-gray-500" />
+                </label>
               </animated.div>
-            </animated.div>
+              {showNoteBox && (
+                <animated.div
+                  style={noteBoxAnimation}
+                  className={`absolute p-2 rounded-lg shadow-sm transition-all duration-300 ${
+                    theme === "dark" ? "bg-gray-800" : "bg-white"
+                  } left-full top-full mt-2 ml-2`}
+                >
+                  <input
+                    type="text"
+                    placeholder="Enter note"
+                    className={`px-4 py-1 rounded-lg focus:outline-none ${
+                      theme === "dark"
+                        ? "bg-gray-700 text-white"
+                        : "bg-gray-100 text-black"
+                    }`}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
+                </animated.div>
+              )}
+            </animated.div>{" "}
           </div>
         </animated.header>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -295,8 +351,10 @@ const ItemsAnimation = ({
   const [editingItemCost, setEditingItemCost] = useState("");
   const [editingItemId, setEditingItemId] = useState(null);
   const [itemEdits, setItemEdits] = useState({});
+  const [selection, setSelection] = useState("quantity"); // Default to quantity
 
   const handleEditClick = (item) => {
+    console.log(item);
     setEditingItemId(item.ItemID);
     setItemEdits({
       ItemDescription: item.ItemDescription,
@@ -374,6 +432,11 @@ const ItemsAnimation = ({
     setItemEdits({});
   };
 
+  // Define handleSelectionChange to update selection state
+  const handleSelectionChange = (event) => {
+    setSelection(event.target.value);
+  };
+
   const transitions = useTransition(items, {
     keys: (item) => item.ItemID,
     from: { opacity: 0, transform: "translate3d(0,-40px,0)" },
@@ -401,10 +464,10 @@ const ItemsAnimation = ({
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [newItem, setNewItem] = useState({
     item_id: "",
-    item_description: "",
     uom: "",
-    use_quantity: "Y",
-    item_cost: 0,
+    item_description: "",
+    item_quantity: 0, // Assuming default quantity
+    item_cost: 0.0, // Assuming default cost
   });
 
   const openModal = () => {
@@ -424,22 +487,44 @@ const ItemsAnimation = ({
   };
 
   const handleAddItem = () => {
-    const updatedNewItem = {
+    // Initialize the updated item with common fields, excluding job_type_id since it's passed separately
+    let updatedNewItem = {
       ...newItem,
-      use_quantity: newItem.use_quantity || "Y",
-      job_type_id: activeJobId,
     };
-    onAddItem(updatedNewItem);
+
+    // Adjust flags and fields based on the selection
+    if (selection === "quantity") {
+      updatedNewItem = {
+        ...updatedNewItem,
+        use_quantity: "Y", // Set use_quantity flag to "Y"
+        use_cost: "N", // Ensure use_cost is "N" when quantity is used
+        item_cost: 0, // Reset item_cost to a default or clear it as needed
+      };
+    } else if (selection === "cost") {
+      updatedNewItem = {
+        ...updatedNewItem,
+        use_quantity: "N", // Set use_quantity flag to "N"
+        use_cost: "Y", // Ensure use_cost is "Y" when cost is used
+        item_quantity: 0, // Reset item_quantity to a default or clear it as needed
+      };
+    }
+
+    // Use the onAddItem prop, passing job's JobTypeID and the new item
+    onAddItem(updatedNewItem); // Here onAddItem will internally call addItem(job.JobTypeID, newItem)
+
+    // Reset the newItem state to clear the form for the next entry
     setNewItem({
       item_id: "",
       item_description: "",
       uom: "",
-      use_quantity: "Y",
+      use_quantity: "N", // Set to your default/preferred state
+      use_cost: "N", // Set to your default/preferred state
       item_cost: 0,
+      item_quantity: 0,
     });
-    closeModal();
-  };
 
+    closeModal(); // Assuming this closes the form/modal
+  };
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {transitions((style, item) => (
@@ -498,7 +583,11 @@ const ItemsAnimation = ({
               <h3 className="font-semibold text-lg mb-1">
                 {item.ItemDescription}
               </h3>
-              <p className="text-sm mb-4">Cost: ${item.ItemCost}</p>
+              {item.ItemQuantity === null ? (
+                <p className="text-sm mb-4">Cost: ${item.ItemCost}</p>
+              ) : (
+                <p className="text-sm mb-4">Quantity: {item.ItemQuantity}</p>
+              )}
               <div className="absolute top-2 right-2 flex space-x-2">
                 <FontAwesomeIcon
                   icon={faPencilAlt}
@@ -563,6 +652,7 @@ const ItemsAnimation = ({
           </button>
           <h2 className="text-3xl font-bold mb-8">Add New Item</h2>
           <form>
+            {/* Item ID Field */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
               <div>
                 <label htmlFor="item_id" className="block mb-2 font-semibold">
@@ -581,6 +671,8 @@ const ItemsAnimation = ({
                   }`}
                 />
               </div>
+
+              {/* UOM Field */}
               <div>
                 <label htmlFor="uom" className="block mb-2 font-semibold">
                   UOM:
@@ -599,6 +691,8 @@ const ItemsAnimation = ({
                 />
               </div>
             </div>
+
+            {/* Item Description Field */}
             <div className="mb-8">
               <label
                 htmlFor="item_description"
@@ -619,9 +713,77 @@ const ItemsAnimation = ({
                 }`}
               ></textarea>
             </div>
+
+            {/* Quantity or Cost Selection */}
             <div className="mb-8">
+              <fieldset>
+                <legend className="block mb-2 font-semibold">
+                  Select Quantity or Cost:
+                </legend>
+                <div className="flex gap-4">
+                  <div>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        name="selection"
+                        value="quantity"
+                        placeholder="0"
+                        onChange={handleSelectionChange} // You need to implement this
+                        className="form-radio"
+                      />
+                      <span className="ml-2">Quantity</span>
+                    </label>
+                  </div>
+                  <div>
+                    <label className="inline-flex items-center">
+                      <input
+                        type="radio"
+                        name="selection"
+                        value="cost"
+                        onChange={handleSelectionChange} // You need to implement this
+                        className="form-radio"
+                      />
+                      <span className="ml-2">Cost</span>
+                    </label>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+
+            {/* Conditional Quantity Field */}
+            {/* This should be displayed based on the selection state */}
+            <div
+              className="mb-8"
+              style={{ display: selection === "quantity" ? "block" : "none" }}
+            >
+              <label
+                htmlFor="item_quantity"
+                className="block mb-2 font-semibold"
+              >
+                Quantity:
+              </label>
+              <input
+                type="number"
+                id="item_quantity"
+                name="item_quantity"
+                value={newItem.item_quantity}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
+                  theme === "dark"
+                    ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
+                    : "bg-gray-100 border-gray-300 focus:ring-blue-500"
+                }`}
+              />
+            </div>
+
+            {/* Conditional Cost Field */}
+            {/* This should be displayed based on the selection state */}
+            <div
+              className="mb-8"
+              style={{ display: selection === "cost" ? "block" : "none" }}
+            >
               <label htmlFor="item_cost" className="block mb-2 font-semibold">
-                Item Cost:
+                Cost:
               </label>
               <div className="relative">
                 <span
@@ -646,6 +808,8 @@ const ItemsAnimation = ({
                 />
               </div>
             </div>
+
+            {/* Form Submission Buttons */}
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
