@@ -624,6 +624,31 @@ const ViewFieldTicket = () => {
                   </div>
                 </animated.div>
               ))}{" "}
+            {!isEditing && fieldNote && (
+              <animated.div
+                style={itemAnimation}
+                className={`mb-8 p-6 rounded-lg shadow-lg ${
+                  theme === "dark"
+                    ? "bg-gradient-to-r from-gray-800 to-gray-900"
+                    : "bg-gradient-to-r from-gray-100 to-gray-200"
+                }`}
+              >
+                <h4
+                  className={`text-2xl font-bold mb-4 ${
+                    theme === "dark" ? "text-gray-200" : "text-gray-800"
+                  }`}
+                >
+                  Note
+                </h4>
+                <p
+                  className={`text-lg leading-relaxed ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {fieldNote}
+                </p>
+              </animated.div>
+            )}
             {isEditing && (
               <animated.div style={itemAnimation} className="mb-8">
                 <h4
