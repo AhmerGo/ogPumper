@@ -6,6 +6,8 @@ import { useTheme } from "./ThemeContext"; // Adjust the import path as needed
 import { useUser } from "./UserContext";
 import OutsideClickHandler from "react-outside-click-handler";
 import logo from "../assets/100.png";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import HomeIcon from "@mui/icons-material/Home";
 
 // Define your NavBarContainer with a gradient and shadow for a modern look
 const GlobalStyle = createGlobalStyle`
@@ -67,22 +69,30 @@ const Logo = styled.div`
   align-items: center;
   cursor: pointer;
 
-  svg {
-    height: 40px; /* Adjust based on your logo */
-    fill: currentColor; /* Adjusts based on theme */
+  svg,
+  .fa-icon {
+    font-size: 30px; /* Adjust the font size to reduce the icon size */
+    fill: currentColor; // Adjusts based on theme
+  }
+
+  .fa-icon {
+    color: ${({ theme }) =>
+      theme === "dark"
+        ? "#FFFFFF"
+        : "#333"}; // Adjusts color based on the theme
+    margin-right: 0.5rem; // Space between icon and text
   }
 
   span {
     font-weight: 600;
     font-size: 1.5rem;
-    margin-left: 0.5rem;
     background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
 
   &:hover {
-    transform: translateY(-2px); /* Subtle hover effect */
+    transform: translateY(-2px); // Subtle hover effect
   }
 `;
 
@@ -285,7 +295,8 @@ function Layout({ children }) {
     >
       <NavBarContainer style={navBarAnimation} theme={theme}>
         <Logo onClick={() => navigate("/home")} theme={theme}>
-          <span>OgFieldDemo</span>
+          <HomeIcon className="material-icon" />
+          <span>ogFieldTicket</span>
         </Logo>
         <NavItems>
           <NavItem

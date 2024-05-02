@@ -12,6 +12,7 @@ import {
   faBriefcase,
   faPlus,
   faEdit,
+  faUser,
 } from "@fortawesome/free-solid-svg-icons";
 
 function TicketItem({ ticket, index, theme, onClick }) {
@@ -22,6 +23,7 @@ function TicketItem({ ticket, index, theme, onClick }) {
 
   const [year, month, day] = ticket.TicketDate.split("-");
   const localDate = new Date(year, month - 1, day); // months are 0-indexed in JavaScript Date
+  const { userRole, userID } = useUser();
 
   const formattedDate = localDate.toLocaleDateString("en-US", {
     month: "long",
@@ -58,17 +60,30 @@ function TicketItem({ ticket, index, theme, onClick }) {
               className="mr-2"
               fixedWidth
             />
-            <span>Lease: {ticket.LeaseName}</span>
+            <span> {ticket.LeaseName}</span>
           </div>
           <div className="flex items-center justify-center md:justify-start">
             <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" fixedWidth />
             {/* Display the corrected formattedDate */}
-            <span>Date: {formattedDate}</span>
+            <span> {formattedDate}</span>
           </div>
           <div className="flex items-center justify-center md:justify-start">
             <FontAwesomeIcon icon={faBriefcase} className="mr-2" fixedWidth />
-            <span>Job: {ticket.JobDescription}</span>
+            <span> {ticket.JobDescription}</span>
           </div>
+
+          {userRole !== "P" && (
+            <div className="flex items-center justify-center md:justify-start">
+              <FontAwesomeIcon icon={faUser} className="mr-2" fixedWidth />
+              <span className="font-semibold">
+                User ID:{" "}
+                {ticket.UserID
+                  ? ticket.UserID.charAt(0).toUpperCase() +
+                    ticket.UserID.slice(1)
+                  : "N/A"}
+              </span>
+            </div>
+          )}
         </div>
       </div>
       <button

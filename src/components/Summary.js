@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import { useTheme } from "./ThemeContext";
 import { useUser } from "./UserContext";
-
+import { MdHome } from "react-icons/md";
 const ConfirmationModal = ({
   isOpen,
   onConfirm,
@@ -195,10 +195,17 @@ const ViewFieldTicket = () => {
 
   const handleCancelClick = () => {
     setIsEditing(false);
-    setTicket(location.state);
     setFieldNote(location.state.Note || "");
-  };
 
+    // Preserve the calculated total costs
+    setTicket((prevTicket) => ({
+      ...location.state,
+      Items: prevTicket.Items.map((item, index) => ({
+        ...location.state.Items[index],
+        totalCost: item.totalCost,
+      })),
+    }));
+  };
   const handleSaveClick = async () => {
     try {
       const updatedTicket = { ...ticket, Note: fieldNote };
@@ -297,6 +304,30 @@ const ViewFieldTicket = () => {
           style={ticketSummaryAnimation}
           className="w-full max-w-6xl mx-auto backdrop-blur-md rounded-xl shadow-2xl overflow-hidden transition-colors duration-500"
         >
+          <button
+            onClick={() => navigate("/home")}
+            className={`absolute top-5 right-5 p-2 rounded-full hover:bg-opacity-30 transition-all ${
+              theme === "dark" ? "hover:bg-white" : "hover:bg-gray-400"
+            }`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className={`w-6 h-6 ${
+                theme === "dark" ? "text-white" : "text-gray-800"
+              }`}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 9.5V21h7V14h4v7h7V9.5M9 3l3-3 3 3M2 9h20"
+              />
+            </svg>
+          </button>
+
           <animated.div style={fadeAnimation} className="px-10 py-8">
             <h2
               className={`text-4xl font-extrabold ${
@@ -329,25 +360,57 @@ const ViewFieldTicket = () => {
                       </span>
                     </animated.p>
                   </div>
-                  <div className="flex flex-col justify-center items-center">
-                    <animated.p
-                      style={itemAnimation}
-                      className={`text-center ${
-                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      }`}
-                    >
-                      Lease:{" "}
-                      <span
-                        className={
+
+                  {userRole !== "P" ? (
+                    <div className="flex flex-col justify-center items-center">
+                      <animated.p
+                        style={itemAnimation}
+                        className={`text-center ${
                           theme === "dark"
-                            ? "font-semibold text-gray-300"
-                            : "font-semibold text-gray-700"
-                        }
+                            ? "text-indigo-400"
+                            : "text-indigo-600"
+                        }`}
                       >
-                        {ticket.LeaseName || "N/A"}
-                      </span>
-                    </animated.p>
-                  </div>
+                        Lease/User:{" "}
+                        <span
+                          className={
+                            theme === "dark"
+                              ? "font-semibold text-gray-300"
+                              : "font-semibold text-gray-700"
+                          }
+                        >
+                          {ticket.LeaseName || "N/A"} /{" "}
+                          {ticket.UserID
+                            ? ticket.UserID.charAt(0).toUpperCase() +
+                              ticket.UserID.slice(1)
+                            : "N/A"}
+                        </span>
+                      </animated.p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col justify-center items-center">
+                      <animated.p
+                        style={itemAnimation}
+                        className={`text-center ${
+                          theme === "dark"
+                            ? "text-indigo-400"
+                            : "text-indigo-600"
+                        }`}
+                      >
+                        Lease:{" "}
+                        <span
+                          className={
+                            theme === "dark"
+                              ? "font-semibold text-gray-300"
+                              : "font-semibold text-gray-700"
+                          }
+                        >
+                          {ticket.LeaseName || "N/A"}{" "}
+                        </span>
+                      </animated.p>
+                    </div>
+                  )}
+
                   <div className="flex flex-col justify-center items-center">
                     <animated.p
                       style={itemAnimation}
@@ -452,22 +515,53 @@ const ViewFieldTicket = () => {
                     </span>
                   </div>
                   {/* Lease Section */}
-                  <div className="flex flex-col items-center">
-                    <p
-                      className={`font-bold ${
-                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      } text-center`}
-                    >
-                      Lease
-                    </p>
-                    <span
-                      className={`block text-center ${
-                        theme === "dark" ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      {ticket.LeaseName || "N/A"}
-                    </span>
-                  </div>
+                  {userRole !== "P" ? (
+                    <div className="flex flex-col justify-center items-center">
+                      <p
+                        className={`font-bold ${
+                          theme === "dark"
+                            ? "text-indigo-400"
+                            : "text-indigo-600"
+                        } text-center`}
+                      >
+                        Lease/User:{" "}
+                        <span
+                          className={
+                            theme === "dark"
+                              ? "font-semibold text-gray-300"
+                              : "font-semibold text-gray-700"
+                          }
+                        >
+                          {ticket.LeaseName || "N/A"} /{" "}
+                          {ticket.UserID
+                            ? ticket.UserID.charAt(0).toUpperCase() +
+                              ticket.UserID.slice(1)
+                            : "N/A"}
+                        </span>
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col justify-center items-center">
+                      <p
+                        className={`font-bold ${
+                          theme === "dark"
+                            ? "text-indigo-400"
+                            : "text-indigo-600"
+                        } text-center`}
+                      >
+                        Lease:{" "}
+                        <span
+                          className={
+                            theme === "dark"
+                              ? "font-semibold text-gray-300"
+                              : "font-semibold text-gray-700"
+                          }
+                        >
+                          {ticket.LeaseName || "N/A"} /{" "}
+                        </span>
+                      </p>
+                    </div>
+                  )}{" "}
                   {/* Well Section */}
                   <div className="flex flex-col items-center">
                     <p
@@ -776,7 +870,7 @@ const ViewFieldTicket = () => {
           isOpen={showBillingConfirmation}
           onConfirm={handleBillConfirm}
           onCancel={handleBillCancel}
-          confirmationQuestion="Are you sure you want to bill this ticket?"
+          confirmationQuestion="Are you sure you want to mark this ticket as billed?"
           actionButtonLabel="Bill"
         />
       </animated.main>

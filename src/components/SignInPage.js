@@ -19,6 +19,31 @@ function SignInPage() {
     config: { mass: 1, tension: 200, friction: 20 },
   });
 
+  const handleForgotPassword = async () => {
+    try {
+      const response = await fetch(
+        "https://ogfieldticket.com/api/passwordreset.php",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userID: username }),
+        }
+      );
+      const data = await response.json();
+      if (data.success) {
+        // Show success message or redirect to a success page
+        console.log("Password reset email sent successfully");
+      } else {
+        setError("Failed to send password reset email");
+      }
+    } catch (error) {
+      console.error("Error sending password reset email:", error);
+      setError("An error occurred while sending password reset email.");
+    }
+  };
+
   async function handleSignIn(e) {
     e.preventDefault();
     try {
@@ -109,6 +134,7 @@ function SignInPage() {
             <a
               className="text-gray-700 hover:text-gray-800 underline transition-colors duration-300"
               href="#"
+              onClick={handleForgotPassword} // Attach handleForgotPassword function to onClick event
             >
               Forgot Password?
             </a>
