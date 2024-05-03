@@ -88,6 +88,7 @@ const ViewFieldTicket = () => {
   const [fieldNote, setFieldNote] = useState("");
   const { userRole, userID } = useUser();
   const [itemCosts, setItemCosts] = useState({});
+  const [itemsMap, setItemsMap] = useState(new Map());
 
   const fadeAnimation = useSpring({
     from: { opacity: 0 },
@@ -122,7 +123,6 @@ const ViewFieldTicket = () => {
   });
 
   useEffect(() => {
-    console.log(ticket);
     if (location.state) {
       setTicket(location.state);
       formatDate(location.state.TicketDate);
@@ -144,21 +144,44 @@ const ViewFieldTicket = () => {
           `https://ogfieldticket.com/api/jobitem.php?id=${ticket.JobTypeID}`
         );
         const data = await response.json();
+        console.log(data.items);
+
         if (data.success) {
-          // Create a map of JobItemID to ItemCost for easy lookup.
-          const costsMap = new Map(
-            data.items.map((item) => [item.ItemID, parseFloat(item.ItemCost)])
+          // Create a map of JobItemID to an object containing ItemCost and UseQuantity for easy lookup.
+          const itemsMap = new Map(
+            data.items.map((item) => [
+              item.ItemID,
+              {
+                ItemCost: parseFloat(item.ItemCost),
+                UseQuantity: item.UseQuantity === "Y",
+              },
+            ])
           );
-          console.log(costsMap);
-          // Calculate the total cost for each ticket item.
+          console.log(itemsMap);
+          setItemsMap(itemsMap); // Store the itemsMap in the component's state
+
+          // Calculate the total cost for each ticket item based on UseQuantity.
           const updatedItems = ticket.Items.map((item) => {
-            const itemCost = costsMap.get(item.JobItemID) || 0;
-            const totalCost = (itemCost * parseFloat(item.Quantity)).toFixed(2);
-            return { ...item, totalCost };
+            const itemData = itemsMap.get(item.JobItemID) || {
+              ItemCost: 0,
+              UseQuantity: false,
+            };
+            const quantity = itemData.UseQuantity ? item.Quantity : 1;
+            const totalCost = (
+              itemData.ItemCost * parseFloat(quantity)
+            ).toFixed(2);
+            return { ...item, totalCost, UseQuantity: itemData.UseQuantity };
           });
 
           // Update your ticket's state with these updated items
-          setTicket((prevTicket) => ({ ...prevTicket, Items: updatedItems }));
+          setTicket((prevTicket) => {
+            const updatedTicket = {
+              ...prevTicket,
+              Items: updatedItems,
+            };
+            console.log(updatedTicket); // Log the updated ticket state
+            return updatedTicket;
+          });
         }
       } catch (error) {
         console.error("Error fetching item costs:", error);
@@ -168,7 +191,6 @@ const ViewFieldTicket = () => {
     fetchItemCosts();
     // Using ticket?.JobTypeID in the dependency array ensures the effect only reruns when JobTypeID changes.
   }, [ticket?.JobTypeID]);
-
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "long", day: "numeric" };
     const date = new Date(dateString);
@@ -177,14 +199,27 @@ const ViewFieldTicket = () => {
 
   const handleChange = (e, itemId) => {
     const { name, value } = e.target;
-    setTicket((prevTicket) => ({
-      ...prevTicket,
-      Items: prevTicket.Items.map((item) =>
-        item.TicketLine === itemId ? { ...item, [name]: value } : item
-      ),
-    }));
+    setTicket((prevTicket) => {
+      const updatedItems = prevTicket.Items.map((item) => {
+        if (item.TicketLine === itemId) {
+          const updatedItem = { ...item, [name]: value };
+          if (item.UseQuantity) {
+            const itemData = itemsMap.get(item.JobItemID) || {
+              ItemCost: 0,
+              UseQuantity: false,
+            };
+            const totalCost = (itemData.ItemCost * parseFloat(value)).toFixed(
+              2
+            );
+            updatedItem.totalCost = totalCost;
+          }
+          return updatedItem;
+        }
+        return item;
+      });
+      return { ...prevTicket, Items: updatedItems };
+    });
   };
-
   const handleFieldNoteChange = (e) => {
     setFieldNote(e.target.value);
   };
@@ -221,7 +256,7 @@ const ViewFieldTicket = () => {
       );
 
       if (response.ok) {
-        navigate("/home");
+        setIsEditing(false);
       } else {
         console.error("Error updating ticket:", response.statusText);
       }
@@ -229,7 +264,6 @@ const ViewFieldTicket = () => {
       console.error("Error updating ticket:", error);
     }
   };
-
   const handleDeleteClick = () => {
     setShowConfirmation(true);
   };
@@ -691,18 +725,30 @@ const ViewFieldTicket = () => {
                           >
                             Qty:
                           </label>
-                          <input
-                            type="number"
-                            name="Quantity"
-                            value={item.Quantity}
-                            onChange={(e) => handleChange(e, item.TicketLine)}
-                            className={`form-input w-32 px-4 py-2 rounded-md border text-lg ${
-                              theme === "dark"
-                                ? "border-gray-600 bg-gray-800 text-gray-300"
-                                : "border-gray-400 bg-white text-gray-700"
-                            } focus:ring-indigo-400 focus:border-indigo-400 transition`}
-                            placeholder="0"
-                          />
+                          {item.UseQuantity ? (
+                            <input
+                              type="number"
+                              name="Quantity"
+                              value={item.Quantity}
+                              onChange={(e) => handleChange(e, item.TicketLine)}
+                              className={`form-input w-32 px-4 py-2 rounded-md border text-lg ${
+                                theme === "dark"
+                                  ? "border-gray-600 bg-gray-800 text-gray-300"
+                                  : "border-gray-400 bg-white text-gray-700"
+                              } focus:ring-indigo-400 focus:border-indigo-400 transition`}
+                              placeholder="0"
+                            />
+                          ) : (
+                            <p
+                              className={`whitespace-nowrap text-lg ${
+                                theme === "dark"
+                                  ? "text-gray-400"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              {item.Quantity}
+                            </p>
+                          )}{" "}
                         </>
                       ) : (
                         <p
@@ -786,16 +832,18 @@ const ViewFieldTicket = () => {
             <animated.div style={buttonAnimation} className="text-center mt-12">
               {!isEditing ? (
                 <>
-                  <button
-                    onClick={handleEditClick}
-                    className={`px-4 py-2 font-semibold rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${
-                      theme === "dark"
-                        ? "bg-indigo-600 hover:bg-indigo-700 text-gray-200"
-                        : "bg-indigo-500 hover:bg-indigo-600 text-white"
-                    }`}
-                  >
-                    Edit Ticket
-                  </button>
+                  {ticket.Billed !== "Y" && (
+                    <button
+                      onClick={handleEditClick}
+                      className={`px-4 py-2 font-semibold rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${
+                        theme === "dark"
+                          ? "bg-indigo-600 hover:bg-indigo-700 text-gray-200"
+                          : "bg-indigo-500 hover:bg-indigo-600 text-white"
+                      }`}
+                    >
+                      Edit Ticket
+                    </button>
+                  )}
 
                   {userRole !== "P" && ticket.Billed !== "Y" && (
                     <button

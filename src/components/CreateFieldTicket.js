@@ -87,7 +87,7 @@ function CreateFieldTicket() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!ticketDate || !lease || !well || !ticketType) {
+    if (!ticketDate || !lease || !ticketType) {
       alert("Please complete all fields before submitting.");
       return;
     }
@@ -130,29 +130,29 @@ function CreateFieldTicket() {
         className={`min-h-screen flex items-center justify-center transition-colors duration-500 ${
           theme === "dark"
             ? "bg-gradient-to-br from-gray-800 to-gray-900"
-            : "bg-gradient-to-br from-gray-100 to-gray-200"
+            : "bg-gradient-to-br from-white to-gray-100"
         } p-4 relative overflow-hidden`}
       >
         <div
           className={`absolute inset-0 animate-gradient-xy transition-colors duration-500 ${
             theme === "dark"
               ? "bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900"
-              : "bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400"
+              : "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-300"
           } opacity-20 mix-blend-soft-light`}
         ></div>
         <div
           className={`absolute inset-0 transition-colors duration-500 ${
             theme === "dark"
               ? "bg-gradient-to-tr from-gray-600 via-gray-700 to-gray-800"
-              : "bg-gradient-to-tr from-gray-300 via-gray-400 to-gray-500"
-          } rounded-full mix-blend-multiply filter blur-xl opacity-50`}
+              : "bg-gradient-to-tr from-white via-gray-50 to-gray-100"
+          } rounded-full mix-blend-multiply filter blur-3xl opacity-50`}
         ></div>
         <div
           className={`absolute inset-0 transition-colors duration-500 ${
             theme === "dark"
               ? "bg-gradient-to-tl from-gray-500 via-gray-600 to-gray-700"
-              : "bg-gradient-to-tl from-gray-200 via-gray-300 to-gray-400"
-          } rounded-full mix-blend-multiply filter blur-xl opacity-50`}
+              : "bg-gradient-to-tl from-white via-gray-50 to-gray-100"
+          } rounded-full mix-blend-multiply filter blur-3xl opacity-50`}
         ></div>
 
         <div
@@ -244,9 +244,8 @@ function CreateFieldTicket() {
                     ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
                     : "border border-gray-300 focus:ring-gray-500"
                 }`}
-                required
               >
-                <option value="">Please select the well.</option>
+                <option value="">Please select the well (optional).</option>
                 {wells
                   .filter((well) => well.LeaseID === lease)
                   .map((well) => (
@@ -256,7 +255,6 @@ function CreateFieldTicket() {
                   ))}
               </select>
             </div>
-
             <div className="flex flex-col mb-4">
               <label
                 htmlFor="ticketType"
@@ -300,6 +298,23 @@ function CreateFieldTicket() {
               }`}
             >
               Submit
+            </animated.button>
+            <animated.button
+              type="button" // Changed from 'submit' to 'button'
+              onClick={() => navigate("/home")} // Redirect to home page
+              style={{
+                opacity: pageAnimation.opacity,
+                transform: pageAnimation.y.interpolate(
+                  (y) => `translateY(${y / 3}px)`
+                ),
+              }}
+              className={`inline-flex items-center justify-center w-full py-3 px-6 font-bold rounded-lg focus:outline-none transition-colors duration-500 ${
+                theme === "dark"
+                  ? "bg-gray-700 hover:bg-gray-600 text-gray-300 focus:ring-4 focus:ring-gray-500"
+                  : "bg-gray-300 hover:bg-gray-200 text-gray-700 focus:ring-4 focus:ring-gray-100"
+              }`}
+            >
+              Cancel
             </animated.button>
           </form>
         </div>

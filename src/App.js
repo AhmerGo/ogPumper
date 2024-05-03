@@ -9,7 +9,7 @@ import FieldTicketEntry from "./components/FieldTicketEntry";
 import { ThemeProvider } from "./components/ThemeContext";
 import Summary from "./components/Summary";
 import JobForm from "./components/JobTypeForm";
-
+import Details from "./components/Details";
 import { UserProvider } from "./components/UserContext";
 
 function App() {
@@ -59,7 +59,14 @@ function App() {
                 </Layout>
               }
             />
-            {/* Add more routes as needed */}
+            <Route
+              path="/profile-details"
+              element={
+                <Layout>
+                  <Details />
+                </Layout>
+              }
+            />
           </Routes>
         </ThemeProvider>
       </UserProvider>

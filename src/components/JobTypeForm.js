@@ -523,6 +523,15 @@ const ItemsAnimation = ({
   const openModal = () => {
     setModalIsOpen(true);
     fetchAvailableItems();
+    setNewItem({
+      item_id: "",
+      uom: "",
+      item_description: "",
+      item_quantity: null,
+      item_cost: 0.0,
+      use_quantity: "Y",
+      use_cost: "N",
+    });
   };
 
   const fetchAvailableItems = async () => {
@@ -530,6 +539,7 @@ const ItemsAnimation = ({
       const response = await axios.get(
         "https://ogfieldticket.com/api/jobitem.php?item_types=1"
       );
+      console.log(response.data);
       setAvailableItems(response.data.itemTypes);
     } catch (error) {
       console.error("Error fetching available items:", error);
@@ -544,30 +554,48 @@ const ItemsAnimation = ({
       item_description: "",
       item_quantity: 1,
       item_cost: 0.0,
-      use_quantity: "N",
+      use_quantity: "Y",
       use_cost: "N",
     });
   };
 
   const handleInputChange = (event) => {
     const { name, value, type, checked } = event.target;
-    setNewItem((prevItem) => ({
-      ...prevItem,
-      [name]: type === "checkbox" ? (checked ? "Y" : "N") : value,
-      item_quantity:
-        name === "use_quantity" && checked ? null : prevItem.item_quantity,
-    }));
+    setNewItem((prevItem) => {
+      if (name === "use_quantity") {
+        return {
+          ...prevItem,
+          [name]: checked ? "N" : "Y",
+          item_quantity: checked ? 1 : null,
+        };
+      } else if (name === "use_cost") {
+        return {
+          ...prevItem,
+          [name]: checked ? "Y" : "N",
+          item_cost: checked ? prevItem.item_cost : 0.0,
+        };
+      } else {
+        return {
+          ...prevItem,
+          [name]: value,
+        };
+      }
+    });
   };
   const handleAddItem = () => {
-    const itemId = selectedItem === "new" ? newItem.item_id : selectedItem;
-    const concatenatedItemId = `${itemId}_${activeJobId}`;
+    let itemId;
+    if (selectedItem === "new") {
+      itemId = newItem.item_id;
+    } else {
+      itemId = `${selectedItem}_${activeJobId}`;
+    }
 
     const updatedNewItem = {
       ...newItem,
-      item_id: concatenatedItemId,
+      item_id: itemId,
       use_quantity: newItem.use_quantity,
       use_cost: newItem.use_cost,
-      item_quantity: newItem.use_quantity === "Y" ? 1 : null,
+      item_quantity: newItem.use_quantity === "N" ? 1 : null,
     };
 
     onAddItem(updatedNewItem);
@@ -736,7 +764,7 @@ const ItemsAnimation = ({
                       item_description: "",
                       item_quantity: 1,
                       item_cost: 0.0,
-                      use_quantity: "N",
+                      use_quantity: "Y",
                       use_cost: "N",
                     });
                   } else {
@@ -750,7 +778,7 @@ const ItemsAnimation = ({
                       item_description: item.ItemDescription,
                       item_quantity: 1,
                       item_cost: item.UseCost === "Y" ? 0.0 : null,
-                      use_quantity: "N",
+                      use_quantity: "Y",
                       use_cost: item.UseCost,
                     });
                   }
@@ -841,7 +869,7 @@ const ItemsAnimation = ({
                       <input
                         type="checkbox"
                         name="use_quantity"
-                        checked={newItem.use_quantity === "Y"}
+                        checked={newItem.use_quantity === "N"}
                         onChange={handleInputChange}
                         className="form-checkbox"
                       />
@@ -864,7 +892,7 @@ const ItemsAnimation = ({
               </fieldset>
             </div>
             {/* Quantity Field */}
-            {newItem.use_quantity === "Y" && (
+            {newItem.use_quantity === "N" && (
               <div className="mb-8">
                 <label
                   htmlFor="item_quantity"

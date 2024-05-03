@@ -278,8 +278,8 @@ function Layout({ children }) {
   });
 
   const handleDetailsClick = () => {
-    // Placeholder for functionality to show profile details or navigate to a details page
-    console.log("Show Profile Details or Navigate");
+    navigate("/profile-details");
+    setProfileCardVisible(false);
   };
 
   // Toggle profile card visibility

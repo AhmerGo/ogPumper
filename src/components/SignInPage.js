@@ -11,6 +11,7 @@ function SignInPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const { setUser } = useUser();
+  const [successMessage, setSuccessMessage] = useState("");
 
   const formAnimation = useSpring({
     opacity: 1,
@@ -20,6 +21,11 @@ function SignInPage() {
   });
 
   const handleForgotPassword = async () => {
+    if (username.trim() === "") {
+      setError("Please Enter Username");
+      return;
+    }
+
     try {
       const response = await fetch(
         "https://ogfieldticket.com/api/passwordreset.php",
@@ -33,17 +39,18 @@ function SignInPage() {
       );
       const data = await response.json();
       if (data.success) {
-        // Show success message or redirect to a success page
-        console.log("Password reset email sent successfully");
+        setSuccessMessage("Password reset email sent successfully");
+        setError(""); // Clear any previous error message
       } else {
         setError("Failed to send password reset email");
+        setSuccessMessage(""); // Clear any previous success message
       }
     } catch (error) {
       console.error("Error sending password reset email:", error);
       setError("An error occurred while sending password reset email.");
+      setSuccessMessage(""); // Clear any previous success message
     }
   };
-
   async function handleSignIn(e) {
     e.preventDefault();
     try {
@@ -119,6 +126,12 @@ function SignInPage() {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
+          {successMessage && (
+            <p className="text-green-500 text-base sm:text-lg animate-pulse">
+              {successMessage}
+            </p>
+          )}
+
           {error && (
             <p className="text-red-500 text-base sm:text-lg animate-pulse">
               {error}

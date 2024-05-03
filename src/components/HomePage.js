@@ -76,7 +76,7 @@ function TicketItem({ ticket, index, theme, onClick }) {
             <div className="flex items-center justify-center md:justify-start">
               <FontAwesomeIcon icon={faUser} className="mr-2" fixedWidth />
               <span className="font-semibold">
-                User ID:{" "}
+                {" "}
                 {ticket.UserID
                   ? ticket.UserID.charAt(0).toUpperCase() +
                     ticket.UserID.slice(1)
