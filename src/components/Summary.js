@@ -232,12 +232,13 @@ const ViewFieldTicket = () => {
     setIsEditing(false);
     setFieldNote(location.state.Note || "");
 
-    // Preserve the calculated total costs
+    // Preserve the calculated total costs and UseQuantity
     setTicket((prevTicket) => ({
       ...location.state,
       Items: prevTicket.Items.map((item, index) => ({
         ...location.state.Items[index],
         totalCost: item.totalCost,
+        UseQuantity: item.UseQuantity, // Preserve the UseQuantity property
       })),
     }));
   };

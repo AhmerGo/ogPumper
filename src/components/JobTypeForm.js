@@ -261,7 +261,7 @@ const JobListPage = () => {
               </animated.div>
               {showNoteBox && (
                 <animated.div
-                  style={stickyNoteAnimation}
+                  style={noteBoxAnimation}
                   className={`absolute p-2 rounded-lg shadow-sm transition-all duration-300 ${
                     theme === "dark" ? "bg-gray-800" : "bg-white"
                   } left-full top-full mt-2 ml-2`}
