@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import { useSpring, useTrail, animated, config } from "react-spring";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useUser } from "./UserContext";
+import { debounce } from "lodash"; // Import lodash's debounce function
 
 import {
   faTasks,
@@ -15,7 +16,7 @@ import {
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
 
-function TicketItem({ ticket, index, theme, onClick }) {
+function TicketItem({ ticket, index, theme, onClick, searchQuery }) {
   const [hoverAnimation, setHoverAnimation] = useSpring(() => ({
     scale: 1,
     config: { tension: 300, friction: 10 }, // Adjust for desired speed
@@ -30,6 +31,20 @@ function TicketItem({ ticket, index, theme, onClick }) {
     day: "numeric",
     year: "numeric",
   });
+
+  const highlightText = (text) => {
+    if (!searchQuery) return text;
+    const regex = new RegExp(`(${searchQuery})`, "gi");
+    return text.split(regex).map((part, i) =>
+      i % 2 === 0 ? (
+        part
+      ) : (
+        <mark key={i} className="bg-yellow-200 text-black">
+          {part}
+        </mark>
+      )
+    );
+  };
 
   return (
     <animated.li
@@ -51,7 +66,13 @@ function TicketItem({ ticket, index, theme, onClick }) {
     >
       <div className="flex-grow mb-4 md:mb-0">
         <h3 className="text-2xl md:text-3xl font-bold mb-2 text-center md:text-left">
-          Ticket: {ticket.Ticket}
+          <Link
+            to="/view-field-ticket"
+            state={ticket}
+            className="text-blue-500 hover:text-blue-600"
+          >
+            Ticket: {ticket.Ticket}
+          </Link>
         </h3>
         <div className="text-gray-500 mt-2 text-lg md:text-xl">
           <div className="flex items-center justify-center md:justify-start">
@@ -106,6 +127,7 @@ function HomePage() {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { userRole, userID } = useUser();
+  const [searchQuery, setSearchQuery] = useState("");
   const [buttonAnimation, setButtonAnimation] = useSpring(() => ({
     scale: 1,
     config: { tension: 300, friction: 10 }, // Adjust for desired responsiveness
@@ -138,6 +160,10 @@ function HomePage() {
     }
   );
 
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
   useEffect(() => {
     const fetchTickets = async () => {
       try {
@@ -160,6 +186,16 @@ function HomePage() {
             (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
           )
         );
+
+        if (searchQuery) {
+          const lowercaseQuery = searchQuery.toLowerCase();
+          filteredTickets = filteredTickets.filter((ticket) =>
+            Object.values(ticket).some((value) =>
+              String(value).toLowerCase().includes(lowercaseQuery)
+            )
+          );
+        }
+
         setLoading(false);
       } catch (error) {
         console.error("Error fetching tickets:", error);
@@ -173,6 +209,13 @@ function HomePage() {
   const handleViewDetailsClick = (ticket) => {
     navigate("/view-field-ticket", { state: ticket });
   };
+
+  const debouncedSearch = useCallback(
+    debounce((query) => {
+      setSearchQuery(query);
+    }, 300),
+    []
+  );
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
@@ -227,7 +270,19 @@ function HomePage() {
                   >
                     Ticket Dashboard
                   </h2>
-                  <div className="h-16"></div> {/* Added empty space */}
+                  <div className="mb-6">
+                    <input
+                      type="text"
+                      placeholder="Search tickets..."
+                      onChange={handleSearchChange} // Update this to use the handleSearchChange
+                      className={`w-full max-w-lg px-4 py-2 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
+                        theme === "dark"
+                          ? "bg-gray-800 text-white placeholder-gray-400"
+                          : "bg-white text-gray-800 placeholder-gray-500"
+                      }`}
+                    />
+                  </div>
+
                   {/* <div className="text-center my-6 mx-auto w-full max-w-xl px-4">
                     <FontAwesomeIcon
                       icon={faTasks}
@@ -250,20 +305,6 @@ function HomePage() {
                       <FontAwesomeIcon icon={faPlus} className="mr-2" />
                       Create New Ticket
                     </Link>
-
-                    {userRole !== "P" && (
-                      <Link
-                        to="/job-form"
-                        className={`inline-flex items-center justify-center font-bold py-3 px-6 rounded-full shadow-lg transition duration-200 ease-in-out pop-effect ${
-                          theme === "dark"
-                            ? "bg-green-600 hover:bg-green-700 text-white"
-                            : "bg-white hover:bg-gray-100 text-green-600"
-                        }`}
-                      >
-                        <FontAwesomeIcon icon={faEdit} className="mr-2" />
-                        Edit Jobs
-                      </Link>
-                    )}
                   </div>
                 </animated.div>
                 <ul
@@ -282,6 +323,7 @@ function HomePage() {
                         index={index}
                         theme={theme}
                         onClick={() => handleViewDetailsClick(ticket)}
+                        searchQuery={searchQuery} // Pass the searchQuery prop
                       />
                     );
                   })}

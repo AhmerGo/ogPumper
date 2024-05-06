@@ -29,6 +29,9 @@ const JobListPage = () => {
   const [note, setNote] = useState("");
   const [visibleNoteJobId, setVisibleNoteJobId] = useState(null);
   const [editingNoteDefault, setEditingNoteDefault] = useState(null);
+  const [editingJobName, setEditingJobName] = useState(null);
+  const [editingJobNote, setEditingJobNote] = useState(null);
+
   const toggleNoteVisibility = (e, jobId) => {
     e.stopPropagation();
     console.log(`Toggling note for job ID: ${jobId}`);
@@ -57,6 +60,11 @@ const JobListPage = () => {
 
   const toggleNoteBox = () => {
     setShowNoteBox(!showNoteBox);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingJobName(null);
+    setEditingJobNote(null);
   };
 
   const titleAnimation = useSpring({
@@ -144,6 +152,41 @@ const JobListPage = () => {
     }
   };
 
+  const handleSaveJobName = async (jobId) => {
+    try {
+      await axios.patch(
+        `https://ogfieldticket.com/api/jobs.php?jobtype=${jobId}`,
+        {
+          Description: editingJobName.name,
+          JobTypeID: jobId,
+        }
+      );
+      setEditingJobName(null);
+      fetchTicketTypes();
+    } catch (error) {
+      console.error("Error updating job name:", error);
+    }
+  };
+
+  const handleEditJobName = (jobId, currentName) => {
+    setEditingJobName({ jobId, name: currentName });
+  };
+
+  const handleSaveJobNote = async (jobId) => {
+    try {
+      await axios.patch(
+        `https://ogfieldticket.com/api/jobs.php?jobtype=${jobId}`,
+        {
+          NoteDefault: editingJobNote.note,
+          JobTypeID: jobId,
+        }
+      );
+      setEditingJobNote(null);
+      fetchTicketTypes();
+    } catch (error) {
+      console.error("Error updating job note:", error);
+    }
+  };
   const handleKeyPress = async (event) => {
     if (event.key === "Enter") {
       const jobDescription = event.target.value;
@@ -175,6 +218,10 @@ const JobListPage = () => {
       setShowTextBox(false);
       setShowNoteBox(false);
     }
+  };
+
+  const handleEditJobNote = (jobId, currentNote) => {
+    setEditingJobNote({ jobId, note: currentNote });
   };
 
   const addItem = async (jobTypeId, newItem) => {
@@ -295,13 +342,34 @@ const JobListPage = () => {
                 onClick={() => toggleJob(job.JobTypeID)}
               >
                 <div className="flex items-center justify-between">
-                  <animated.span
-                    style={titleAnimation}
-                    className="text-xl font-semibold"
-                  >
-                    <FontAwesomeIcon icon={faBusinessTime} className="mr-2" />
-                    {job.Description}
-                  </animated.span>
+                  {editingJobName && editingJobName.jobId === job.JobTypeID ? (
+                    <input
+                      type="text"
+                      value={editingJobName.name}
+                      onChange={(e) =>
+                        setEditingJobName({
+                          ...editingJobName,
+                          name: e.target.value,
+                        })
+                      }
+                      onBlur={() => handleSaveJobName(job.JobTypeID)}
+                      onKeyPress={(e) =>
+                        e.key === "Enter" && handleSaveJobName(job.JobTypeID)
+                      }
+                      className="text-xl font-semibold w-1/2"
+                    />
+                  ) : (
+                    <animated.span
+                      style={titleAnimation}
+                      className="text-xl font-semibold flex-grow"
+                      onDoubleClick={() =>
+                        handleEditJobName(job.JobTypeID, job.Description)
+                      }
+                    >
+                      <FontAwesomeIcon icon={faBusinessTime} className="mr-2" />
+                      {job.Description}
+                    </animated.span>
+                  )}
                   <div>
                     <FontAwesomeIcon
                       icon={faListUl}
@@ -324,15 +392,13 @@ const JobListPage = () => {
                         deleteJob(job.JobTypeID);
                       }}
                     />
-                    {job.NoteDefault && job.NoteDefault !== "" && (
-                      <FontAwesomeIcon
-                        icon={faStickyNote}
-                        className="cursor-pointer ml-2"
-                        onClick={(e) => {
-                          toggleNoteVisibility(e, job.JobTypeID);
-                        }}
-                      />
-                    )}
+                    <FontAwesomeIcon
+                      icon={faStickyNote}
+                      className="cursor-pointer ml-2"
+                      onClick={(e) => {
+                        toggleNoteVisibility(e, job.JobTypeID);
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -345,13 +411,37 @@ const JobListPage = () => {
                         : "bg-white border-gray-300"
                     }`}
                   >
-                    <p
-                      className={`text-lg ${
-                        theme === "dark" ? "text-gray-100" : "text-gray-900"
-                      }`}
-                    >
-                      {job.NoteDefault}
-                    </p>
+                    {editingJobNote &&
+                    editingJobNote.jobId === job.JobTypeID ? (
+                      <textarea
+                        value={editingJobNote.note}
+                        onChange={(e) =>
+                          setEditingJobNote({
+                            ...editingJobNote,
+                            note: e.target.value,
+                          })
+                        }
+                        onBlur={() => handleSaveJobNote(job.JobTypeID)}
+                        onKeyPress={(e) =>
+                          e.key === "Enter" && handleSaveJobNote(job.JobTypeID)
+                        }
+                        className={`text-lg w-full ${
+                          theme === "dark" ? "text-gray-100" : "text-gray-900"
+                        }`}
+                        placeholder="Add a note..."
+                      />
+                    ) : (
+                      <p
+                        className={`text-lg ${
+                          theme === "dark" ? "text-gray-100" : "text-gray-900"
+                        }`}
+                        onDoubleClick={() =>
+                          handleEditJobNote(job.JobTypeID, job.NoteDefault)
+                        }
+                      >
+                        {job.NoteDefault || "Double-click to add a note"}
+                      </p>
+                    )}
                   </animated.div>
                 )}
               </animated.div>

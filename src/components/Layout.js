@@ -29,7 +29,7 @@ const NavBarContainer = styled(animated.nav)`
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-  position: fixed; /* Changed from sticky to fixed for consistent stickiness */
+  position: fixed;
   top: 0;
   z-index: 1000;
   transition: all 0.3s ease;
@@ -40,6 +40,12 @@ const NavBarContainer = styled(animated.nav)`
       background: rgba(0, 0, 0, 0.8);
       color: #fff;
     `}
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+    padding: 0.5rem 1rem;
+  }
 `;
 
 const DetailsButton = styled.button`
@@ -63,7 +69,45 @@ const DetailsButton = styled.button`
   }
 `;
 
-// Logo now includes a custom SVG for a more unique and artsy title
+const AdminButton = styled.button`
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background-color: ${({ theme }) =>
+    theme === "dark" ? "#4285F4" : "#FFFFFF"};
+  color: ${({ theme }) => (theme === "dark" ? "#FFFFFF" : "#4285F4")};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  transition: box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+    background-color: ${({ theme }) =>
+      theme === "dark" ? "#3367D6" : "#F2F2F2"};
+  }
+
+  @media (max-width: 768px) {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+
+  svg {
+    margin-right: 8px;
+    transition: transform 0.5s ease;
+  }
+
+  &:hover svg {
+    transform: rotate(360deg);
+  }
+`;
 const Logo = styled.div`
   display: flex;
   align-items: center;
@@ -99,15 +143,21 @@ const Logo = styled.div`
 const NavItems = styled.div`
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 10px;
   position: relative;
-  width: 200px;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    justify-content: space-evenly;
+    margin-top: 0.5rem;
+  }
 
   .material-symbols-outlined {
     font-size: 24px;
     cursor: pointer;
     &:hover {
-      color: #ddd; // Lighten the icon on hover for interactivity
+      color: #ddd;
     }
   }
 `;
@@ -299,9 +349,17 @@ function Layout({ children }) {
           <span>ogFieldTicket</span>
         </Logo>
         <NavItems>
+          {userRole !== "P" && (
+            <AdminButton theme={theme} onClick={() => navigate("/admin")}>
+              <span className="material-symbols-outlined">
+                admin_panel_settings
+              </span>
+            </AdminButton>
+          )}
+
           <NavItem
             onClick={(e) => {
-              e.stopPropagation(); // Stop the click from reaching the OutsideClickHandler
+              e.stopPropagation();
               setProfileCardVisible(!profileCardVisible);
             }}
             theme={theme}
@@ -341,4 +399,5 @@ function Layout({ children }) {
     </div>
   );
 }
+
 export default Layout;

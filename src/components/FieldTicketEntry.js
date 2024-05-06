@@ -97,10 +97,10 @@ function FieldTicketEntry() {
     }
   };
 
-  const animationProps = useSpring({
-    from: { opacity: 0, transform: "translateY(50px)" },
-    to: { opacity: 1, transform: "translateY(0)" },
-    config: { duration: 500 },
+  const pageAnimation = useSpring({
+    from: { opacity: 0, y: 50 },
+    to: { opacity: 1, y: 0 },
+    config: { mass: 1, tension: 280, friction: 25 },
   });
 
   const handleFinalSubmit = async (e) => {
@@ -157,33 +157,33 @@ function FieldTicketEntry() {
 
   return (
     <animated.main
-      style={animationProps}
+      style={pageAnimation}
       className={`min-h-screen flex items-center justify-center transition-colors duration-500 ${
         theme === "dark"
           ? "bg-gradient-to-br from-gray-800 to-gray-900"
-          : "bg-gradient-to-br from-gray-100 to-gray-200"
+          : "bg-gradient-to-br from-white to-gray-100"
       } p-6 relative overflow-hidden`}
     >
       <div
         className={`absolute inset-0 animate-gradient-xy transition-colors duration-500 ${
           theme === "dark"
             ? "bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900"
-            : "bg-gradient-to-r from-gray-200 via-gray-300 to-gray-400"
+            : "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-300"
         } opacity-20 mix-blend-soft-light`}
       ></div>
       <div
-        className={`absolute inset-0 animate-blob blob-1 transition-colors duration-500 ${
+        className={`absolute inset-0 transition-colors duration-500 ${
           theme === "dark"
             ? "bg-gradient-to-tr from-gray-600 via-gray-700 to-gray-800"
-            : "bg-gradient-to-tr from-gray-300 via-gray-400 to-gray-500"
-        } rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-duration-200s`}
+            : "bg-gradient-to-tr from-white via-gray-50 to-gray-100"
+        } rounded-full mix-blend-multiply filter blur-3xl opacity-50`}
       ></div>
       <div
-        className={`absolute inset-0 animate-blob blob-2 transition-colors duration-500 ${
+        className={`absolute inset-0 transition-colors duration-500 ${
           theme === "dark"
             ? "bg-gradient-to-tl from-gray-500 via-gray-600 to-gray-700"
-            : "bg-gradient-to-tl from-gray-200 via-gray-300 to-gray-400"
-        } rounded-full mix-blend-multiply filter blur-xl opacity-50 animate-duration-300s`}
+            : "bg-gradient-to-tl from-white via-gray-50 to-gray-100"
+        } rounded-full mix-blend-multiply filter blur-3xl opacity-50`}
       ></div>
 
       <div

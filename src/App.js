@@ -11,7 +11,7 @@ import Summary from "./components/Summary";
 import JobForm from "./components/JobTypeForm";
 import Details from "./components/Details";
 import { UserProvider } from "./components/UserContext";
-
+import Admin from "./components/admin";
 function App() {
   return (
     <Router>
@@ -64,6 +64,14 @@ function App() {
               element={
                 <Layout>
                   <Details />
+                </Layout>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <Layout>
+                  <Admin />
                 </Layout>
               }
             />
