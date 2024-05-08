@@ -9,6 +9,7 @@ function FieldTicketEntry() {
   const { ticketType } = state;
   const { theme } = useTheme();
   const { userRole, userID } = useUser();
+  const [subdomain, setSubdomain] = useState("");
 
   const navigate = useNavigate();
 
@@ -26,12 +27,31 @@ function FieldTicketEntry() {
   const [leases, setLeases] = useState([]);
 
   useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
+
+  useEffect(() => {
     console.log(state);
     const fetchHighestTicketNumber = async () => {
       try {
-        const response = await fetch(
-          "https://ogfieldticket.com/api/tickets.php"
-        );
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogpumper.net`
+          : "https://ogfieldticket.com";
+        const response = await fetch(`${baseUrl}/api/tickets.php`);
         const data = await response.json();
         const highestTicketNumber = Math.max(
           ...data.map((ticket) => parseInt(ticket.Ticket))
@@ -51,9 +71,10 @@ function FieldTicketEntry() {
   useEffect(() => {
     const fetchLeases = async () => {
       try {
-        const response = await fetch(
-          "https://ogfieldticket.com/api/leases.php"
-        );
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogpumper.net`
+          : "https://ogfieldticket.com";
+        const response = await fetch(`${baseUrl}/api/leases.php`);
         const data = await response.json();
         setLeases(data);
       } catch (error) {
@@ -67,7 +88,10 @@ function FieldTicketEntry() {
   useEffect(() => {
     const fetchTicketTypes = async () => {
       try {
-        const response = await fetch("https://ogfieldticket.com/api/jobs.php");
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogpumper.net`
+          : "https://ogfieldticket.com";
+        const response = await fetch(`${baseUrl}/api/jobs.php`);
         const data = await response.json();
         setTicketTypes(data);
         setItems(
@@ -124,23 +148,24 @@ function FieldTicketEntry() {
         quantity: item.quantity || item.ItemQuantity || 0,
       }));
 
-      const response = await fetch(
-        "https://ogfieldticket.com/api/tickets.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...formFields,
-            lease: leaseID,
-            JobTypeID: jobTypeID,
-            userID: userID,
-            items: updatedItems,
-            note: formFields.note,
-          }),
-        }
-      );
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
+      const response = await fetch(`${baseUrl}/api/tickets.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formFields,
+          lease: leaseID,
+          JobTypeID: jobTypeID,
+          userID: userID,
+          items: updatedItems,
+          note: formFields.note,
+        }),
+      });
 
       if (response.ok) {
         navigate("/home");

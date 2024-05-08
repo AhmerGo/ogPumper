@@ -16,6 +16,25 @@ function CreateFieldTicket() {
   const [leases, setLeases] = useState([]);
   const [wells, setWells] = useState([]);
   const [ticketTypes, setTicketTypes] = useState([]);
+  const [subdomain, setSubdomain] = useState("");
+
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
 
   const pageAnimation = useSpring({
     from: { opacity: 0, y: 50 },
@@ -36,9 +55,10 @@ function CreateFieldTicket() {
   useEffect(() => {
     const fetchLeases = async () => {
       try {
-        const response = await fetch(
-          "https://ogfieldticket.com/api/leases.php"
-        );
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogpumper.net`
+          : "https://ogfieldticket.com";
+        const response = await fetch(`${baseUrl}/api/leases.php`);
         const data = await response.json();
         console.log("Fetched leases:", data);
         setLeases(data);
@@ -53,9 +73,13 @@ function CreateFieldTicket() {
     const fetchWells = async () => {
       if (lease) {
         try {
+          const baseUrl = subdomain
+            ? `https://${subdomain}.ogpumper.net`
+            : "https://ogfieldticket.com";
           const response = await fetch(
-            `https://ogfieldticket.com/api/leases.php?lease=${lease}`
+            `${baseUrl}/api/leases.php?lease=${lease}`
           );
+
           const data = await response.json();
           setWells(data[0].Wells);
         } catch (error) {
@@ -72,7 +96,11 @@ function CreateFieldTicket() {
   useEffect(() => {
     const fetchTicketTypes = async () => {
       try {
-        const response = await fetch("https://ogfieldticket.com/api/jobs.php");
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogpumper.net`
+          : "https://ogfieldticket.com";
+        const response = await fetch(`${baseUrl}/api/jobs.php`);
+
         const data = await response.json();
         console.log(data);
         setTicketTypes(data);

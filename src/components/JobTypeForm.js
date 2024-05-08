@@ -337,8 +337,10 @@ const JobListPage = () => {
                 key={job.JobTypeID}
                 style={jobAnimation}
                 className={`col-span-1 p-4 border rounded-lg shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer ${
-                  theme === "dark" ? "bg-gray-800" : "bg-white"
-                }`}
+                  theme === "dark"
+                    ? "bg-gray-800 text-white"
+                    : "bg-white text-gray-900"
+                }`} // Adjust text color here
                 onClick={() => toggleJob(job.JobTypeID)}
               >
                 <div className="flex items-center justify-between">
@@ -356,7 +358,11 @@ const JobListPage = () => {
                       onKeyPress={(e) =>
                         e.key === "Enter" && handleSaveJobName(job.JobTypeID)
                       }
-                      className="text-xl font-semibold w-1/2"
+                      className={`text-xl font-semibold w-1/2 ${
+                        theme === "dark"
+                          ? "bg-gray-700 text-white"
+                          : "bg-white text-gray-900"
+                      }`} // Adjust input field style for dark mode
                     />
                   ) : (
                     <animated.span
@@ -370,6 +376,7 @@ const JobListPage = () => {
                       {job.Description}
                     </animated.span>
                   )}
+
                   <div>
                     <FontAwesomeIcon
                       icon={faListUl}

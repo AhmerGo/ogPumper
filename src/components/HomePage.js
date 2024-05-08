@@ -81,7 +81,15 @@ function TicketItem({ ticket, index, theme, onClick, searchQuery }) {
               className="mr-2"
               fixedWidth
             />
-            <span> {ticket.LeaseName}</span>
+            <>
+              {ticket.WellID !== null ? (
+                <span>
+                  {ticket.LeaseName} & {ticket.WellID}
+                </span>
+              ) : (
+                <span>{ticket.LeaseName}</span>
+              )}
+            </>
           </div>
           <div className="flex items-center justify-center md:justify-start">
             <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" fixedWidth />
@@ -128,10 +136,30 @@ function HomePage() {
   const { theme } = useTheme();
   const { userRole, userID } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
+  const [subdomain, setSubdomain] = useState("");
+
   const [buttonAnimation, setButtonAnimation] = useSpring(() => ({
     scale: 1,
     config: { tension: 300, friction: 10 }, // Adjust for desired responsiveness
   }));
+
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
 
   const pageAnimation = useSpring({
     from: { opacity: 0, scale: 0.95, y: -20 },
@@ -161,17 +189,17 @@ function HomePage() {
   );
 
   const handleSearchChange = (event) => {
-    setSearchQuery(event.target.value);
+    debouncedSearch(event.target.value);
   };
-
   useEffect(() => {
     const fetchTickets = async () => {
       try {
         console.log(userRole + "  and " + userID);
 
-        const response = await fetch(
-          "https://ogfieldticket.com/api/tickets.php"
-        );
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogpumper.net`
+          : "https://ogfieldticket.com";
+        const response = await fetch(`${baseUrl}/api/tickets.php`);
         const data = await response.json();
         let filteredTickets = data;
 
@@ -180,12 +208,6 @@ function HomePage() {
             (ticket) => ticket.Billed !== "Y" && ticket.UserID === userID
           );
         }
-
-        setTickets(
-          filteredTickets.sort(
-            (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
-          )
-        );
 
         if (searchQuery) {
           const lowercaseQuery = searchQuery.toLowerCase();
@@ -196,6 +218,12 @@ function HomePage() {
           );
         }
 
+        setTickets(
+          filteredTickets.sort(
+            (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
+          )
+        );
+
         setLoading(false);
       } catch (error) {
         console.error("Error fetching tickets:", error);
@@ -204,8 +232,7 @@ function HomePage() {
     };
 
     fetchTickets();
-  }, [userRole]);
-
+  }, [userRole, searchQuery]);
   const handleViewDetailsClick = (ticket) => {
     navigate("/view-field-ticket", { state: ticket });
   };
@@ -273,7 +300,7 @@ function HomePage() {
                   <div className="mb-6">
                     <input
                       type="text"
-                      placeholder="Search tickets..."
+                      placeholder="Search by ticket fields eg. 05-06, circulate, etc  "
                       onChange={handleSearchChange} // Update this to use the handleSearchChange
                       className={`w-full max-w-lg px-4 py-2 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
                         theme === "dark"
