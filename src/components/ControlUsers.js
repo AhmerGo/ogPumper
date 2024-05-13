@@ -132,13 +132,34 @@ const ControlUsers = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { theme } = useTheme();
+  const [subdomain, setSubdomain] = useState("");
+
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axios.get(
-          "https://ogfieldticket.com/api/userdetails.php"
-        );
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogpumper.net`
+          : "https://ogfieldticket.com";
+
+        const response = await axios.get(`${baseUrl}/api/userdetails.php`);
         const filteredUsers = response.data.users.filter(
           (user) => user.Role === "P" || user.Role === "O" || user.Role === "A"
         );
@@ -156,8 +177,12 @@ const ControlUsers = () => {
 
   const handleSave = async (updatedUserData) => {
     try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
       const response = await axios.put(
-        `https://ogfieldticket.com/api/userdetails.php?id=${updatedUserData.UserID}`,
+        `${baseUrl}/api/userdetails.php?id=${updatedUserData.UserID}`,
         updatedUserData
       );
       console.log(response.data);

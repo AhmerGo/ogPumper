@@ -14,15 +14,14 @@ export const ThemeProvider = ({ children }) => {
     const storedTheme = localStorage.getItem("theme");
     if (storedTheme) {
       setTheme(storedTheme);
+      document.body.classList.add(storedTheme);
+    } else {
+      document.body.classList.add("light");
     }
-    const body = document.body;
-    body.classList.remove("light", "dark");
-    body.classList.add(storedTheme || "light");
     return () => {
-      body.classList.remove("light", "dark");
+      document.body.classList.remove("light", "dark");
     };
   }, []);
-
   useEffect(() => {
     localStorage.setItem("theme", theme);
     const body = document.body;

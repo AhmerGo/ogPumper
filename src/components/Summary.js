@@ -89,6 +89,7 @@ const ViewFieldTicket = () => {
   const { userRole, userID } = useUser();
   const [itemCosts, setItemCosts] = useState({});
   const [itemsMap, setItemsMap] = useState(new Map());
+  const [subdomain, setSubdomain] = useState("");
 
   const fadeAnimation = useSpring({
     from: { opacity: 0 },
@@ -242,11 +243,35 @@ const ViewFieldTicket = () => {
       })),
     }));
   };
+
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
+
   const handleSaveClick = async () => {
     try {
       const updatedTicket = { ...ticket, Note: fieldNote };
+
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
       const response = await fetch(
-        `https://ogfieldticket.com/api/tickets.php?ticket=${ticket.Ticket}`,
+        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
         {
           method: "PATCH",
           headers: {
@@ -271,8 +296,12 @@ const ViewFieldTicket = () => {
 
   const handleDeleteConfirm = async () => {
     try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
       const response = await fetch(
-        `https://ogfieldticket.com/api/tickets.php?ticket=${ticket.Ticket}`,
+        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
         {
           method: "DELETE",
         }
@@ -299,8 +328,12 @@ const ViewFieldTicket = () => {
   const handleBillConfirm = async () => {
     try {
       const updatedTicket = { ...ticket, Billed: "Y" };
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
       const response = await fetch(
-        `https://ogfieldticket.com/api/tickets.php?ticket=${ticket.Ticket}`,
+        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
         {
           method: "PATCH",
           headers: {

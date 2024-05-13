@@ -31,6 +31,25 @@ const JobListPage = () => {
   const [editingNoteDefault, setEditingNoteDefault] = useState(null);
   const [editingJobName, setEditingJobName] = useState(null);
   const [editingJobNote, setEditingJobNote] = useState(null);
+  const [subdomain, setSubdomain] = useState("");
+
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
 
   const toggleNoteVisibility = (e, jobId) => {
     e.stopPropagation();
@@ -45,7 +64,11 @@ const JobListPage = () => {
   };
   const fetchTicketTypes = async () => {
     try {
-      const response = await fetch("https://ogfieldticket.com/api/jobs.php");
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
+      const response = await fetch(`${baseUrl}/api/jobs.php`);
       const data = await response.json();
       console.log(data);
       setTicketTypes(data);
@@ -116,12 +139,12 @@ const JobListPage = () => {
 
   const deleteItem = async (itemId) => {
     try {
-      const response = await fetch(
-        `https://ogfieldticket.com/api/jobs.php?itemID=${itemId}`,
-        {
-          method: "DELETE",
-        }
-      );
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+      const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemId}`, {
+        method: "DELETE",
+      });
       if (response.ok) {
         fetchTicketTypes();
       } else {
@@ -134,8 +157,11 @@ const JobListPage = () => {
 
   const deleteJob = async (jobTypeId) => {
     try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
       const response = await fetch(
-        `https://ogfieldticket.com/api/jobs.php?jobtype=${jobTypeId}`,
+        `${baseUrl}/api/jobs.php?jobtype=${jobTypeId}`,
         {
           method: "DELETE",
         }
@@ -154,13 +180,13 @@ const JobListPage = () => {
 
   const handleSaveJobName = async (jobId) => {
     try {
-      await axios.patch(
-        `https://ogfieldticket.com/api/jobs.php?jobtype=${jobId}`,
-        {
-          Description: editingJobName.name,
-          JobTypeID: jobId,
-        }
-      );
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+      await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
+        Description: editingJobName.name,
+        JobTypeID: jobId,
+      });
       setEditingJobName(null);
       fetchTicketTypes();
     } catch (error) {
@@ -174,13 +200,13 @@ const JobListPage = () => {
 
   const handleSaveJobNote = async (jobId) => {
     try {
-      await axios.patch(
-        `https://ogfieldticket.com/api/jobs.php?jobtype=${jobId}`,
-        {
-          NoteDefault: editingJobNote.note,
-          JobTypeID: jobId,
-        }
-      );
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+      await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
+        NoteDefault: editingJobNote.note,
+        JobTypeID: jobId,
+      });
       setEditingJobNote(null);
       fetchTicketTypes();
     } catch (error) {
@@ -194,7 +220,10 @@ const JobListPage = () => {
       console.log(noteDefault);
 
       try {
-        const response = await fetch("https://ogfieldticket.com/api/jobs.php", {
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogpumper.net`
+          : "https://ogfieldticket.com";
+        const response = await fetch(`${baseUrl}/api/jobs.php`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -227,16 +256,16 @@ const JobListPage = () => {
   const addItem = async (jobTypeId, newItem) => {
     try {
       console.log(JSON.stringify({ ...newItem, job_type_id: jobTypeId }));
-      const response = await fetch(
-        "https://ogfieldticket.com/api/jobitem.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ ...newItem, job_type_id: jobTypeId }),
-        }
-      );
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+      const response = await fetch(`${baseUrl}/api/jobitem.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...newItem, job_type_id: jobTypeId }),
+      });
 
       if (response.ok) {
         fetchTicketTypes();
@@ -498,6 +527,26 @@ const ItemsAnimation = ({
   const [selection, setSelection] = useState("quantity"); // Default to quantity
   const [availableItems, setAvailableItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("new");
+  const [subdomain, setSubdomain] = useState("");
+
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
+
   const handleEditClick = (item) => {
     console.log(item);
     setEditingItemId(item.ItemID);
@@ -514,17 +563,16 @@ const ItemsAnimation = ({
   };
   const handleDeleteItem = (itemId) => {
     console.log(itemId);
-    console.log(
-      `https://ogfieldticket.com/api/jobs.php?itemID=${itemId.JobItemID}`
-    );
+    const baseUrl = subdomain
+      ? `https://${subdomain}.ogpumper.net`
+      : "https://ogfieldticket.com";
 
     const data = {
       JobItemID: itemId.JobItemID,
       ItemDescription: itemId.ItemDescription,
     };
     console.log(data);
-
-    fetch(`https://ogfieldticket.com/api/jobs.php?itemID=${itemId.JobItemID}`, {
+    fetch(`${baseUrl}/api/jobs.php?itemID=${itemId.JobItemID}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -544,8 +592,11 @@ const ItemsAnimation = ({
   };
   const finalizeEdit = async (items, setTicketTypes) => {
     try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
       await axios.patch(
-        `https://ogfieldticket.com/api/jobs.php?itemID=${editingItemId}`,
+        `${baseUrl}/api/jobs.php?itemID=${editingItemId}`,
         itemEdits
       );
 
@@ -633,8 +684,12 @@ const ItemsAnimation = ({
 
   const fetchAvailableItems = async () => {
     try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
       const response = await axios.get(
-        "https://ogfieldticket.com/api/jobitem.php?item_types=1"
+        `${baseUrl}/api/jobitem.php?item_types=1`
       );
       console.log(response.data);
       setAvailableItems(response.data.itemTypes);

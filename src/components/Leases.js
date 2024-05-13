@@ -20,8 +20,6 @@ const Leases = () => {
   const [editLease, setEditLease] = useState(null);
   const [formData, setFormData] = useState({});
   const [subdomain, setSubdomain] = useState("");
-  const [tagOptions, setTagOptions] = useState([]);
-  const [pumperOptions, setPumperOptions] = useState([]);
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -57,36 +55,6 @@ const Leases = () => {
       setFilteredLeases(data);
     } catch (error) {
       console.error("Error fetching leases:", error);
-    }
-  };
-  useEffect(() => {
-    fetchTagOptions();
-    fetchPumperOptions();
-  }, []);
-
-  const fetchTagOptions = async () => {
-    try {
-      const response = await axios.get(
-        "https://ogfieldticket.com/api/usertags.php"
-      );
-      const data = response.data;
-      const tags = data.filter((item) => item.TagID && item.TagDesc);
-      setTagOptions(tags);
-    } catch (error) {
-      console.error("Error fetching tag options:", error);
-    }
-  };
-
-  const fetchPumperOptions = async () => {
-    try {
-      const response = await axios.get(
-        "https://ogfieldticket.com/api/usertags.php"
-      );
-      const data = response.data;
-      const pumpers = data.filter((item) => item.Role === "P");
-      setPumperOptions(pumpers);
-    } catch (error) {
-      console.error("Error fetching pumper options:", error);
     }
   };
 
@@ -140,9 +108,12 @@ const Leases = () => {
         ...formData,
       };
       console.log(updatedLease);
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
 
       const response = await axios.patch(
-        `https://ogfieldticket.com/api/leases.php`,
+        `${baseUrl}/api/leases.php`,
         updatedLease,
         {
           headers: {
@@ -308,49 +279,47 @@ const EditLeaseModal = ({
   const [tagOptions, setTagOptions] = useState([]);
   const [pumperOptions, setPumperOptions] = useState([]);
   const [reliefOptions, setReliefOptions] = useState([]);
+  const [subdomain, setSubdomain] = useState("");
 
   useEffect(() => {
-    fetchTagOptions();
-    fetchPumperOptions();
-    fetchReliefOptions();
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
   }, []);
 
-  const fetchTagOptions = async () => {
+  useEffect(() => {
+    fetchOptions();
+  }, []);
+
+  const fetchOptions = async () => {
     try {
-      const response = await axios.get(
-        "https://ogfieldticket.com/api/usertags.php"
-      );
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
+      const response = await axios.get(`${baseUrl}/api/usertags.php`);
       const data = response.data;
       const tags = data.filter((item) => item.TagID && item.TagDesc);
-      setTagOptions(tags);
-    } catch (error) {
-      console.error("Error fetching tag options:", error);
-    }
-  };
-
-  const fetchReliefOptions = async () => {
-    try {
-      const response = await axios.get(
-        "https://ogfieldticket.com/api/usertags.php"
-      );
-      const data = response.data;
+      const pumpers = data.filter((item) => item.Role === "P");
       const reliefPumpers = data.filter((item) => item.Role === "P");
+
+      setTagOptions(tags);
+      setPumperOptions(pumpers);
       setReliefOptions(reliefPumpers);
     } catch (error) {
-      console.error("Error fetching relief options:", error);
-    }
-  };
-
-  const fetchPumperOptions = async () => {
-    try {
-      const response = await axios.get(
-        "https://ogfieldticket.com/api/usertags.php"
-      );
-      const data = response.data;
-      const pumpers = data.filter((item) => item.Role === "P");
-      setPumperOptions(pumpers);
-    } catch (error) {
-      console.error("Error fetching pumper options:", error);
+      console.error("Error fetching options:", error);
     }
   };
 

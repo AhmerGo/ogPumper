@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import logo from "../assets/logo.jpg";
@@ -12,6 +12,7 @@ function SignInPage() {
   const [error, setError] = useState("");
   const { setUser } = useUser();
   const [successMessage, setSuccessMessage] = useState("");
+  const [subdomain, setSubdomain] = useState("");
 
   const formAnimation = useSpring({
     opacity: 1,
@@ -20,6 +21,24 @@ function SignInPage() {
     config: { mass: 1, tension: 200, friction: 20 },
   });
 
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
+
   const handleForgotPassword = async () => {
     if (username.trim() === "") {
       setError("Please Enter Username");
@@ -27,16 +46,17 @@ function SignInPage() {
     }
 
     try {
-      const response = await fetch(
-        "https://ogfieldticket.com/api/passwordreset.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ userID: username }),
-        }
-      );
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
+      const response = await fetch(`${baseUrl}/api/passwordreset.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userID: username }),
+      });
       const data = await response.json();
       if (data.success) {
         setSuccessMessage("Password reset email sent successfully");
@@ -54,16 +74,17 @@ function SignInPage() {
   async function handleSignIn(e) {
     e.preventDefault();
     try {
-      const response = await fetch(
-        "https://ogfieldticket.com/api/login_api.php",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ username, password }),
-        }
-      );
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
+      const response = await fetch(`${baseUrl}/api/login_api.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      });
       const data = await response.json();
       const { success, message, user } = data;
       if (success) {

@@ -21,12 +21,35 @@ function UserProfile() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
+  const [subdomain, setSubdomain] = useState("");
+
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogpumper.net`
+          : "https://ogfieldticket.com";
+
         const response = await axios.get(
-          `https://ogfieldticket.com/api/userdetails.php?id=${userID}`
+          `${baseUrl}/api/userdetails.php?id=${userID}`
         );
         if (response.data.success) {
           const users = response.data.users;
@@ -52,8 +75,12 @@ function UserProfile() {
 
   const handleSaveProfile = async () => {
     try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+
       const response = await axios.patch(
-        "https://ogfieldticket.com/api/userdetails.php",
+        `${baseUrl}/api/userdetails.php`,
         editedUser
       );
       if (response.data.success) {
@@ -87,9 +114,12 @@ function UserProfile() {
         UserID: user.UserID,
         Sec: password, // Assuming 'Sec' is your backend field for password
       };
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
 
       const response = await axios.patch(
-        "https://ogfieldticket.com/api/userdetails.php",
+        `${baseUrl}/api/userdetails.php`,
         updatedUser
       );
       if (response.data.success) {
