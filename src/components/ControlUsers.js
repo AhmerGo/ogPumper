@@ -38,8 +38,8 @@ const EditUserForm = ({ user, onSave, onCancel, theme }) => {
       }`}
     >
       <div
-        className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-full max-w-md ${
-          theme === "dark" ? "text-white" : "text-gray-900"
+        className={`rounded-lg shadow-lg p-6 w-full max-w-md ${
+          theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900"
         }`}
       >
         <h2 className="text-xl font-bold mb-4">Edit User</h2>
@@ -53,7 +53,7 @@ const EditUserForm = ({ user, onSave, onCancel, theme }) => {
             className={`w-full p-2 mb-2 border rounded ${
               theme === "dark"
                 ? "bg-gray-700 border-gray-600 text-white"
-                : "bg-white border-gray-300"
+                : "bg-white border-gray-300 text-gray-900"
             }`}
             onChange={handleChange}
           />
@@ -66,7 +66,7 @@ const EditUserForm = ({ user, onSave, onCancel, theme }) => {
             className={`w-full p-2 mb-2 border rounded ${
               theme === "dark"
                 ? "bg-gray-700 border-gray-600 text-white"
-                : "bg-white border-gray-300"
+                : "bg-white border-gray-300 text-gray-900"
             }`}
             onChange={handleChange}
           />
@@ -79,7 +79,7 @@ const EditUserForm = ({ user, onSave, onCancel, theme }) => {
             className={`w-full p-2 mb-2 border rounded ${
               theme === "dark"
                 ? "bg-gray-700 border-gray-600 text-white"
-                : "bg-white border-gray-300"
+                : "bg-white border-gray-300 text-gray-900"
             }`}
             onChange={handleChange}
           />
@@ -92,7 +92,7 @@ const EditUserForm = ({ user, onSave, onCancel, theme }) => {
             className={`w-full p-2 mb-2 border rounded ${
               theme === "dark"
                 ? "bg-gray-700 border-gray-600 text-white"
-                : "bg-white border-gray-300"
+                : "bg-white border-gray-300 text-gray-900"
             }`}
             onChange={handleChange}
           />
@@ -100,14 +100,13 @@ const EditUserForm = ({ user, onSave, onCancel, theme }) => {
             value={formData.Message}
             name="Message"
             placeholder="Message"
-            required
             className={`w-full p-2 mb-4 border rounded ${
               theme === "dark"
                 ? "bg-gray-700 border-gray-600 text-white"
-                : "bg-white border-gray-300"
+                : "bg-white border-gray-300 text-gray-900"
             }`}
             onChange={handleChange}
-          ></textarea>
+          ></textarea>{" "}
           <div className="flex justify-end">
             <button
               type="submit"
@@ -140,7 +139,10 @@ const ControlUsers = () => {
         const response = await axios.get(
           "https://ogfieldticket.com/api/userdetails.php"
         );
-        setUsers(response.data.users || []);
+        const filteredUsers = response.data.users.filter(
+          (user) => user.Role === "P" || user.Role === "O" || user.Role === "A"
+        );
+        setUsers(filteredUsers || []);
       } catch (error) {
         console.error("Error fetching users:", error);
       }
@@ -242,13 +244,12 @@ const ControlUsers = () => {
           filteredUsers.map((user) => (
             <div
               key={user.UserID}
-              className={`py-4 border-b hover:bg-gray-200 dark:hover:bg-gray-800 transition duration-150 ${
+              className={`py-4 border-b ${
                 theme === "dark"
-                  ? "border-gray-600 bg-gray-800"
-                  : "border-gray-300 bg-white"
+                  ? "border-gray-600 bg-gray-800 text-gray-400"
+                  : "border-gray-300 bg-white text-gray-600"
               } flex justify-between items-center`}
             >
-              {" "}
               {editingUser && editingUser.UserID === user.UserID ? (
                 <EditUserForm
                   user={user}
@@ -290,7 +291,7 @@ const ControlUsers = () => {
                   </div>
                   <button
                     onClick={() => handleEdit(user)}
-                    className={`btn-edit hover:text-blue-700 px-4 ${
+                    className={`btn-edit px-4 ${
                       theme === "dark" ? "text-gray-400" : "text-blue-500"
                     }`}
                   >
@@ -310,14 +311,6 @@ const ControlUsers = () => {
           </p>
         )}
       </animated.div>
-      {editingUser && (
-        <EditUserForm
-          user={editingUser}
-          onSave={handleSave}
-          onCancel={handleCancel}
-          theme={theme}
-        />
-      )}
     </div>
   );
 };

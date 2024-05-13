@@ -84,7 +84,7 @@ function TicketItem({ ticket, index, theme, onClick, searchQuery }) {
             <>
               {ticket.WellID !== null ? (
                 <span>
-                  {ticket.LeaseName} & {ticket.WellID}
+                  {ticket.LeaseName} # {ticket.WellID}
                 </span>
               ) : (
                 <span>{ticket.LeaseName}</span>
@@ -191,48 +191,50 @@ function HomePage() {
   const handleSearchChange = (event) => {
     debouncedSearch(event.target.value);
   };
-  useEffect(() => {
-    const fetchTickets = async () => {
-      try {
-        console.log(userRole + "  and " + userID);
+  const fetchTickets = useCallback(async () => {
+    try {
+      console.log(userRole + "  and " + userID);
 
-        const baseUrl = subdomain
-          ? `https://${subdomain}.ogpumper.net`
-          : "https://ogfieldticket.com";
-        const response = await fetch(`${baseUrl}/api/tickets.php`);
-        const data = await response.json();
-        let filteredTickets = data;
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+      const response = await fetch(`${baseUrl}/api/tickets.php`);
 
-        if (userRole === "P") {
-          filteredTickets = data.filter(
-            (ticket) => ticket.Billed !== "Y" && ticket.UserID === userID
-          );
-        }
+      const data = await response.json();
+      let filteredTickets = data;
 
-        if (searchQuery) {
-          const lowercaseQuery = searchQuery.toLowerCase();
-          filteredTickets = filteredTickets.filter((ticket) =>
-            Object.values(ticket).some((value) =>
-              String(value).toLowerCase().includes(lowercaseQuery)
-            )
-          );
-        }
+      if (userRole === "P") {
+        filteredTickets = data.filter(
+          (ticket) => ticket.Billed !== "Y" && ticket.UserID === userID
+        );
+      }
 
-        setTickets(
-          filteredTickets.sort(
-            (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
+      if (searchQuery) {
+        const lowercaseQuery = searchQuery.toLowerCase();
+        filteredTickets = filteredTickets.filter((ticket) =>
+          Object.values(ticket).some((value) =>
+            String(value).toLowerCase().includes(lowercaseQuery)
           )
         );
-
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching tickets:", error);
-        setLoading(false);
       }
-    };
 
+      setTickets(
+        filteredTickets.sort(
+          (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
+        )
+      );
+
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+      setLoading(false);
+    }
+  }, [userRole, searchQuery, subdomain]);
+
+  useEffect(() => {
     fetchTickets();
-  }, [userRole, searchQuery]);
+  }, [fetchTickets]);
+
   const handleViewDetailsClick = (ticket) => {
     navigate("/view-field-ticket", { state: ticket });
   };

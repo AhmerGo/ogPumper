@@ -20,6 +20,8 @@ const Leases = () => {
   const [editLease, setEditLease] = useState(null);
   const [formData, setFormData] = useState({});
   const [subdomain, setSubdomain] = useState("");
+  const [tagOptions, setTagOptions] = useState([]);
+  const [pumperOptions, setPumperOptions] = useState([]);
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -55,6 +57,36 @@ const Leases = () => {
       setFilteredLeases(data);
     } catch (error) {
       console.error("Error fetching leases:", error);
+    }
+  };
+  useEffect(() => {
+    fetchTagOptions();
+    fetchPumperOptions();
+  }, []);
+
+  const fetchTagOptions = async () => {
+    try {
+      const response = await axios.get(
+        "https://ogfieldticket.com/api/usertags.php"
+      );
+      const data = response.data;
+      const tags = data.filter((item) => item.TagID && item.TagDesc);
+      setTagOptions(tags);
+    } catch (error) {
+      console.error("Error fetching tag options:", error);
+    }
+  };
+
+  const fetchPumperOptions = async () => {
+    try {
+      const response = await axios.get(
+        "https://ogfieldticket.com/api/usertags.php"
+      );
+      const data = response.data;
+      const pumpers = data.filter((item) => item.Role === "P");
+      setPumperOptions(pumpers);
+    } catch (error) {
+      console.error("Error fetching pumper options:", error);
     }
   };
 
@@ -114,7 +146,7 @@ const Leases = () => {
       console.log(updatedLease);
 
       const response = await axios.patch(
-        `https://ogfieldticket.com/api/leases.php/${editLease.LeaseID}`,
+        `https://ogfieldticket.com/api/service/leases.php/${editLease.LeaseID}`,
         updatedLease,
         {
           headers: {
@@ -277,6 +309,54 @@ const EditLeaseModal = ({
 }) => {
   const [activeTab, setActiveTab] = useState("basic");
   const { theme } = useTheme();
+  const [tagOptions, setTagOptions] = useState([]);
+  const [pumperOptions, setPumperOptions] = useState([]);
+  const [reliefOptions, setReliefOptions] = useState([]);
+
+  useEffect(() => {
+    fetchTagOptions();
+    fetchPumperOptions();
+    fetchReliefOptions();
+  }, []);
+
+  const fetchTagOptions = async () => {
+    try {
+      const response = await axios.get(
+        "https://ogfieldticket.com/api/usertags.php"
+      );
+      const data = response.data;
+      const tags = data.filter((item) => item.TagID && item.TagDesc);
+      setTagOptions(tags);
+    } catch (error) {
+      console.error("Error fetching tag options:", error);
+    }
+  };
+
+  const fetchReliefOptions = async () => {
+    try {
+      const response = await axios.get(
+        "https://ogfieldticket.com/api/usertags.php"
+      );
+      const data = response.data;
+      const reliefPumpers = data.filter((item) => item.Role === "P");
+      setReliefOptions(reliefPumpers);
+    } catch (error) {
+      console.error("Error fetching relief options:", error);
+    }
+  };
+
+  const fetchPumperOptions = async () => {
+    try {
+      const response = await axios.get(
+        "https://ogfieldticket.com/api/usertags.php"
+      );
+      const data = response.data;
+      const pumpers = data.filter((item) => item.Role === "P");
+      setPumperOptions(pumpers);
+    } catch (error) {
+      console.error("Error fetching pumper options:", error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -451,6 +531,82 @@ const EditLeaseModal = ({
                             {/* Additional information fields within the tabbed interface */}
                             {activeTab === "additional" && (
                               <div>
+                                <div>
+                                  <label
+                                    htmlFor="PumperID"
+                                    className={`block text-sm font-medium leading-5 ${
+                                      theme === "light"
+                                        ? "text-gray-700"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    Pumper
+                                  </label>
+                                  <select
+                                    name="PumperID"
+                                    value={formData.PumperID || ""}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        PumperID: e.target.value,
+                                      })
+                                    }
+                                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                                      theme === "light"
+                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                                  >
+                                    <option value="">Select Pumper</option>
+                                    {pumperOptions.map((pumper) => (
+                                      <option
+                                        key={pumper.UserID}
+                                        value={pumper.UserID}
+                                      >
+                                        {pumper.FullName}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label
+                                    htmlFor="ReliefID"
+                                    className={`block text-sm font-medium leading-5 ${
+                                      theme === "light"
+                                        ? "text-gray-700"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    Relief
+                                  </label>
+                                  <select
+                                    name="ReliefID"
+                                    value={formData.ReliefID || ""}
+                                    onChange={(e) =>
+                                      setFormData({
+                                        ...formData,
+                                        ReliefID: e.target.value,
+                                      })
+                                    }
+                                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                                      theme === "light"
+                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                                  >
+                                    <option value="">Select Relief</option>
+                                    {reliefOptions.map((relief) => (
+                                      <option
+                                        key={relief.UserID}
+                                        value={relief.UserID}
+                                      >
+                                        {relief.FullName}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
                                 {/* Additional fields can be added here based on requirement */}
                                 <div>
                                   <label
@@ -463,23 +619,30 @@ const EditLeaseModal = ({
                                   >
                                     Tag 1
                                   </label>
-                                  <input
-                                    type="text"
+                                  <select
                                     name="Tag1"
-                                    value={formData.Tag1 || "OIL/GAS"}
+                                    value={formData.Tag1 || ""}
                                     onChange={(e) =>
                                       setFormData({
                                         ...formData,
                                         Tag1: e.target.value,
                                       })
                                     }
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                                    className={`mt-1 form-select block w-full px-3 py-2 ${
                                       theme === "light"
                                         ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
                                         : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
                                     } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
+                                  >
+                                    <option value="">Select Tag 1</option>
+                                    {tagOptions.map((tag) => (
+                                      <option key={tag.TagID} value={tag.TagID}>
+                                        {tag.TagID} - {tag.TagDesc}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </div>
+
                                 <div>
                                   <label
                                     htmlFor="Tag2"
@@ -491,8 +654,7 @@ const EditLeaseModal = ({
                                   >
                                     Tag 2
                                   </label>
-                                  <input
-                                    type="text"
+                                  <select
                                     name="Tag2"
                                     value={formData.Tag2 || ""}
                                     onChange={(e) =>
@@ -501,13 +663,21 @@ const EditLeaseModal = ({
                                         Tag2: e.target.value,
                                       })
                                     }
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                                    className={`mt-1 form-select block w-full px-3 py-2 ${
                                       theme === "light"
                                         ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
                                         : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
                                     } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
+                                  >
+                                    <option value="">Select Tag 2</option>
+                                    {tagOptions.map((tag) => (
+                                      <option key={tag.TagID} value={tag.TagID}>
+                                        {tag.TagID} - {tag.TagDesc}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </div>
+
                                 <div>
                                   <label
                                     htmlFor="Tag3"
@@ -519,8 +689,7 @@ const EditLeaseModal = ({
                                   >
                                     Tag 3
                                   </label>
-                                  <input
-                                    type="text"
+                                  <select
                                     name="Tag3"
                                     value={formData.Tag3 || ""}
                                     onChange={(e) =>
@@ -529,13 +698,21 @@ const EditLeaseModal = ({
                                         Tag3: e.target.value,
                                       })
                                     }
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                                    className={`mt-1 form-select block w-full px-3 py-2 ${
                                       theme === "light"
                                         ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
                                         : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
                                     } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
+                                  >
+                                    <option value="">Select Tag 3</option>
+                                    {tagOptions.map((tag) => (
+                                      <option key={tag.TagID} value={tag.TagID}>
+                                        {tag.TagID} - {tag.TagDesc}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </div>
+
                                 <div>
                                   <label
                                     htmlFor="Tag4"
@@ -547,8 +724,7 @@ const EditLeaseModal = ({
                                   >
                                     Tag 4
                                   </label>
-                                  <input
-                                    type="text"
+                                  <select
                                     name="Tag4"
                                     value={formData.Tag4 || ""}
                                     onChange={(e) =>
@@ -557,13 +733,21 @@ const EditLeaseModal = ({
                                         Tag4: e.target.value,
                                       })
                                     }
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                                    className={`mt-1 form-select block w-full px-3 py-2 ${
                                       theme === "light"
                                         ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
                                         : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
                                     } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
+                                  >
+                                    <option value="">Select Tag 4</option>
+                                    {tagOptions.map((tag) => (
+                                      <option key={tag.TagID} value={tag.TagID}>
+                                        {tag.TagID} - {tag.TagDesc}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </div>
+
                                 <div>
                                   <label
                                     htmlFor="Purchaser"

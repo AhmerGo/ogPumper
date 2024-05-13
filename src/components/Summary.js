@@ -732,6 +732,7 @@ const ViewFieldTicket = () => {
                               name="Quantity"
                               value={item.Quantity}
                               onChange={(e) => handleChange(e, item.TicketLine)}
+                              onClick={(e) => e.target.select()}
                               className={`form-input w-32 px-4 py-2 rounded-md border text-lg ${
                                 theme === "dark"
                                   ? "border-gray-600 bg-gray-800 text-gray-300"
