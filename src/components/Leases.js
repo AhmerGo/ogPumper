@@ -136,17 +136,13 @@ const Leases = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const updatedLease = {};
-      Object.keys(formData).forEach((key) => {
-        if (editLease.hasOwnProperty(key)) {
-          updatedLease[key] = formData[key];
-        }
-      });
-      console.log(editLease.LeaseID);
+      const updatedLease = {
+        ...formData,
+      };
       console.log(updatedLease);
 
       const response = await axios.patch(
-        `https://ogfieldticket.com/api/service/leases.php/${editLease.LeaseID}`,
+        `https://ogfieldticket.com/api/leases.php`,
         updatedLease,
         {
           headers: {
