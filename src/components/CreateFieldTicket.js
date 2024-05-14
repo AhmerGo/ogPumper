@@ -59,8 +59,24 @@ function CreateFieldTicket() {
           console.log(`Using default URL: ${baseUrl}`);
         }
         const response = await fetch(`${baseUrl}/api/leases.php`);
-        const data = await response.json();
+        let data = await response.json();
         console.log("Fetched leases:", data);
+
+        // Sort leases numerically first, then alphabetically
+        data.sort((a, b) => {
+          const aNum = parseInt(a.LeaseName, 10);
+          const bNum = parseInt(b.LeaseName, 10);
+          if (isNaN(aNum) && isNaN(bNum)) {
+            return a.LeaseName.localeCompare(b.LeaseName);
+          }
+          if (isNaN(aNum)) return 1;
+          if (isNaN(bNum)) return -1;
+          if (aNum === bNum) {
+            return a.LeaseName.localeCompare(b.LeaseName);
+          }
+          return aNum - bNum;
+        });
+
         setLeases(data);
       } catch (error) {
         console.error("Error fetching leases:", error);

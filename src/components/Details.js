@@ -10,6 +10,7 @@ import {
   faPenFancy,
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 function UserProfile() {
   const { theme } = useTheme();
@@ -22,6 +23,8 @@ function UserProfile() {
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [subdomain, setSubdomain] = useState("");
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -119,6 +122,7 @@ function UserProfile() {
       console.error("Error updating user profile:", error);
     }
   };
+
   const handleCancelEdit = () => {
     setEditedUser(user);
     setEditMode(false);
@@ -167,162 +171,256 @@ function UserProfile() {
     <div
       className={`min-h-screen ${
         theme === "dark" ? "bg-gray-900" : "bg-gray-100"
-      }`}
+      } py-8`}
     >
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div
-            className={`rounded-xl overflow-hidden shadow-lg ${
-              theme === "dark" ? "bg-gray-800" : "bg-white"
+      <div className="container mx-auto px-4">
+        <div
+          className={`max-w-4xl mx-auto relative ${
+            theme === "dark" ? "bg-gray-800" : "bg-white"
+          } rounded-lg shadow-lg p-6`}
+        >
+          <button
+            onClick={() => navigate("/home")}
+            className={`absolute top-5 right-5 p-2 rounded-full hover:bg-opacity-30 transition-all ${
+              theme === "dark" ? "hover:bg-white" : "hover:bg-gray-400"
             }`}
           >
-            <div
-              className={`p-6 ${
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              className={`w-6 h-6 ${
                 theme === "dark" ? "text-white" : "text-gray-800"
               }`}
             >
-              <h1 className="text-2xl font-bold mb-4">User Profile</h1>
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="rounded-full w-20 h-20 bg-gray-300 flex items-center justify-center">
-                  <FontAwesomeIcon icon={faUser} size="3x" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xl font-semibold">{user.FullName}</p>
-
-                  {editMode ? (
-                    <input
-                      type="email"
-                      name="Email"
-                      value={editedUser.Email}
-                      onChange={handleInputChange}
-                      className="text-gray-400 bg-transparent border-b border-gray-500 focus:outline-none focus:border-blue-500"
-                    />
-                  ) : (
-                    <p className="text-gray-400 truncate">{user.Email}</p>
-                  )}
-                </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 9.5V21h7V14h4v7h7V9.5M9 3l3-3 3 3M2 9h20"
+              />
+            </svg>
+          </button>
+          <div
+            className={`p-6 ${
+              theme === "dark" ? "text-white" : "text-gray-800"
+            }`}
+          >
+            <div className="flex flex-col items-center space-y-6">
+              <div className="rounded-full w-24 h-24 bg-gray-300 flex items-center justify-center">
+                <FontAwesomeIcon icon={faUser} size="3x" />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faEnvelope} className="h-6 w-6 mr-4" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold">Email</p>
-                    {editMode ? (
-                      <input
-                        type="email"
-                        name="Email"
-                        value={editedUser.Email}
-                        onChange={handleInputChange}
-                        className="text-gray-400 bg-transparent border-b border-gray-500 focus:outline-none focus:border-blue-500"
-                      />
-                    ) : (
-                      <p className="text-gray-400 truncate">{user.Email}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faPhone} className="h-6 w-6 mr-4" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold">Phone</p>
-                    {editMode ? (
-                      <input
-                        type="tel"
-                        name="Phone"
-                        value={editedUser.Phone}
-                        onChange={handleInputChange}
-                        className="text-gray-400 bg-transparent border-b border-gray-500 focus:outline-none focus:border-blue-500"
-                      />
-                    ) : (
-                      <p className="text-gray-400 truncate">{user.Phone}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faLock} className="h-6 w-6 mr-4" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold">UserID</p>
-                    <p className="text-gray-400 truncate">{user.UserID}</p>
-                  </div>
-                </div>
-                <div className="flex items-center">
-                  <FontAwesomeIcon icon={faPenFancy} className="h-6 w-6 mr-4" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold">Message</p>
-
-                    <p className="text-gray-400 truncate">{user.Message}</p>
-                  </div>
-                </div>
+              <div className="w-full text-center">
+                <p className="text-xl font-semibold">{user.FullName}</p>
+                {editMode ? (
+                  <input
+                    type="email"
+                    name="Email"
+                    value={editedUser.Email}
+                    onChange={handleInputChange}
+                    className="text-gray-400 bg-transparent border-b border-gray-500 focus:outline-none focus:border-blue-500 w-full"
+                  />
+                ) : (
+                  <p className="text-gray-400 truncate">{user.Email}</p>
+                )}
               </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+              <div className="flex flex-col">
+                <div className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faEnvelope}
+                    className={`h-6 w-6 mr-4 ${
+                      theme === "dark" ? "text-white" : "text-black"
+                    }`}
+                  />
+                  <p
+                    className={`font-semibold ${
+                      theme === "dark" ? "text-white" : "text-black"
+                    }`}
+                  >
+                    Email
+                  </p>
+                </div>
+                {editMode ? (
+                  <input
+                    type="email"
+                    name="Email"
+                    value={editedUser.Email}
+                    onChange={handleInputChange}
+                    className={`text-gray-400 bg-transparent border-b focus:outline-none focus:border-blue-500 w-full ${
+                      theme === "dark"
+                        ? "border-gray-500 text-white"
+                        : "border-gray-300 text-black"
+                    }`}
+                  />
+                ) : (
+                  <p
+                    className={`truncate mt-2 ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-700"
+                    }`}
+                  >
+                    {user.Email}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faPhone}
+                    className={`h-6 w-6 mr-4 ${
+                      theme === "dark" ? "text-white" : "text-black"
+                    }`}
+                  />
+                  <p
+                    className={`font-semibold ${
+                      theme === "dark" ? "text-white" : "text-black"
+                    }`}
+                  >
+                    Phone
+                  </p>
+                </div>
+                {editMode ? (
+                  <input
+                    type="tel"
+                    name="Phone"
+                    value={editedUser.Phone}
+                    onChange={handleInputChange}
+                    className={`text-gray-400 bg-transparent border-b focus:outline-none focus:border-blue-500 w-full ${
+                      theme === "dark"
+                        ? "border-gray-500 text-white"
+                        : "border-gray-300 text-black"
+                    }`}
+                  />
+                ) : (
+                  <p
+                    className={`truncate mt-2 ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-700"
+                    }`}
+                  >
+                    {user.Phone}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faLock}
+                    className={`h-6 w-6 mr-4 ${
+                      theme === "dark" ? "text-white" : "text-black"
+                    }`}
+                  />
+                  <p
+                    className={`font-semibold ${
+                      theme === "dark" ? "text-white" : "text-black"
+                    }`}
+                  >
+                    UserID
+                  </p>
+                </div>
+                <p
+                  className={`truncate mt-2 ${
+                    theme === "dark" ? "text-gray-400" : "text-gray-700"
+                  }`}
+                >
+                  {user.UserID}
+                </p>
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faPenFancy}
+                    className={`h-6 w-6 mr-4 ${
+                      theme === "dark" ? "text-white" : "text-black"
+                    }`}
+                  />
+                  <p
+                    className={`font-semibold ${
+                      theme === "dark" ? "text-white" : "text-black"
+                    }`}
+                  >
+                    Message
+                  </p>
+                </div>
+                <p
+                  className={`truncate mt-2 ${
+                    theme === "dark" ? "text-gray-400" : "text-gray-700"
+                  }`}
+                >
+                  {user.Message}
+                </p>
+              </div>
+            </div>
 
-              {showPasswordChange && (
-                <div className="mt-6">
-                  <h2 className="text-xl font-semibold mb-2">
-                    Change Password
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input
-                      type="password"
-                      placeholder="New Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="text-gray-400 bg-transparent border-b border-gray-500 focus:outline-none focus:border-blue-500"
-                    />
-                    <input
-                      type="password"
-                      placeholder="Confirm Password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="text-gray-400 bg-transparent border-b border-gray-500 focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="flex space-x-4 mt-4">
+            {showPasswordChange && (
+              <div className="mt-8">
+                <h2 className="text-xl font-semibold mb-4 text-center">
+                  Change Password
+                </h2>
+                <div className="space-y-4">
+                  <input
+                    type="password"
+                    placeholder="New Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="text-gray-400 bg-transparent border-b border-gray-500 focus:outline-none focus:border-blue-500 w-full"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="text-gray-400 bg-transparent border-b border-gray-500 focus:outline-none focus:border-blue-500 w-full"
+                  />
+                  <div className="flex space-x-4">
                     <button
-                      className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+                      className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full"
                       onClick={handleChangePassword}
                     >
                       Save Password
                     </button>
                     <button
-                      className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
+                      className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-full"
                       onClick={() => setShowPasswordChange(false)}
                     >
                       Cancel
                     </button>
                   </div>
                 </div>
-              )}
-
-              <div className="flex space-x-4 mt-6">
-                {editMode ? (
-                  <>
-                    <button
-                      className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
-                      onClick={handleSaveProfile}
-                    >
-                      Save
-                    </button>
-                    <button
-                      className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
-                      onClick={handleCancelEdit}
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
-                    onClick={handleEditProfile}
-                  >
-                    Edit Profile
-                  </button>
-                )}
-                <button
-                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
-                  onClick={() => setShowPasswordChange(true)}
-                >
-                  Change Password
-                </button>
               </div>
+            )}
+
+            <div className="flex space-x-4 mt-8">
+              {editMode ? (
+                <>
+                  <button
+                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded w-full"
+                    onClick={handleSaveProfile}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-full"
+                    onClick={handleCancelEdit}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded w-full"
+                  onClick={handleEditProfile}
+                >
+                  Edit Profile
+                </button>
+              )}
+              <button
+                className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-full"
+                onClick={() => setShowPasswordChange(true)}
+              >
+                Change Password
+              </button>
             </div>
           </div>
         </div>

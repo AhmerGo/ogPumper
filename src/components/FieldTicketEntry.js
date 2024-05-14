@@ -492,7 +492,7 @@ function FieldTicketEntry() {
                   <input
                     type="number"
                     name="quantity"
-                    value={item.quantity || item.ItemQuantity || 0}
+                    value={item.quantity || 0}
                     onChange={(e) => handleChange(e, item.JobItemID)}
                     onClick={(e) => e.target.select()}
                     className={`form-input w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
@@ -501,10 +501,9 @@ function FieldTicketEntry() {
                         : "border border-gray-300 focus:ring-gray-500"
                     }`}
                     placeholder="0"
-                    insertmode="true"
                   />
                 )}
-              </div>{" "}
+              </div>
             </div>
           ))}
 

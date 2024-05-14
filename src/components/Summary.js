@@ -598,6 +598,23 @@ const ViewFieldTicket = () => {
               {/* Mobile layout */}
               <div className="sm:hidden">
                 <div className="grid grid-cols-2 gap-4">
+                  {/* Ticket Number Section */}
+                  <div className="flex flex-col items-center">
+                    <p
+                      className={`font-bold ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      } text-center`}
+                    >
+                      Ticket Number
+                    </p>
+                    <span
+                      className={`block text-center ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {ticket.Ticket || "N/A"}
+                    </span>
+                  </div>
                   {/* Date Section */}
                   <div className="flex flex-col items-center">
                     <p
@@ -642,7 +659,7 @@ const ViewFieldTicket = () => {
                       </p>
                     </div>
                   ) : (
-                    <div className="flex flex-col justify-center items-center">
+                    <div className="flex flex-col items-center">
                       <p
                         className={`font-bold ${
                           theme === "dark"
@@ -650,17 +667,15 @@ const ViewFieldTicket = () => {
                             : "text-indigo-600"
                         } text-center`}
                       >
-                        Lease:{" "}
-                        <span
-                          className={
-                            theme === "dark"
-                              ? "font-semibold text-gray-300"
-                              : "font-semibold text-gray-700"
-                          }
-                        >
-                          {ticket.LeaseName || "N/A"} /{" "}
-                        </span>
+                        Lease
                       </p>
+                      <span
+                        className={`block text-center ${
+                          theme === "dark" ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        {ticket.LeaseName || "N/A"}
+                      </span>
                     </div>
                   )}{" "}
                   {/* Well Section */}
@@ -697,40 +712,26 @@ const ViewFieldTicket = () => {
                       {ticket.JobDescription || "N/A"}
                     </span>
                   </div>
-                  {/* Ticket Number Section */}
-                  <div className="flex flex-col items-center">
-                    <p
-                      className={`font-bold ${
-                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      } text-center`}
-                    >
-                      Ticket Number
-                    </p>
-                    <span
-                      className={`block text-center ${
-                        theme === "dark" ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      {ticket.Ticket || "N/A"}
-                    </span>
-                  </div>
                   {/* Billed Section */}
-                  <div className="flex flex-col items-center">
-                    <p
-                      className={`font-bold ${
+                  {userRole !== "P" && (
+                    <animated.p
+                      style={itemAnimation}
+                      className={`text-center ${
                         theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      } text-center`}
-                    >
-                      Billed
-                    </p>
-                    <span
-                      className={`block text-center ${
-                        theme === "dark" ? "text-gray-300" : "text-gray-700"
                       }`}
                     >
-                      {ticket.Billed || "N/A"}
-                    </span>
-                  </div>
+                      Billed:{" "}
+                      <span
+                        className={
+                          theme === "dark"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
+                        }
+                      >
+                        {ticket.Billed || "N/A"}
+                      </span>
+                    </animated.p>
+                  )}
                 </div>
               </div>
             </div>{" "}
@@ -739,35 +740,35 @@ const ViewFieldTicket = () => {
                 <animated.div
                   key={item.TicketLine}
                   style={itemAnimation}
-                  className={`flex flex-col md:flex-row justify-between gap-6 items-center ${
+                  className={`flex flex-col md:flex-row justify-between items-center ${
                     theme === "dark" ? "bg-gray-700" : "bg-gray-200"
-                  } p-6 rounded-lg mb-4`}
+                  } p-4 rounded-lg mb-4 shadow-md`}
                 >
-                  <div className="flex-1">
+                  <div className="flex-1 w-full md:w-auto mb-4 md:mb-0 text-center md:text-left">
                     <h4
-                      className={`text-xl font-semibold ${
+                      className={`text-lg md:text-xl font-semibold ${
                         theme === "dark" ? "text-gray-200" : "text-gray-800"
                       }`}
                     >
-                      {item.ItemDescription}{" "}
-                      {item.UOM && (
-                        <span
-                          className={
-                            theme === "dark"
-                              ? "text-sm text-gray-400"
-                              : "text-sm text-gray-600"
-                          }
-                        >
-                          ({item.UOM})
-                        </span>
-                      )}
+                      {item.ItemDescription}
                     </h4>
+                    {item.UOM && (
+                      <span
+                        className={`block md:inline mt-1 md:mt-0 ${
+                          theme === "dark"
+                            ? "text-sm text-gray-400"
+                            : "text-sm text-gray-600"
+                        }`}
+                      >
+                        ({item.UOM})
+                      </span>
+                    )}
                   </div>
-                  <div className="flex flex-1 items-center justify-end gap-4">
+                  <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-12">
                     {userRole !== "P" && (
-                      <div className="flex-grow min-w-0">
+                      <div className="flex-1 text-center md:text-center">
                         <p
-                          className={`whitespace-nowrap ${
+                          className={`text-base ${
                             theme === "dark" ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
@@ -776,15 +777,11 @@ const ViewFieldTicket = () => {
                         </p>
                       </div>
                     )}
-                    <div
-                      className={`flex-shrink-0 ${
-                        userRole.userRole === "P" ? "ml-auto" : ""
-                      }`}
-                    >
+                    <div className="w-full md:w-auto text-center md:text-right">
                       {isEditing ? (
-                        <>
+                        <div className="flex items-center justify-center md:justify-end">
                           <label
-                            className={`block ${
+                            className={`mr-2 ${
                               theme === "dark"
                                 ? "text-gray-400"
                                 : "text-gray-600"
@@ -799,7 +796,7 @@ const ViewFieldTicket = () => {
                               value={item.Quantity}
                               onChange={(e) => handleChange(e, item.TicketLine)}
                               onClick={(e) => e.target.select()}
-                              className={`form-input w-32 px-4 py-2 rounded-md border text-lg ${
+                              className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
                                 theme === "dark"
                                   ? "border-gray-600 bg-gray-800 text-gray-300"
                                   : "border-gray-400 bg-white text-gray-700"
@@ -808,7 +805,7 @@ const ViewFieldTicket = () => {
                             />
                           ) : (
                             <p
-                              className={`whitespace-nowrap text-lg ${
+                              className={`text-base ${
                                 theme === "dark"
                                   ? "text-gray-400"
                                   : "text-gray-600"
@@ -816,11 +813,11 @@ const ViewFieldTicket = () => {
                             >
                               {item.Quantity}
                             </p>
-                          )}{" "}
-                        </>
+                          )}
+                        </div>
                       ) : (
                         <p
-                          className={`whitespace-nowrap text-lg ${
+                          className={`text-base ${
                             theme === "dark" ? "text-gray-400" : "text-gray-600"
                           }`}
                         >
@@ -831,7 +828,7 @@ const ViewFieldTicket = () => {
                     </div>
                   </div>
                 </animated.div>
-              ))}{" "}
+              ))}
             {!isEditing && fieldNote && (
               <animated.div
                 style={itemAnimation}
@@ -930,49 +927,37 @@ const ViewFieldTicket = () => {
                 <div className="flex justify-center flex-wrap gap-2 sm:space-x-4 sm:flex-nowrap">
                   <button
                     onClick={handleSaveClick}
-                    className={`text-lg px-4 sm:px-8 py-2 sm:py-3 ${
+                    className={`px-4 py-2 font-semibold rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${
                       theme === "dark"
-                        ? "bg-gradient-to-r from-green-700 to-green-600 hover:bg-gradient-to-l focus:ring-green-800 text-white"
-                        : "bg-gradient-to-r from-green-500 to-green-400 hover:bg-gradient-to-l focus:ring-green-300 text-white"
-                    } shadow-lg ${
-                      theme === "dark"
-                        ? "shadow-green-800/50"
-                        : "shadow-green-500/50"
-                    } hover:shadow-green-500/50 font-semibold rounded-full transition-all ease-in-out duration-300`}
+                        ? "bg-green-600 hover:bg-green-700 text-gray-200"
+                        : "bg-green-500 hover:bg-green-600 text-white"
+                    }`}
                   >
                     Save
                   </button>
                   <button
                     onClick={handleCancelClick}
-                    className={`text-lg px-4 sm:px-8 py-2 sm:py-3 ${
+                    className={`px-4 py-2 font-semibold rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${
                       theme === "dark"
-                        ? "bg-gradient-to-r from-red-700 to-red-600 hover:bg-gradient-to-l focus:ring-red-800 text-white"
-                        : "bg-gradient-to-r from-red-500 to-red-400 hover:bg-gradient-to-l focus:ring-red-300 text-gray-800"
-                    } shadow-lg ${
-                      theme === "dark"
-                        ? "shadow-red-800/50"
-                        : "shadow-red-500/50"
-                    } hover:shadow-red-500/50 font-semibold rounded-full transition-all ease-in-out duration-300`}
+                        ? "bg-red-600 hover:bg-red-700 text-gray-200"
+                        : "bg-red-500 hover:bg-red-600 text-white"
+                    }`}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleDeleteClick}
-                    className={`text-lg px-4 sm:px-8 py-2 sm:py-3 ${
+                    className={`px-4 py-2 font-semibold rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${
                       theme === "dark"
-                        ? "bg-gradient-to-r from-red-700 to-red-600 hover:bg-gradient-to-l focus:ring-red-800 text-white"
-                        : "bg-gradient-to-r from-red-500 to-red-400 hover:bg-gradient-to-l focus:ring-red-300 text-gray-800"
-                    } shadow-lg ${
-                      theme === "dark"
-                        ? "shadow-red-800/50"
-                        : "shadow-red-500/50"
-                    } hover:shadow-red-500/50 font-semibold rounded-full transition-all ease-in-out duration-300`}
+                        ? "bg-red-600 hover:bg-red-700 text-gray-200"
+                        : "bg-red-500 hover:bg-red-600 text-white"
+                    }`}
                   >
                     Delete
                   </button>
                 </div>
               )}
-            </animated.div>{" "}
+            </animated.div>
           </animated.div>
         </animated.div>
         <ConfirmationModal

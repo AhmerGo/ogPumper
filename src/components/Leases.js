@@ -181,8 +181,8 @@ const Leases = () => {
 
   return (
     <div
-      className={`p-8 ${
-        theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-800"
+      className={`container mx-auto mt-5 p-4 rounded shadow ${
+        theme === "dark" ? "bg-gray-800" : "bg-white"
       }`}
     >
       <h1 className="text-4xl font-bold mb-8">Leases</h1>
@@ -312,7 +312,6 @@ const Leases = () => {
     </div>
   );
 };
-
 const EditLeaseModal = ({
   lease,
   formData,
@@ -387,555 +386,433 @@ const EditLeaseModal = ({
 
   return (
     <div
-      className={`fixed inset-0 z-10 overflow-y-auto ${
-        theme === "light" ? "bg-white" : "bg-gray-800"
+      className={`fixed inset-0 flex items-center justify-center z-50 ${
+        theme === "light"
+          ? "bg-white bg-opacity-90"
+          : "bg-gray-800 bg-opacity-90"
       }`}
+      style={{ background: "rgba(0, 0, 0, 0.5)" }}
     >
-      <div className="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity">
-          <div
-            className={`absolute inset-0 ${
-              theme === "light"
-                ? "bg-gray-500 opacity-75"
-                : "bg-black opacity-75"
-            }`}
-          ></div>
-        </div>
-
-        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">
-          &#8203;
-        </span>
-
+      <div className="relative bg-transparent w-full max-w-3xl mx-auto p-6 rounded-lg">
         <div
-          className={`inline-block overflow-hidden text-left align-bottom transition-all transform ${
-            theme === "light"
-              ? "bg-white rounded-lg shadow-xl"
-              : "bg-gray-700 rounded-lg shadow-xl"
-          } sm:my-8 sm:align-middle sm:max-w-lg sm:w-full`}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-headline"
+          className={`rounded-lg shadow-lg overflow-hidden transform transition-all ${
+            theme === "light" ? "bg-white" : "bg-gray-700"
+          }`}
         >
-          <form
-            onSubmit={handleSubmit}
-            className={`${
-              theme === "light" ? "bg-white" : "bg-gray-700 text-white"
-            } px-4 pt-5 pb-4 sm:p-6 sm:pb-4`}
-          >
-            <div>
-              <div className="sm:flex sm:items-start">
-                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                  <h3
-                    className={`text-lg leading-6 font-medium ${
-                      theme === "light" ? "text-gray-900" : "text-white"
+          <form onSubmit={handleSubmit} className="px-8 pt-6 pb-8 mb-4">
+            <div className="flex justify-between items-center border-b pb-4 mb-4">
+              <h3
+                className={`text-2xl font-semibold ${
+                  theme === "light" ? "text-gray-900" : "text-white"
+                }`}
+              >
+                Edit Lease
+              </h3>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-red-500 hover:text-red-700"
+              >
+                <FontAwesomeIcon icon={faTimes} />
+              </button>
+            </div>
+            <div className="flex space-x-4 mb-4">
+              <button
+                type="button"
+                onClick={() => setActiveTab("basic")}
+                className={`px-4 py-2 rounded-lg focus:outline-none ${
+                  activeTab === "basic"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-300 text-gray-700"
+                }`}
+              >
+                Basic Info
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("additional")}
+                className={`px-4 py-2 rounded-lg focus:outline-none ${
+                  activeTab === "additional"
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-300 text-gray-700"
+                }`}
+              >
+                Additional Info
+              </button>
+            </div>
+            {activeTab === "basic" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="LeaseID"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
                     }`}
-                    id="modal-headline"
                   >
-                    Edit Lease
-                  </h3>
-                  <div className="mt-2">
-                    <div className="py-2 align-middle inline-block min-w-full">
-                      <div
-                        className={`shadow overflow-hidden ${
-                          theme === "light"
-                            ? "border-b border-gray-200"
-                            : "border-b border-gray-600"
-                        } sm:rounded-lg`}
-                      >
-                        <div
-                          className={`${
-                            theme === "light"
-                              ? "bg-white px-4 py-5"
-                              : "bg-gray-700 px-4 py-5 text-white"
-                          } sm:px-6`}
-                        >
-                          <div className="grid grid-cols-1 gap-6">
-                            <div className="col-span-1">
-                              <button
-                                type="button"
-                                onClick={() => setActiveTab("basic")}
-                                className={`px-3 py-2 ${
-                                  activeTab === "basic"
-                                    ? `${
-                                        theme === "light"
-                                          ? "text-white bg-blue-500"
-                                          : "text-white bg-blue-600"
-                                      }`
-                                    : `${
-                                        theme === "light"
-                                          ? "text-blue-500 bg-white"
-                                          : "text-blue-400 bg-gray-700"
-                                      }`
-                                } font-medium text-sm leading-4 rounded-md focus:outline-none focus:border-blue-300 focus:shadow-outline-blue transition ease-in-out duration-150`}
-                              >
-                                Basic Info
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setActiveTab("additional")}
-                                className={`ml-2 px-3 py-2 ${
-                                  activeTab === "additional"
-                                    ? `${
-                                        theme === "light"
-                                          ? "text-white bg-blue-500"
-                                          : "text-white bg-blue-600"
-                                      }`
-                                    : `${
-                                        theme === "light"
-                                          ? "text-blue-500 bg-white"
-                                          : "text-blue-400 bg-gray-700"
-                                      }`
-                                } font-medium text-sm leading-4 rounded-md focus:outline-none focus:border-blue-300 focus:shadow-outline-blue transition ease-in-out duration-150`}
-                              >
-                                Additional Info
-                              </button>
-                            </div>
-                            {activeTab === "basic" && (
-                              <>
-                                <div>
-                                  <label
-                                    htmlFor="LeaseID"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Lease ID
-                                  </label>
-                                  <input
-                                    type="text"
-                                    name="LeaseID"
-                                    value={formData.LeaseID}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        LeaseID: e.target.value,
-                                      })
-                                    }
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
-                                </div>
-                                <div>
-                                  <label
-                                    htmlFor="LeaseName"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Lease Name
-                                  </label>
-                                  <input
-                                    type="text"
-                                    name="LeaseName"
-                                    value={formData.LeaseName}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        LeaseName: e.target.value,
-                                      })
-                                    }
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
-                                </div>
-                              </>
-                            )}
-                            {activeTab === "additional" && (
-                              <div>
-                                <div>
-                                  <label
-                                    htmlFor="PumperID"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Pumper
-                                  </label>
-                                  <select
-                                    name="PumperID"
-                                    value={formData.PumperID || ""}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        PumperID: e.target.value,
-                                      })
-                                    }
-                                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  >
-                                    <option value="">Select Pumper</option>
-                                    {pumperOptions.map((pumper) => (
-                                      <option
-                                        key={pumper.UserID}
-                                        value={pumper.UserID}
-                                      >
-                                        {pumper.FullName}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor="ReliefID"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Relief
-                                  </label>
-                                  <select
-                                    name="ReliefID"
-                                    value={formData.ReliefID || ""}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        ReliefID: e.target.value,
-                                      })
-                                    }
-                                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  >
-                                    <option value="">Select Relief</option>
-                                    {reliefOptions.map((relief) => (
-                                      <option
-                                        key={relief.UserID}
-                                        value={relief.UserID}
-                                      >
-                                        {relief.FullName}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor="Tag1"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Tag 1
-                                  </label>
-                                  <select
-                                    name="Tag1"
-                                    value={formData.Tag1 || ""}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        Tag1: e.target.value,
-                                      })
-                                    }
-                                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  >
-                                    <option value="">Select Tag 1</option>
-                                    {tagOptions.map((tag) => (
-                                      <option key={tag.TagID} value={tag.TagID}>
-                                        {tag.TagID} - {tag.TagDesc}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor="Tag2"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Tag 2
-                                  </label>
-                                  <select
-                                    name="Tag2"
-                                    value={formData.Tag2 || ""}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        Tag2: e.target.value,
-                                      })
-                                    }
-                                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  >
-                                    <option value="">Select Tag 2</option>
-                                    {tagOptions.map((tag) => (
-                                      <option key={tag.TagID} value={tag.TagID}>
-                                        {tag.TagID} - {tag.TagDesc}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor="Tag3"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Tag 3
-                                  </label>
-                                  <select
-                                    name="Tag3"
-                                    value={formData.Tag3 || ""}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        Tag3: e.target.value,
-                                      })
-                                    }
-                                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  >
-                                    <option value="">Select Tag 3</option>
-                                    {tagOptions.map((tag) => (
-                                      <option key={tag.TagID} value={tag.TagID}>
-                                        {tag.TagID} - {tag.TagDesc}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor="Tag4"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Tag 4
-                                  </label>
-                                  <select
-                                    name="Tag4"
-                                    value={formData.Tag4 || ""}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        Tag4: e.target.value,
-                                      })
-                                    }
-                                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  >
-                                    <option value="">Select Tag 4</option>
-                                    {tagOptions.map((tag) => (
-                                      <option key={tag.TagID} value={tag.TagID}>
-                                        {tag.TagID} - {tag.TagDesc}
-                                      </option>
-                                    ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor="Purchaser"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Purchaser
-                                  </label>
-                                  <select
-                                    name="Purchaser"
-                                    value={formData.Purchaser || ""}
-                                    onChange={onInputChange}
-                                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  >
-                                    <option value="">Select Purchaser</option>
-                                    {purchasers
-                                      .filter(
-                                        (purchaser) =>
-                                          purchaser.PurchaserName &&
-                                          purchaser.PurchaserID
-                                      )
-                                      .map((purchaser) => (
-                                        <option
-                                          key={purchaser.PurchaserID}
-                                          value={purchaser.PurchaserID}
-                                        >
-                                          {purchaser.PurchaserName}
-                                        </option>
-                                      ))}
-                                  </select>
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor="PurchaserLeaseNo"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Purchaser Lease No
-                                  </label>
-                                  <input
-                                    type="text"
-                                    name="PurchaserLeaseNo"
-                                    value={formData.PurchaserLeaseNo || ""}
-                                    onChange={onInputChange}
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor="MaxInj"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Max Inj
-                                  </label>
-                                  <input
-                                    type="text"
-                                    name="MaxInj"
-                                    value={formData.MaxInj || "0"}
-                                    onChange={onInputChange}
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
-                                </div>
-                                <div>
-                                  <label
-                                    htmlFor="MaxPressure"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    Max Pressure
-                                  </label>
-                                  <input
-                                    type="text"
-                                    name="MaxPressure"
-                                    value={formData.MaxPressure || "0"}
-                                    onChange={onInputChange}
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
-                                </div>
-                                <div>
-                                  <label
-                                    htmlFor="PropertyNum"
-                                    className={`block text-sm font-medium leading-5 ${
-                                      theme === "light"
-                                        ? "text-gray-700"
-                                        : "text-white"
-                                    }`}
-                                  >
-                                    External Property #
-                                  </label>
-                                  <input
-                                    type="text"
-                                    name="PropertyNum"
-                                    value={formData.PropertyNum || "1000"}
-                                    onChange={onInputChange}
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                                      theme === "light"
-                                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    Lease ID
+                  </label>
+                  <input
+                    type="text"
+                    name="LeaseID"
+                    value={formData.LeaseID}
+                    onChange={(e) =>
+                      setFormData({ ...formData, LeaseID: e.target.value })
+                    }
+                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="LeaseName"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Lease Name
+                  </label>
+                  <input
+                    type="text"
+                    name="LeaseName"
+                    value={formData.LeaseName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, LeaseName: e.target.value })
+                    }
+                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="PumperID"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Pumper
+                  </label>
+                  <select
+                    name="PumperID"
+                    value={formData.PumperID || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, PumperID: e.target.value })
+                    }
+                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  >
+                    <option value="">Select Pumper</option>
+                    {pumperOptions.map((pumper) => (
+                      <option key={pumper.UserID} value={pumper.UserID}>
+                        {pumper.FullName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="ReliefID"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Relief
+                  </label>
+                  <select
+                    name="ReliefID"
+                    value={formData.ReliefID || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, ReliefID: e.target.value })
+                    }
+                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  >
+                    <option value="">Select Relief</option>
+                    {reliefOptions.map((relief) => (
+                      <option key={relief.UserID} value={relief.UserID}>
+                        {relief.FullName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            </div>
+            )}
+            {activeTab === "additional" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label
+                    htmlFor="Tag1"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Tag 1
+                  </label>
+                  <select
+                    name="Tag1"
+                    value={formData.Tag1 || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, Tag1: e.target.value })
+                    }
+                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  >
+                    <option value="">Select Tag 1</option>
+                    {tagOptions.map((tag) => (
+                      <option key={tag.TagID} value={tag.TagID}>
+                        {tag.TagID} - {tag.TagDesc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="Tag2"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Tag 2
+                  </label>
+                  <select
+                    name="Tag2"
+                    value={formData.Tag2 || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, Tag2: e.target.value })
+                    }
+                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  >
+                    <option value="">Select Tag 2</option>
+                    {tagOptions.map((tag) => (
+                      <option key={tag.TagID} value={tag.TagID}>
+                        {tag.TagID} - {tag.TagDesc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="Tag3"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Tag 3
+                  </label>
+                  <select
+                    name="Tag3"
+                    value={formData.Tag3 || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, Tag3: e.target.value })
+                    }
+                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  >
+                    <option value="">Select Tag 3</option>
+                    {tagOptions.map((tag) => (
+                      <option key={tag.TagID} value={tag.TagID}>
+                        {tag.TagID} - {tag.TagDesc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="Tag4"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Tag 4
+                  </label>
+                  <select
+                    name="Tag4"
+                    value={formData.Tag4 || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, Tag4: e.target.value })
+                    }
+                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  >
+                    <option value="">Select Tag 4</option>
+                    {tagOptions.map((tag) => (
+                      <option key={tag.TagID} value={tag.TagID}>
+                        {tag.TagID} - {tag.TagDesc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="Purchaser"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Purchaser
+                  </label>
+                  <select
+                    name="Purchaser"
+                    value={formData.Purchaser || ""}
+                    onChange={onInputChange}
+                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  >
+                    <option value="">Select Purchaser</option>
+                    {purchasers
+                      .filter(
+                        (purchaser) =>
+                          purchaser.PurchaserName && purchaser.PurchaserID
+                      )
+                      .map((purchaser) => (
+                        <option
+                          key={purchaser.PurchaserID}
+                          value={purchaser.PurchaserID}
+                        >
+                          {purchaser.PurchaserName}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div>
+                  <label
+                    htmlFor="PurchaserLeaseNo"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Purchaser Lease No
+                  </label>
+                  <input
+                    type="text"
+                    name="PurchaserLeaseNo"
+                    value={formData.PurchaserLeaseNo || ""}
+                    onChange={onInputChange}
+                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="MaxInj"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Max Inj
+                  </label>
+                  <input
+                    type="text"
+                    name="MaxInj"
+                    value={formData.MaxInj || "0"}
+                    onChange={onInputChange}
+                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="MaxPressure"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Max Pressure
+                  </label>
+                  <input
+                    type="text"
+                    name="MaxPressure"
+                    value={formData.MaxPressure || "0"}
+                    onChange={onInputChange}
+                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="PropertyNum"
+                    className={`block text-sm font-medium leading-5 ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    External Property #
+                  </label>
+                  <input
+                    type="text"
+                    name="PropertyNum"
+                    value={formData.PropertyNum || "1000"}
+                    onChange={onInputChange}
+                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                  />
+                </div>
+              </div>
+            )}
             <div
-              className={`px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse ${
-                theme === "light" ? "bg-white" : "bg-gray-700 text-white"
+              className={`mt-6 px-4 py-3 sm:px-6 flex justify-center space-x-4 ${
+                theme === "light" ? "bg-gray-50" : "bg-gray-700"
               }`}
             >
-              <span className="flex w-full rounded-md shadow-sm sm:ml-3 sm:w-auto">
+              <span className="flex w-full sm:w-auto">
                 <button
                   type="submit"
-                  className={`inline-flex justify-center w-full px-4 py-2 text-base leading-6 font-medium rounded-md ${
+                  className={`inline-flex items-center justify-center w-full px-6 py-3 text-base font-semibold rounded-lg shadow-md ${
                     theme === "light"
-                      ? "text-white bg-blue-500 hover:bg-blue-400 focus:outline-none focus:border-blue-700 focus:shadow-outline-blue"
-                      : "text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:border-blue-700 focus:shadow-outline-blue"
-                  } transition ease-in-out duration-150 sm:text-sm sm:leading-5`}
+                      ? "text-white bg-blue-500 hover:bg-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
+                      : "text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-700 focus:ring-opacity-50"
+                  } transition-all duration-300 ease-in-out transform hover:scale-105`}
                 >
                   Save
                 </button>
               </span>
-              <span className="mt-3 flex w-full rounded-md shadow-sm sm:mt-0 sm:w-auto">
+              <span className="flex w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={onClose}
-                  className={`inline-flex justify-center w-full px-4 py-2 text-base leading-6 font-medium rounded-md ${
+                  className={`inline-flex items-center justify-center w-full px-6 py-3 text-base font-semibold rounded-lg shadow-md ${
                     theme === "light"
-                      ? "text-gray-700 bg-white hover:text-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue"
-                      : "text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue"
-                  } transition ease-in-out duration-150 sm:text-sm sm:leading-5`}
+                      ? "text-gray-700 bg-gray-100 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
+                      : "text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-blue-700 focus:ring-opacity-50"
+                  } transition-all duration-300 ease-in-out transform hover:scale-105`}
                 >
                   Cancel
                 </button>
@@ -947,4 +824,5 @@ const EditLeaseModal = ({
     </div>
   );
 };
+
 export default Leases;

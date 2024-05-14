@@ -209,9 +209,9 @@ const ProfileCard = styled(animated.div)`
   width: 300px;
   background: ${({ theme }) =>
     theme === "dark"
-      ? "linear-gradient(145deg, #333, #2b2f37)"
-      : "linear-gradient(145deg, #fff, #e6e6e6)"};
-  color: ${({ theme }) => (theme === "dark" ? "#FFF" : "#000")};
+      ? "linear-gradient(145deg, #1a202c, #2d3748)"
+      : "linear-gradient(145deg, #f7fafc, #edf2f7)"};
+  color: ${({ theme }) => (theme === "dark" ? "#f7fafc" : "#1a202c")};
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2), 0 10px 20px rgba(0, 0, 0, 0.15);
   border-radius: 15px;
   padding: 20px;
@@ -221,7 +221,7 @@ const ProfileCard = styled(animated.div)`
   justify-content: space-between;
   z-index: 1001;
   backdrop-filter: blur(12px);
-  border: 1px solid ${({ theme }) => (theme === "dark" ? "#444" : "#ddd")};
+  border: 1px solid ${({ theme }) => (theme === "dark" ? "#4a5568" : "#cbd5e0")};
   transition: all 0.5s ease-in-out;
 `;
 

@@ -26,13 +26,12 @@ const Admin = () => {
     config: { tension: 220, friction: 20 },
   });
 
-  // Styling for the theme
   const sidePanelClass =
-    theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-gray-900";
+    theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-gray-900";
   const sidePanelHoverClass =
     theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100";
   const activePanelClass =
-    theme === "dark" ? "bg-gray-600 text-white" : "bg-gray-300 text-black";
+    theme === "dark" ? "bg-gray-700 text-white" : "bg-gray-200 text-black";
 
   const handleChangePanel = (panel) => {
     setActivePanel(panel);
@@ -45,19 +44,19 @@ const Admin = () => {
       }`}
     >
       {/* Side Panel Container */}
-      <div className={`w-64 ${sidePanelClass} fixed h-full shadow-lg`}>
-        <animated.div style={{ ...panelAnimation }} className="p-4">
+      <div className={`w-64 ${sidePanelClass} fixed h-full shadow-2xl`}>
+        <animated.div style={{ ...panelAnimation }} className="p-6">
           {/* Control Panel Header */}
-          <div className="mb-6">
-            <h1 className="text-xl font-bold border-b-4 border-gray-500 pb-2">
+          <div className="mb-8">
+            <h1 className="text-2xl font-extrabold border-b-4 border-indigo-120 pb-3">
               Control Panel
             </h1>
           </div>
-          <ul className="space-y-1">
+          <ul className="space-y-2">
             {["jobs", "leases", "users"].map((item, index) => (
               <li
                 key={index}
-                className={`px-6 py-3 rounded-md flex items-center gap-2 cursor-pointer ${sidePanelHoverClass} ${
+                className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
                   activePanel === item ? activePanelClass : ""
                 }`}
                 onClick={() => handleChangePanel(item)}
@@ -72,8 +71,11 @@ const Admin = () => {
                       ? faUsers
                       : faTachometerAlt // Assuming this is for 'dashboard' if included.
                   }
+                  className="text-xl"
                 />
-                {item.charAt(0).toUpperCase() + item.slice(1)}
+                <span className="text-lg font-medium">
+                  {item.charAt(0).toUpperCase() + item.slice(1)}
+                </span>
               </li>
             ))}
           </ul>
@@ -81,14 +83,16 @@ const Admin = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-grow pl-[16rem] p-10 overflow-y-auto">
-        {activePanel === "jobs" ? (
-          <JobListPage />
-        ) : activePanel === "leases" ? (
-          <Leases />
-        ) : (
-          <ControlUsers />
-        )}
+      <div className="flex-grow pl-72 p-10 overflow-y-auto">
+        <animated.div style={{ ...panelAnimation }}>
+          {activePanel === "jobs" ? (
+            <JobListPage />
+          ) : activePanel === "leases" ? (
+            <Leases />
+          ) : (
+            <ControlUsers />
+          )}
+        </animated.div>
       </div>
     </div>
   );
