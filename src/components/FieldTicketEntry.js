@@ -480,28 +480,20 @@ function FieldTicketEntry() {
                 <label className="block font-medium transition-colors duration-500 mr-4">
                   Qty:
                 </label>
-                {item.ItemQuantity !== null ? (
-                  <span
-                    className={`inline-block w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
-                      theme === "dark" ? "text-gray-300" : "text-gray-700"
-                    }`}
-                  >
-                    {item.ItemQuantity}
-                  </span>
-                ) : (
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={item.quantity || 0}
-                    onChange={(e) => handleChange(e, item.JobItemID)}
-                    className={`form-input w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
-                      theme === "dark"
-                        ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
-                        : "border border-gray-300 focus:ring-gray-500"
-                    }`}
-                    placeholder="0"
-                  />
-                )}
+                <input
+                  type="number"
+                  name="quantity"
+                  value={item.quantity || item.ItemQuantity || 0}
+                  onChange={(e) => handleChange(e, item.JobItemID)}
+                  onClick={(e) => e.target.select()}
+                  className={`form-input w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
+                    theme === "dark"
+                      ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
+                      : "border border-gray-300 focus:ring-gray-500"
+                  }`}
+                  placeholder="0"
+                  insertmode="true"
+                />
               </div>
             </div>
           ))}
