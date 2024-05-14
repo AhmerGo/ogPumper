@@ -45,9 +45,18 @@ function SignInPage() {
     }
 
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
 
       const response = await fetch(`${baseUrl}/api/passwordreset.php`, {
         method: "POST",
@@ -74,9 +83,18 @@ function SignInPage() {
   async function handleSignIn(e) {
     e.preventDefault();
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
 
       const response = await fetch(`${baseUrl}/api/login_api.php`, {
         method: "POST",

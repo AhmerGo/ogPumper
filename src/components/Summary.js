@@ -91,6 +91,24 @@ const ViewFieldTicket = () => {
   const [itemsMap, setItemsMap] = useState(new Map());
   const [subdomain, setSubdomain] = useState("");
 
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        console.log(`sub domain ${subdomainPart}`);
+        setSubdomain(subdomainPart);
+      } else {
+        console.log(`sub domain ${parts}`);
+
+        setSubdomain("");
+      }
+    };
+
+    extractSubdomain();
+  }, []);
+
   const fadeAnimation = useSpring({
     from: { opacity: 0 },
     to: { opacity: 1 },
@@ -141,9 +159,25 @@ const ViewFieldTicket = () => {
       }
 
       try {
+        const hostname = window.location.hostname;
+        const parts = hostname.split(".");
+        let baseUrl;
+
+        if (parts.length > 2) {
+          const subdomainPart = parts.shift();
+          baseUrl = `https://${subdomainPart}.ogpumper.net`;
+          console.log(`Using subdomain URL: ${baseUrl}`);
+        } else {
+          baseUrl = "https://ogfieldticket.com";
+          console.log(`Using default URL: ${baseUrl}`);
+        }
+
+        console.log(`The base url is  ${baseUrl}`);
+
         const response = await fetch(
-          `https://ogfieldticket.com/api/jobitem.php?id=${ticket.JobTypeID}`
+          `${baseUrl}/api/jobitem.php?id=${ticket.JobTypeID}`
         );
+
         const data = await response.json();
         console.log(data.items);
 
@@ -244,31 +278,21 @@ const ViewFieldTicket = () => {
     }));
   };
 
-  useEffect(() => {
-    const extractSubdomain = () => {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        console.log(`sub domain ${subdomainPart}`);
-        setSubdomain(subdomainPart);
-      } else {
-        console.log(`sub domain ${parts}`);
-
-        setSubdomain("");
-      }
-    };
-
-    extractSubdomain();
-  }, []);
-
   const handleSaveClick = async () => {
     try {
       const updatedTicket = { ...ticket, Note: fieldNote };
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
 
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
 
       const response = await fetch(
         `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
@@ -296,9 +320,18 @@ const ViewFieldTicket = () => {
 
   const handleDeleteConfirm = async () => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
 
       const response = await fetch(
         `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,

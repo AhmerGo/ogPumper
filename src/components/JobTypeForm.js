@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSpring, animated, useTransition, useTrail } from "react-spring";
+import { useSpring, animated, useTransition } from "react-spring";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBusinessTime,
@@ -17,12 +17,12 @@ import { useTheme } from "./ThemeContext";
 import Modal from "react-modal";
 import axios from "axios";
 
-Modal.setAppElement("#root"); // Add this line to bind the modal to your app's root element
+Modal.setAppElement("#root");
 
 const JobListPage = () => {
   const [ticketTypes, setTicketTypes] = useState([]);
   const [activeJobId, setActiveJobId] = useState(null);
-  const { theme, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const [showTextBox, setShowTextBox] = useState(false);
   const [showNoteBox, setShowNoteBox] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
@@ -43,7 +43,6 @@ const JobListPage = () => {
         setSubdomain(subdomainPart);
       } else {
         console.log(`sub domain ${parts}`);
-
         setSubdomain("");
       }
     };
@@ -51,22 +50,20 @@ const JobListPage = () => {
     extractSubdomain();
   }, []);
 
-  const toggleNoteVisibility = (e, jobId) => {
-    e.stopPropagation();
-    console.log(`Toggling note for job ID: ${jobId}`);
-    console.log();
-
-    setVisibleNoteJobId((prevId) => {
-      const newId = prevId === jobId ? null : jobId;
-      console.log(`Updating visibleNoteJobId from ${prevId} to ${newId}`);
-      return newId;
-    });
-  };
   const fetchTicketTypes = async () => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
 
       const response = await fetch(`${baseUrl}/api/jobs.php`);
       const data = await response.json();
@@ -80,6 +77,16 @@ const JobListPage = () => {
   useEffect(() => {
     fetchTicketTypes();
   }, [subdomain]);
+
+  const toggleNoteVisibility = (e, jobId) => {
+    e.stopPropagation();
+    console.log(`Toggling note for job ID: ${jobId}`);
+    setVisibleNoteJobId((prevId) => {
+      const newId = prevId === jobId ? null : jobId;
+      console.log(`Updating visibleNoteJobId from ${prevId} to ${newId}`);
+      return newId;
+    });
+  };
 
   const toggleNoteBox = () => {
     setShowNoteBox(!showNoteBox);
@@ -116,6 +123,7 @@ const JobListPage = () => {
     to: { opacity: 1, maxHeight: "1000px" },
     config: { tension: 200, friction: 20 },
   });
+
   const buttonAnimation = useSpring({
     transform: showTextBox ? "translateX(-240px)" : "translateX(0px)",
     config: { tension: 170, friction: 26 },
@@ -131,17 +139,27 @@ const JobListPage = () => {
   const toggleTextBox = () => {
     setShowTextBox(!showTextBox);
     setJobDescription("");
-    setNote(""); // Add this line to reset the note state
+    setNote("");
   };
+
   const toggleJob = (jobId) => {
     setActiveJobId(activeJobId === jobId ? null : jobId);
   };
 
   const deleteItem = async (itemId) => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
       const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemId}`, {
         method: "DELETE",
       });
@@ -157,9 +175,18 @@ const JobListPage = () => {
 
   const deleteJob = async (jobTypeId) => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
       const response = await fetch(
         `${baseUrl}/api/jobs.php?jobtype=${jobTypeId}`,
         {
@@ -180,9 +207,18 @@ const JobListPage = () => {
 
   const handleSaveJobName = async (jobId) => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
         Description: editingJobName.name,
         JobTypeID: jobId,
@@ -200,9 +236,18 @@ const JobListPage = () => {
 
   const handleSaveJobNote = async (jobId) => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
         NoteDefault: editingJobNote.note,
         JobTypeID: jobId,
@@ -213,16 +258,28 @@ const JobListPage = () => {
       console.error("Error updating job note:", error);
     }
   };
+
   const handleKeyPress = async (event) => {
     if (event.key === "Enter") {
       const jobDescription = event.target.value;
       const noteDefault = showNoteBox ? note : "";
+      console.log(jobDescription);
       console.log(noteDefault);
 
       try {
-        const baseUrl = subdomain
-          ? `https://${subdomain}.ogpumper.net`
-          : "https://ogfieldticket.com";
+        const hostname = window.location.hostname;
+        const parts = hostname.split(".");
+        let baseUrl;
+
+        if (parts.length > 2) {
+          const subdomainPart = parts.shift();
+          baseUrl = `https://${subdomainPart}.ogpumper.net`;
+          console.log(`Using subdomain URL: ${baseUrl}`);
+        } else {
+          baseUrl = "https://ogfieldticket.com";
+          console.log(`Using default URL: ${baseUrl}`);
+        }
+
         const response = await fetch(`${baseUrl}/api/jobs.php`, {
           method: "POST",
           headers: {
@@ -234,7 +291,12 @@ const JobListPage = () => {
         if (response.ok) {
           event.target.value = "";
           if (showNoteBox) {
-            event.target.nextSibling.value = "";
+            const noteElement = event.target.nextSibling;
+            if (noteElement) {
+              noteElement.value = "";
+            } else {
+              console.error("Note element not found");
+            }
           }
           fetchTicketTypes();
         } else {
@@ -256,9 +318,18 @@ const JobListPage = () => {
   const addItem = async (jobTypeId, newItem) => {
     try {
       console.log(JSON.stringify({ ...newItem, job_type_id: jobTypeId }));
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
         method: "POST",
         headers: {
@@ -276,6 +347,7 @@ const JobListPage = () => {
       console.error("Error adding new item:", error);
     }
   };
+
   return (
     <>
       <div
@@ -283,7 +355,6 @@ const JobListPage = () => {
           theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
         }`}
       >
-        {" "}
         <animated.header
           style={titleAnimation}
           className="text-center py-10 relative"
@@ -356,7 +427,7 @@ const JobListPage = () => {
                   />
                 </animated.div>
               )}
-            </animated.div>{" "}
+            </animated.div>
           </div>
         </animated.header>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -369,7 +440,7 @@ const JobListPage = () => {
                   theme === "dark"
                     ? "bg-gray-800 text-white"
                     : "bg-white text-gray-900"
-                }`} // Adjust text color here
+                }`}
                 onClick={() => toggleJob(job.JobTypeID)}
               >
                 <div className="flex items-center justify-between">
@@ -391,7 +462,7 @@ const JobListPage = () => {
                         theme === "dark"
                           ? "bg-gray-700 text-white"
                           : "bg-white text-gray-900"
-                      }`} // Adjust input field style for dark mode
+                      }`}
                     />
                   ) : (
                     <animated.span
@@ -494,6 +565,8 @@ const JobListPage = () => {
                     onDeleteItem={(itemId) => deleteItem(itemId)}
                     activeJobId={activeJobId}
                     setTicketTypes={setTicketTypes}
+                    subdomain={subdomain}
+                    setSubdomain={setSubdomain}
                   />
                 </animated.div>
               )}
@@ -518,16 +591,42 @@ const ItemsAnimation = ({
   onDeleteItem,
   activeJobId,
   setTicketTypes,
+  subdomain,
+  setSubdomain,
 }) => {
   const { theme } = useTheme();
   const [hoveredItem, setHoveredItem] = useState(null);
   const [editingItemCost, setEditingItemCost] = useState("");
   const [editingItemId, setEditingItemId] = useState(null);
   const [itemEdits, setItemEdits] = useState({});
-  const [selection, setSelection] = useState("quantity"); // Default to quantity
+  const [selection, setSelection] = useState("quantity");
   const [availableItems, setAvailableItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("new");
-  const [subdomain, setSubdomain] = useState("");
+
+  const fetchAvailableItems = async () => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
+
+      const response = await axios.get(
+        `${baseUrl}/api/jobitem.php?item_types=1`
+      );
+      console.log(response.data);
+      setAvailableItems(response.data.itemTypes);
+    } catch (error) {
+      console.error("Error fetching available items:", error);
+    }
+  };
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -560,6 +659,7 @@ const ItemsAnimation = ({
     const { name, value } = e.target;
     setItemEdits((prev) => ({ ...prev, [name]: value }));
   };
+
   const handleDeleteItem = (itemId) => {
     console.log(itemId);
     const baseUrl = subdomain
@@ -589,17 +689,26 @@ const ItemsAnimation = ({
         console.error("Error deleting item:", error);
       });
   };
+
   const finalizeEdit = async (items, setTicketTypes) => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
       await axios.patch(
         `${baseUrl}/api/jobs.php?itemID=${editingItemId}`,
         itemEdits
       );
 
-      // Update the items locally to reflect changes
       const updatedItems = items.map((item) => {
         if (item.ItemID === editingItemId) {
           return { ...item, ...itemEdits };
@@ -607,7 +716,6 @@ const ItemsAnimation = ({
         return item;
       });
 
-      // Update the ticketTypes state with the updated items
       setTicketTypes((prevTicketTypes) =>
         prevTicketTypes.map((job) => {
           if (job.JobTypeID === activeJobId) {
@@ -623,12 +731,12 @@ const ItemsAnimation = ({
       console.error("Error updating item:", error);
     }
   };
+
   const handleCancelEdit = () => {
     setEditingItemId(null);
     setItemEdits({});
   };
 
-  // Define handleSelectionChange to update selection state
   const handleSelectionChange = (event) => {
     setSelection(event.target.value);
   };
@@ -662,11 +770,12 @@ const ItemsAnimation = ({
     item_id: "",
     uom: "",
     item_description: "",
-    item_quantity: 1, // Default quantity set to 1
+    item_quantity: 1,
     item_cost: 0.0,
-    use_quantity: "N", // Default to not use quantity
+    use_quantity: "N",
     use_cost: "N",
   });
+
   const openModal = () => {
     setModalIsOpen(true);
     fetchAvailableItems();
@@ -674,28 +783,13 @@ const ItemsAnimation = ({
       item_id: "",
       uom: "",
       item_description: "",
-      item_quantity: null,
+      item_quantity: 1,
       item_cost: 0.0,
       use_quantity: "Y",
       use_cost: "N",
     });
   };
 
-  const fetchAvailableItems = async () => {
-    try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
-
-      const response = await axios.get(
-        `${baseUrl}/api/jobitem.php?item_types=1`
-      );
-      console.log(response.data);
-      setAvailableItems(response.data.itemTypes);
-    } catch (error) {
-      console.error("Error fetching available items:", error);
-    }
-  };
   const closeModal = () => {
     setModalIsOpen(false);
     setSelectedItem("new");
@@ -733,6 +827,7 @@ const ItemsAnimation = ({
       }
     });
   };
+
   const handleAddItem = () => {
     let itemId;
     if (selectedItem === "new") {
@@ -753,6 +848,7 @@ const ItemsAnimation = ({
 
     closeModal();
   };
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {transitions((style, item) => (
@@ -969,7 +1065,7 @@ const ItemsAnimation = ({
                   }`}
                 />
               </div>
-            )}{" "}
+            )}
             {/* UOM Field */}
             <div className="mb-8">
               <label htmlFor="uom" className="block mb-2 font-semibold">
@@ -1156,4 +1252,5 @@ const ItemsAnimation = ({
     </div>
   );
 };
+
 export default JobListPage;

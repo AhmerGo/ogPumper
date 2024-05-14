@@ -20,6 +20,7 @@ const Leases = () => {
   const [editLease, setEditLease] = useState(null);
   const [formData, setFormData] = useState({});
   const [subdomain, setSubdomain] = useState("");
+  const [purchasers, setPurchasers] = useState([]);
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -41,13 +42,24 @@ const Leases = () => {
 
   useEffect(() => {
     fetchLeases();
+    fetchPurchasers();
   }, []);
 
   const fetchLeases = async () => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
+
       const response = await axios.get(`${baseUrl}/api/leases.php`);
 
       const data = response.data;
@@ -55,6 +67,28 @@ const Leases = () => {
       setFilteredLeases(data);
     } catch (error) {
       console.error("Error fetching leases:", error);
+    }
+  };
+
+  const fetchPurchasers = async () => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
+
+      const response = await axios.get(`${baseUrl}/api/usertags.php`);
+      setPurchasers(response.data);
+    } catch (error) {
+      console.error("Error fetching purchasers:", error);
     }
   };
 
@@ -91,6 +125,7 @@ const Leases = () => {
     setEditLease(lease);
     setFormData({ ...lease }); // Create a copy of the lease object
   };
+
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
@@ -101,6 +136,7 @@ const Leases = () => {
       [e.target.name]: e.target.value,
     });
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -108,9 +144,18 @@ const Leases = () => {
         ...formData,
       };
       console.log(updatedLease);
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
 
       const response = await axios.patch(
         `${baseUrl}/api/leases.php`,
@@ -133,6 +178,7 @@ const Leases = () => {
       // Display an error message to the user
     }
   };
+
   return (
     <div
       className={`p-8 ${
@@ -260,6 +306,7 @@ const Leases = () => {
           onSave={handleSubmit}
           onClose={() => setEditLease(null)}
           setFormData={setFormData} // Pass setFormData as a prop
+          purchasers={purchasers}
         />
       )}
     </div>
@@ -273,6 +320,7 @@ const EditLeaseModal = ({
   onSave,
   onClose,
   setFormData,
+  purchasers,
 }) => {
   const [activeTab, setActiveTab] = useState("basic");
   const { theme } = useTheme();
@@ -305,9 +353,18 @@ const EditLeaseModal = ({
 
   const fetchOptions = async () => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
 
       const response = await axios.get(`${baseUrl}/api/usertags.php`);
       const data = response.data;
@@ -327,6 +384,7 @@ const EditLeaseModal = ({
     e.preventDefault();
     onSave(e);
   };
+
   return (
     <div
       className={`fixed inset-0 z-10 overflow-y-auto ${
@@ -344,7 +402,6 @@ const EditLeaseModal = ({
           ></div>
         </div>
 
-        {/* This element is to trick the browser into centering the modal contents. */}
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen">
           &#8203;
         </span>
@@ -493,7 +550,6 @@ const EditLeaseModal = ({
                                 </div>
                               </>
                             )}
-                            {/* Additional information fields within the tabbed interface */}
                             {activeTab === "additional" && (
                               <div>
                                 <div>
@@ -572,7 +628,6 @@ const EditLeaseModal = ({
                                   </select>
                                 </div>
 
-                                {/* Additional fields can be added here based on requirement */}
                                 <div>
                                   <label
                                     htmlFor="Tag1"
@@ -724,23 +779,34 @@ const EditLeaseModal = ({
                                   >
                                     Purchaser
                                   </label>
-                                  <input
-                                    type="text"
+                                  <select
                                     name="Purchaser"
-                                    value={formData.Purchaser || "TRANSOIL"}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        Purchaser: e.target.value,
-                                      })
-                                    }
-                                    className={`mt-1 form-input block w-full px-3 py-2 ${
+                                    value={formData.Purchaser || ""}
+                                    onChange={onInputChange}
+                                    className={`mt-1 form-select block w-full px-3 py-2 ${
                                       theme === "light"
                                         ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
                                         : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
                                     } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                                  />
+                                  >
+                                    <option value="">Select Purchaser</option>
+                                    {purchasers
+                                      .filter(
+                                        (purchaser) =>
+                                          purchaser.PurchaserName &&
+                                          purchaser.PurchaserID
+                                      )
+                                      .map((purchaser) => (
+                                        <option
+                                          key={purchaser.PurchaserID}
+                                          value={purchaser.PurchaserID}
+                                        >
+                                          {purchaser.PurchaserName}
+                                        </option>
+                                      ))}
+                                  </select>
                                 </div>
+
                                 <div>
                                   <label
                                     htmlFor="PurchaserLeaseNo"
@@ -755,13 +821,8 @@ const EditLeaseModal = ({
                                   <input
                                     type="text"
                                     name="PurchaserLeaseNo"
-                                    value={formData.PurchaserLeaseNo || "6096"}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        PurchaserLeaseNo: e.target.value,
-                                      })
-                                    }
+                                    value={formData.PurchaserLeaseNo || ""}
+                                    onChange={onInputChange}
                                     className={`mt-1 form-input block w-full px-3 py-2 ${
                                       theme === "light"
                                         ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
@@ -769,6 +830,7 @@ const EditLeaseModal = ({
                                     } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
                                   />
                                 </div>
+
                                 <div>
                                   <label
                                     htmlFor="MaxInj"
@@ -784,12 +846,7 @@ const EditLeaseModal = ({
                                     type="text"
                                     name="MaxInj"
                                     value={formData.MaxInj || "0"}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        MaxInj: e.target.value,
-                                      })
-                                    }
+                                    onChange={onInputChange}
                                     className={`mt-1 form-input block w-full px-3 py-2 ${
                                       theme === "light"
                                         ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
@@ -812,12 +869,7 @@ const EditLeaseModal = ({
                                     type="text"
                                     name="MaxPressure"
                                     value={formData.MaxPressure || "0"}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        MaxPressure: e.target.value,
-                                      })
-                                    }
+                                    onChange={onInputChange}
                                     className={`mt-1 form-input block w-full px-3 py-2 ${
                                       theme === "light"
                                         ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
@@ -840,12 +892,7 @@ const EditLeaseModal = ({
                                     type="text"
                                     name="PropertyNum"
                                     value={formData.PropertyNum || "1000"}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        PropertyNum: e.target.value,
-                                      })
-                                    }
+                                    onChange={onInputChange}
                                     className={`mt-1 form-input block w-full px-3 py-2 ${
                                       theme === "light"
                                         ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
@@ -900,5 +947,4 @@ const EditLeaseModal = ({
     </div>
   );
 };
-
 export default Leases;

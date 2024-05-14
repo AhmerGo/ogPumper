@@ -46,9 +46,18 @@ function CreateFieldTicket() {
   useEffect(() => {
     const fetchLeases = async () => {
       try {
-        const baseUrl = subdomain
-          ? `https://${subdomain}.ogpumper.net`
-          : "https://ogfieldticket.com";
+        const hostname = window.location.hostname;
+        const parts = hostname.split(".");
+        let baseUrl;
+
+        if (parts.length > 2) {
+          const subdomainPart = parts.shift();
+          baseUrl = `https://${subdomainPart}.ogpumper.net`;
+          console.log(`Using subdomain URL: ${baseUrl}`);
+        } else {
+          baseUrl = "https://ogfieldticket.com";
+          console.log(`Using default URL: ${baseUrl}`);
+        }
         const response = await fetch(`${baseUrl}/api/leases.php`);
         const data = await response.json();
         console.log("Fetched leases:", data);
@@ -64,9 +73,19 @@ function CreateFieldTicket() {
     const fetchWells = async () => {
       if (lease) {
         try {
-          const baseUrl = subdomain
-            ? `https://${subdomain}.ogpumper.net`
-            : "https://ogfieldticket.com";
+          const hostname = window.location.hostname;
+          const parts = hostname.split(".");
+          let baseUrl;
+
+          if (parts.length > 2) {
+            const subdomainPart = parts.shift();
+            baseUrl = `https://${subdomainPart}.ogpumper.net`;
+            console.log(`Using subdomain URL: ${baseUrl}`);
+          } else {
+            baseUrl = "https://ogfieldticket.com";
+            console.log(`Using default URL: ${baseUrl}`);
+          }
+
           const response = await fetch(
             `${baseUrl}/api/leases.php?lease=${lease}`
           );
@@ -85,9 +104,19 @@ function CreateFieldTicket() {
   useEffect(() => {
     const fetchTicketTypes = async () => {
       try {
-        const baseUrl = subdomain
-          ? `https://${subdomain}.ogpumper.net`
-          : "https://ogfieldticket.com";
+        const hostname = window.location.hostname;
+        const parts = hostname.split(".");
+        let baseUrl;
+
+        if (parts.length > 2) {
+          const subdomainPart = parts.shift();
+          baseUrl = `https://${subdomainPart}.ogpumper.net`;
+          console.log(`Using subdomain URL: ${baseUrl}`);
+        } else {
+          baseUrl = "https://ogfieldticket.com";
+          console.log(`Using default URL: ${baseUrl}`);
+        }
+
         const response = await fetch(`${baseUrl}/api/jobs.php`);
         const data = await response.json();
         console.log(data);
