@@ -28,11 +28,9 @@ function CreateFieldTicket() {
         setSubdomain(subdomainPart);
       } else {
         console.log(`sub domain ${parts}`);
-
         setSubdomain("");
       }
     };
-
     extractSubdomain();
   }, []);
 
@@ -40,13 +38,6 @@ function CreateFieldTicket() {
     from: { opacity: 0, y: 50 },
     to: { opacity: 1, y: 0 },
     config: { mass: 1, tension: 280, friction: 25 },
-  });
-
-  const blobAnimation = useSpring({
-    loop: true,
-    from: { scale: 1 },
-    to: [{ scale: 1.2 }, { scale: 1 }],
-    config: { mass: 1, tension: 180, friction: 12 },
   });
 
   const today = new Date();
@@ -66,8 +57,8 @@ function CreateFieldTicket() {
         console.error("Error fetching leases:", error);
       }
     };
-    fetchLeases();
-  }, []);
+    fetchLeases(); // Ensure fetchLeases is called regardless of the subdomain
+  }, [subdomain]);
 
   useEffect(() => {
     const fetchWells = async () => {
@@ -79,7 +70,6 @@ function CreateFieldTicket() {
           const response = await fetch(
             `${baseUrl}/api/leases.php?lease=${lease}`
           );
-
           const data = await response.json();
           setWells(data[0].Wells);
         } catch (error) {
@@ -89,9 +79,8 @@ function CreateFieldTicket() {
         setWells([]);
       }
     };
-
-    fetchWells();
-  }, [lease]);
+    fetchWells(); // Ensure fetchWells is called regardless of the subdomain
+  }, [lease, subdomain]);
 
   useEffect(() => {
     const fetchTicketTypes = async () => {
@@ -100,7 +89,6 @@ function CreateFieldTicket() {
           ? `https://${subdomain}.ogpumper.net`
           : "https://ogfieldticket.com";
         const response = await fetch(`${baseUrl}/api/jobs.php`);
-
         const data = await response.json();
         console.log(data);
         setTicketTypes(data);
@@ -108,9 +96,8 @@ function CreateFieldTicket() {
         console.error("Error fetching ticket types:", error);
       }
     };
-
-    fetchTicketTypes();
-  }, []);
+    fetchTicketTypes(); // Ensure fetchTicketTypes is called regardless of the subdomain
+  }, [subdomain]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -146,6 +133,7 @@ function CreateFieldTicket() {
       },
     });
   };
+
   return (
     <animated.main
       style={{

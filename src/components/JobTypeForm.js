@@ -79,7 +79,7 @@ const JobListPage = () => {
 
   useEffect(() => {
     fetchTicketTypes();
-  }, []);
+  }, [subdomain]);
 
   const toggleNoteBox = () => {
     setShowNoteBox(!showNoteBox);
@@ -539,7 +539,6 @@ const ItemsAnimation = ({
         setSubdomain(subdomainPart);
       } else {
         console.log(`sub domain ${parts}`);
-
         setSubdomain("");
       }
     };

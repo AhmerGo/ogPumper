@@ -62,7 +62,6 @@ const EditUserForm = ({ user, onSave, onCancel, theme }) => {
             name="Email"
             type="email"
             placeholder="Email"
-            required
             className={`w-full p-2 mb-2 border rounded ${
               theme === "dark"
                 ? "bg-gray-700 border-gray-600 text-white"
@@ -75,7 +74,6 @@ const EditUserForm = ({ user, onSave, onCancel, theme }) => {
             name="Phone"
             type="tel"
             placeholder="Phone"
-            required
             className={`w-full p-2 mb-2 border rounded ${
               theme === "dark"
                 ? "bg-gray-700 border-gray-600 text-white"
@@ -181,7 +179,7 @@ const ControlUsers = () => {
         ? `https://${subdomain}.ogpumper.net`
         : "https://ogfieldticket.com";
 
-      const response = await axios.put(
+      const response = await axios.patch(
         `${baseUrl}/api/userdetails.php?id=${updatedUserData.UserID}`,
         updatedUserData
       );

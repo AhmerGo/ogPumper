@@ -33,7 +33,6 @@ function UserProfile() {
         setSubdomain(subdomainPart);
       } else {
         console.log(`sub domain ${parts}`);
-
         setSubdomain("");
       }
     };
@@ -67,7 +66,7 @@ function UserProfile() {
     if (userID) {
       fetchUserDetails();
     }
-  }, [userID]);
+  }, [userID, subdomain]);
 
   const handleEditProfile = () => {
     setEditMode(true);
@@ -78,23 +77,30 @@ function UserProfile() {
       const baseUrl = subdomain
         ? `https://${subdomain}.ogpumper.net`
         : "https://ogfieldticket.com";
+      const response = await fetch(`${baseUrl}/api/userdetails.php`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editedUser),
+      });
 
-      const response = await axios.patch(
-        `${baseUrl}/api/userdetails.php`,
-        editedUser
-      );
-      if (response.data.success) {
-        setUser(editedUser);
-        setEditMode(false);
-        console.log("User profile updated successfully");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUser(editedUser);
+          setEditMode(false);
+          console.log("User profile updated successfully");
+        } else {
+          console.error("Failed to update user profile");
+        }
       } else {
-        console.error("Failed to update user profile");
+        console.error("Error updating user profile:", response.statusText);
       }
     } catch (error) {
       console.error("Error updating user profile:", error);
     }
   };
-
   const handleCancelEdit = () => {
     setEditedUser(user);
     setEditMode(false);

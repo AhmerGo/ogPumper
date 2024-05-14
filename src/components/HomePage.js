@@ -4,7 +4,7 @@ import { useTheme } from "./ThemeContext";
 import { useSpring, useTrail, animated, config } from "react-spring";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useUser } from "./UserContext";
-import { debounce } from "lodash"; // Import lodash's debounce function
+import { debounce } from "lodash";
 
 import {
   faTasks,
@@ -12,18 +12,17 @@ import {
   faCalendarAlt,
   faBriefcase,
   faPlus,
-  faEdit,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
 
 function TicketItem({ ticket, index, theme, onClick, searchQuery }) {
   const [hoverAnimation, setHoverAnimation] = useSpring(() => ({
     scale: 1,
-    config: { tension: 300, friction: 10 }, // Adjust for desired speed
+    config: { tension: 300, friction: 10 },
   }));
 
   const [year, month, day] = ticket.TicketDate.split("-");
-  const localDate = new Date(year, month - 1, day); // months are 0-indexed in JavaScript Date
+  const localDate = new Date(year, month - 1, day);
   const { userRole, userID } = useUser();
 
   const formattedDate = localDate.toLocaleDateString("en-US", {
@@ -93,7 +92,6 @@ function TicketItem({ ticket, index, theme, onClick, searchQuery }) {
           </div>
           <div className="flex items-center justify-center md:justify-start">
             <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" fixedWidth />
-            {/* Display the corrected formattedDate */}
             <span> {formattedDate}</span>
           </div>
           <div className="flex items-center justify-center md:justify-start">
@@ -127,6 +125,7 @@ function TicketItem({ ticket, index, theme, onClick, searchQuery }) {
     </animated.li>
   );
 }
+
 function HomePage() {
   const [tickets, setTickets] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -140,7 +139,7 @@ function HomePage() {
 
   const [buttonAnimation, setButtonAnimation] = useSpring(() => ({
     scale: 1,
-    config: { tension: 300, friction: 10 }, // Adjust for desired responsiveness
+    config: { tension: 300, friction: 10 },
   }));
 
   useEffect(() => {
@@ -153,7 +152,6 @@ function HomePage() {
         setSubdomain(subdomainPart);
       } else {
         console.log(`sub domain ${parts}`);
-
         setSubdomain("");
       }
     };
@@ -191,6 +189,7 @@ function HomePage() {
   const handleSearchChange = (event) => {
     debouncedSearch(event.target.value);
   };
+
   const fetchTickets = useCallback(async () => {
     try {
       console.log(userRole + "  and " + userID);
@@ -229,11 +228,11 @@ function HomePage() {
       console.error("Error fetching tickets:", error);
       setLoading(false);
     }
-  }, [userRole, searchQuery, subdomain]);
+  }, [userRole, searchQuery, subdomain, userID]);
 
   useEffect(() => {
     fetchTickets();
-  }, [fetchTickets]);
+  }, [fetchTickets, subdomain, userRole, userID, searchQuery]);
 
   const handleViewDetailsClick = (ticket) => {
     navigate("/view-field-ticket", { state: ticket });
@@ -303,7 +302,7 @@ function HomePage() {
                     <input
                       type="text"
                       placeholder="Search by ticket fields eg. 05-06, circulate, etc  "
-                      onChange={handleSearchChange} // Update this to use the handleSearchChange
+                      onChange={handleSearchChange}
                       className={`w-full max-w-lg px-4 py-2 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
                         theme === "dark"
                           ? "bg-gray-800 text-white placeholder-gray-400"
@@ -312,16 +311,6 @@ function HomePage() {
                     />
                   </div>
 
-                  {/* <div className="text-center my-6 mx-auto w-full max-w-xl px-4">
-                    <FontAwesomeIcon
-                      icon={faTasks}
-                      size="3x"
-                      className={`inline-block mb-4 animate-bounce ${
-                        theme === "dark" ? "text-blue-200" : "text-blue-100"
-                      }`}
-                      style={{ transform: "rotate(-10deg)" }}
-                    />
-                  </div> */}
                   <div className="flex justify-center space-x-4">
                     <Link
                       to="/create-field-ticket"
@@ -352,7 +341,7 @@ function HomePage() {
                         index={index}
                         theme={theme}
                         onClick={() => handleViewDetailsClick(ticket)}
-                        searchQuery={searchQuery} // Pass the searchQuery prop
+                        searchQuery={searchQuery}
                       />
                     );
                   })}

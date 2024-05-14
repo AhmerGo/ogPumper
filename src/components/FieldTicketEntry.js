@@ -36,7 +36,6 @@ function FieldTicketEntry() {
         setSubdomain(subdomainPart);
       } else {
         console.log(`sub domain ${parts}`);
-
         setSubdomain("");
       }
     };
@@ -66,7 +65,7 @@ function FieldTicketEntry() {
     };
 
     fetchHighestTicketNumber();
-  }, []);
+  }, [subdomain]);
 
   useEffect(() => {
     const fetchLeases = async () => {
@@ -83,7 +82,7 @@ function FieldTicketEntry() {
     };
 
     fetchLeases();
-  }, []);
+  }, [subdomain]);
 
   useEffect(() => {
     const fetchTicketTypes = async () => {
@@ -101,9 +100,8 @@ function FieldTicketEntry() {
         console.error("Error fetching ticket types:", error);
       }
     };
-
     fetchTicketTypes();
-  }, [ticketType]);
+  }, [ticketType, subdomain]);
 
   const handleChange = (e, itemId) => {
     const { name, value } = e.target;
@@ -176,6 +174,7 @@ function FieldTicketEntry() {
       console.error("Error submitting ticket:", error);
     }
   };
+
   const formattedDate = formFields.ticketDate
     ? new Date(formFields.ticketDate).toLocaleDateString()
     : "N/A";
@@ -476,7 +475,7 @@ function FieldTicketEntry() {
                     placeholder="0"
                   />
                 )}
-              </div>{" "}
+              </div>
             </div>
           ))}
 
@@ -513,4 +512,5 @@ function FieldTicketEntry() {
     </animated.main>
   );
 }
+
 export default FieldTicketEntry;

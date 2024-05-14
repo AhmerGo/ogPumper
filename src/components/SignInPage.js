@@ -31,7 +31,6 @@ function SignInPage() {
         setSubdomain(subdomainPart);
       } else {
         console.log(`sub domain ${parts}`);
-
         setSubdomain("");
       }
     };
@@ -71,6 +70,7 @@ function SignInPage() {
       setSuccessMessage(""); // Clear any previous success message
     }
   };
+
   async function handleSignIn(e) {
     e.preventDefault();
     try {
@@ -99,6 +99,7 @@ function SignInPage() {
       setError("An error occurred while signing in.");
     }
   }
+
   return (
     <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200">
       <Particles
