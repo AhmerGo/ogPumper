@@ -532,8 +532,10 @@ const JobListPage = () => {
                         onKeyPress={(e) =>
                           e.key === "Enter" && handleSaveJobNote(job.JobTypeID)
                         }
-                        className={`text-lg w-full ${
-                          theme === "dark" ? "text-gray-100" : "text-gray-900"
+                        className={`text-xl font-semibold w-1/2 ${
+                          theme === "dark"
+                            ? "bg-gray-700 text-white"
+                            : "bg-white text-gray-900"
                         }`}
                         placeholder="Add a note..."
                       />
