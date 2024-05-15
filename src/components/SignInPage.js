@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import logo from "../assets/logo.jpg";
-import Particles from "react-tsparticles";
 import { useUser } from "./UserContext";
 
 function SignInPage() {
@@ -118,83 +118,133 @@ function SignInPage() {
     }
   }
 
-  return (
-    <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200">
-      <Particles
-      // ... (existing Particles component remains the same)
-      />
-      <animated.div
-        style={formAnimation}
-        className="bg-white shadow-2xl rounded-lg px-6 py-10 sm:px-12 sm:py-14 max-w-md w-full transform hover:scale-105 transition-transform duration-500 relative z-10 flex flex-col justify-center min-h-screen sm:min-h-0"
-      >
-        <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 to-gray-500 rounded-t-lg animate-pulse"></div>
-        <img
-          src={logo}
-          className="w-40 sm:w-32 mx-auto mb-6 sm:mb-8 rounded-full border-4 border-white shadow-md animate-float"
-          alt="logo"
-        />
-        <form className="space-y-6 sm:space-y-8" onSubmit={handleSignIn}>
-          <div>
-            <label
-              className="block text-gray-700 font-semibold mb-2 text-base sm:text-lg"
-              htmlFor="username"
-            >
-              Username
-            </label>
-            <input
-              className="w-full border-gray-300 border-2 rounded-md px-4 py-2 sm:px-5 sm:py-3 text-base sm:text-lg focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
-              id="username"
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-          <div>
-            <label
-              className="block text-gray-700 font-semibold mb-2 text-base sm:text-lg"
-              htmlFor="password"
-            >
-              Password
-            </label>
-            <input
-              className="w-full border-gray-300 border-2 rounded-md px-4 py-2 sm:px-5 sm:py-3 text-base sm:text-lg focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-          {successMessage && (
-            <p className="text-green-500 text-base sm:text-lg animate-pulse">
-              {successMessage}
-            </p>
-          )}
+  const handleGoogleLoginSuccess = (response) => {
+    // Send the token to the backend
+    const token = response.credential;
+    const hostname = window.location.hostname;
+    const parts = hostname.split(".");
+    let baseUrl;
 
-          {error && (
-            <p className="text-red-500 text-base sm:text-lg animate-pulse">
-              {error}
-            </p>
-          )}
-          <button
-            className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full hover:from-gray-700 hover:to-gray-800 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-gray-600 transform hover:scale-105 transition-transform duration-500 shadow-lg text-lg sm:text-xl"
-            type="submit"
-          >
-            Sign In
-          </button>
-          <p className="text-gray-600 text-center text-base sm:text-lg">
-            <a
-              className="text-gray-700 hover:text-gray-800 underline transition-colors duration-300"
-              href="#"
-              onClick={handleForgotPassword} // Attach handleForgotPassword function to onClick event
+    if (parts.length > 2) {
+      const subdomainPart = parts.shift();
+      baseUrl = `https://${subdomainPart}.ogpumper.net`;
+      console.log(`Using subdomain URL: ${baseUrl}`);
+    } else {
+      baseUrl = "https://ogfieldticket.com";
+      console.log(`Using default URL: ${baseUrl}`);
+    }
+
+    fetch(`${baseUrl}/api/google_login.php`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          const { user } = data;
+          setUser(user.Role, user.email);
+          localStorage.setItem("userRole", user.Role);
+          navigate("/home");
+        } else {
+          setError("Google Sign-In failed.");
+        }
+      })
+      .catch((error) => {
+        console.error("Error during Google Sign-In:", error);
+        setError("An error occurred during Google Sign-In.");
+      });
+  };
+
+  const handleGoogleLoginError = () => {
+    setError("Google Sign-In failed.");
+  };
+
+  return (
+    <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+      <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200">
+        <animated.div
+          style={formAnimation}
+          className="bg-white shadow-2xl rounded-lg px-6 py-10 sm:px-12 sm:py-14 max-w-md w-full transform hover:scale-105 transition-transform duration-500 relative z-10 flex flex-col justify-center min-h-screen sm:min-h-0"
+        >
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-gray-400 to-gray-500 rounded-t-lg animate-pulse"></div>
+          <img
+            src={logo}
+            className="w-40 sm:w-32 mx-auto mb-6 sm:mb-8 rounded-full border-4 border-white shadow-md animate-float"
+            alt="logo"
+          />
+          <form className="space-y-6 sm:space-y-8" onSubmit={handleSignIn}>
+            <div>
+              <label
+                className="block text-gray-700 font-semibold mb-2 text-base sm:text-lg"
+                htmlFor="username"
+              >
+                Username
+              </label>
+              <input
+                className="w-full border-gray-300 border-2 rounded-md px-4 py-2 sm:px-5 sm:py-3 text-base sm:text-lg focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div>
+              <label
+                className="block text-gray-700 font-semibold mb-2 text-base sm:text-lg"
+                htmlFor="password"
+              >
+                Password
+              </label>
+              <input
+                className="w-full border-gray-300 border-2 rounded-md px-4 py-2 sm:px-5 sm:py-3 text-base sm:text-lg focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            {successMessage && (
+              <p className="text-green-500 text-base sm:text-lg animate-pulse">
+                {successMessage}
+              </p>
+            )}
+
+            {error && (
+              <p className="text-red-500 text-base sm:text-lg animate-pulse">
+                {error}
+              </p>
+            )}
+            <button
+              className="w-full bg-gradient-to-r from-gray-600 to-gray-700 text-white font-bold py-3 sm:py-4 px-6 sm:px-8 rounded-full hover:from-gray-700 hover:to-gray-800 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-gray-600 transform hover:scale-105 transition-transform duration-500 shadow-lg text-lg sm:text-xl"
+              type="submit"
             >
-              Forgot Password?
-            </a>
-          </p>
-        </form>
-      </animated.div>
-    </div>
+              Sign In
+            </button>
+            <p className="text-gray-600 text-center text-base sm:text-lg">
+              <a
+                className="text-gray-700 hover:text-gray-800 underline transition-colors duration-300"
+                href="#"
+                onClick={handleForgotPassword}
+              >
+                Forgot Password?
+              </a>
+            </p>
+          </form>
+          <div className="mt-4">
+            <GoogleLogin
+              onSuccess={handleGoogleLoginSuccess}
+              onError={handleGoogleLoginError}
+              scope="openid profile email"
+            />
+          </div>
+        </animated.div>
+      </div>
+    </GoogleOAuthProvider>
   );
 }
 
