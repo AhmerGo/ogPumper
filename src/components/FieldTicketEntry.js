@@ -137,12 +137,18 @@ function FieldTicketEntry() {
         ...prevFields,
         [name]: value,
       }));
-    } else {
-      setItems((prevItems) =>
-        prevItems.map((item) =>
-          item.JobItemID === itemId ? { ...item, [name]: value } : item
-        )
-      );
+    } else if (name === "quantity") {
+      const quantity = parseFloat(value);
+      if (quantity > 0) {
+        setItems((prevItems) =>
+          prevItems.map((item) =>
+            item.JobItemID === itemId ? { ...item, [name]: quantity } : item
+          )
+        );
+      } else {
+        // Optionally, provide feedback for invalid input
+        console.warn("Quantity must be a positive number");
+      }
     }
   };
 

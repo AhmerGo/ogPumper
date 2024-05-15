@@ -234,6 +234,14 @@ const ViewFieldTicket = () => {
 
   const handleChange = (e, itemId) => {
     const { name, value } = e.target;
+    const parsedValue = parseFloat(value);
+
+    if (name === "Quantity" && parsedValue <= 0) {
+      // Optionally, provide feedback for invalid input
+      console.warn("Quantity must be a positive number");
+      return;
+    }
+
     setTicket((prevTicket) => {
       const updatedItems = prevTicket.Items.map((item) => {
         if (item.TicketLine === itemId) {
@@ -243,9 +251,7 @@ const ViewFieldTicket = () => {
               ItemCost: 0,
               UseQuantity: false,
             };
-            const totalCost = (itemData.ItemCost * parseFloat(value)).toFixed(
-              2
-            );
+            const totalCost = (itemData.ItemCost * parsedValue).toFixed(2);
             updatedItem.totalCost = totalCost;
           }
           return updatedItem;
@@ -255,6 +261,7 @@ const ViewFieldTicket = () => {
       return { ...prevTicket, Items: updatedItems };
     });
   };
+
   const handleFieldNoteChange = (e) => {
     setFieldNote(e.target.value);
   };

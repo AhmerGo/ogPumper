@@ -1,4 +1,4 @@
-import { React, useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import styled, { css, createGlobalStyle } from "styled-components";
@@ -9,7 +9,6 @@ import logo from "../assets/100.png";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import HomeIcon from "@mui/icons-material/Home";
 
-// Define your NavBarContainer with a gradient and shadow for a modern look
 const GlobalStyle = createGlobalStyle`
   body {
     font-family: 'Inter', sans-serif;
@@ -108,6 +107,7 @@ const AdminButton = styled.button`
     transform: rotate(360deg);
   }
 `;
+
 const Logo = styled.div`
   display: flex;
   align-items: center;
@@ -162,7 +162,6 @@ const NavItems = styled.div`
   }
 `;
 
-// Styling for navigation items, including Material Icons
 const NavItem = styled(animated.div)`
   cursor: pointer;
   padding: 10px;
@@ -242,7 +241,6 @@ const UserAvatar = styled.div`
 
 const UserName = styled.div`
   font-family: "Inter", sans-serif;
-
   font-size: 24px;
   font-weight: 700; // Use a bolder weight for more emphasis
   margin-bottom: 10px;
@@ -254,7 +252,6 @@ const UserName = styled.div`
 
 const UserRole = styled.div`
   font-family: "Inter", sans-serif;
-
   font-size: 16px;
   color: ${({ theme }) =>
     theme === "dark"
@@ -295,7 +292,7 @@ const CloseIcon = styled.div`
 function Layout({ children }) {
   let navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { user, setUser, userRole, userID } = useUser();
+  const { userRole, userID, setUser } = useUser();
   const [spinning, setSpinning] = useState(false);
   const [profileCardVisible, setProfileCardVisible] = useState(false);
 
@@ -305,6 +302,7 @@ function Layout({ children }) {
     transform: profileCardVisible ? "translateY(0)" : "translateY(-20px)",
     config: { mass: 1, tension: 210, friction: 20 },
   });
+
   const handleSignOut = () => {
     localStorage.removeItem("userRole");
     localStorage.removeItem("userID");
@@ -319,8 +317,13 @@ function Layout({ children }) {
       toggleTheme();
     }, 1000);
   };
-  const capitalizeFirstLetter = (string) =>
-    string.charAt(0).toUpperCase() + string.slice(1);
+
+  const capitalizeFirstLetter = (string) => {
+    if (string && typeof string === "string") {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+    return "";
+  };
 
   const navBarAnimation = useSpring({
     from: { opacity: 0 },
@@ -385,8 +388,8 @@ function Layout({ children }) {
                 <UserAvatar>
                   <img src={logo} alt="Logo" />
                 </UserAvatar>
-                <UserName>{user ? user : "Signed in"}</UserName>
-                <UserRole>Hello {capitalizeFirstLetter(userID)} !</UserRole>
+                <UserName>{userID ? userID : "Signed in"}</UserName>
+                <UserRole>Hello {capitalizeFirstLetter(userID)}!</UserRole>
                 <DetailsButton onClick={handleDetailsClick}>
                   Profile Details
                 </DetailsButton>

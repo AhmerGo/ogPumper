@@ -21,7 +21,6 @@ function UserProfile() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
   const [subdomain, setSubdomain] = useState("");
 
   const navigate = useNavigate();
@@ -163,6 +162,21 @@ function UserProfile() {
     }
   };
 
+  const getRoleLabel = (role) => {
+    switch (role) {
+      case "P":
+        return "Pumper";
+      case "O":
+        return "Operator";
+      case "A":
+        return "Admin";
+      case "I":
+        return "Partner";
+      default:
+        return "";
+    }
+  };
+
   if (!user) {
     return <div>Loading...</div>;
   }
@@ -213,17 +227,9 @@ function UserProfile() {
               </div>
               <div className="w-full text-center">
                 <p className="text-xl font-semibold">{user.FullName}</p>
-                {editMode ? (
-                  <input
-                    type="email"
-                    name="Email"
-                    value={editedUser.Email}
-                    onChange={handleInputChange}
-                    className="text-gray-400 bg-transparent border-b border-gray-500 focus:outline-none focus:border-blue-500 w-full"
-                  />
-                ) : (
-                  <p className="text-gray-400 truncate">{user.Email}</p>
-                )}
+                <p className="text-gray-400 truncate">
+                  {getRoleLabel(user.Role)}
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
@@ -327,30 +333,32 @@ function UserProfile() {
                   {user.UserID}
                 </p>
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center">
-                  <FontAwesomeIcon
-                    icon={faPenFancy}
-                    className={`h-6 w-6 mr-4 ${
-                      theme === "dark" ? "text-white" : "text-black"
-                    }`}
-                  />
+              {user.Role === "A" || user.Role === "P" ? (
+                <div className="flex flex-col">
+                  <div className="flex items-center">
+                    <FontAwesomeIcon
+                      icon={faPenFancy}
+                      className={`h-6 w-6 mr-4 ${
+                        theme === "dark" ? "text-white" : "text-black"
+                      }`}
+                    />
+                    <p
+                      className={`font-semibold ${
+                        theme === "dark" ? "text-white" : "text-black"
+                      }`}
+                    >
+                      Message
+                    </p>
+                  </div>
                   <p
-                    className={`font-semibold ${
-                      theme === "dark" ? "text-white" : "text-black"
+                    className={`truncate mt-2 ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-700"
                     }`}
                   >
-                    Message
+                    {user.Message}
                   </p>
                 </div>
-                <p
-                  className={`truncate mt-2 ${
-                    theme === "dark" ? "text-gray-400" : "text-gray-700"
-                  }`}
-                >
-                  {user.Message}
-                </p>
-              </div>
+              ) : null}
             </div>
 
             {showPasswordChange && (
