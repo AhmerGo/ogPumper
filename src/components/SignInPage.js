@@ -105,9 +105,11 @@ function SignInPage() {
       });
       const data = await response.json();
       const { success, message, user } = data;
+      console.log(data);
       if (success) {
-        setUser(user.Role, username);
+        setUser(user.Role, user.UserID);
         localStorage.setItem("userRole", user.Role);
+        localStorage.setItem("userID", user.UserID);
         navigate("/home");
       } else {
         setError(message);
@@ -144,9 +146,10 @@ function SignInPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const { user } = data;
-          setUser(user.Role, user.email);
+          const { success, message, user } = data;
+          setUser(user.Role, user.UserID);
           localStorage.setItem("userRole", user.Role);
+          localStorage.setItem("userID", user.UserID);
           navigate("/home");
         } else {
           setError("Google Sign-In failed.");
@@ -235,11 +238,12 @@ function SignInPage() {
               </a>
             </p>
           </form>
-          <div className="mt-4">
+          <div className="flex justify-center mt-6">
             <GoogleLogin
               onSuccess={handleGoogleLoginSuccess}
               onError={handleGoogleLoginError}
               scope="openid profile email"
+              className="w-full"
             />
           </div>
         </animated.div>
