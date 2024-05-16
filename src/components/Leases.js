@@ -585,6 +585,7 @@ const EditLeaseModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     onSave(e, { wells, tanks });
+    setFormData(lease); // Reset the form data to the original lease values
   };
 
   return (
@@ -1342,7 +1343,10 @@ const EditLeaseModal = ({
 
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={() => {
+                    onClose();
+                    setFormData(lease); // Reset the form data to the original lease values
+                  }}
                   className="p-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
                 >
                   Cancel
