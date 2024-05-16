@@ -6,6 +6,7 @@ import {
   faTrash,
   faSave,
   faTimes,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "./ThemeContext";
 import axios from "axios";
@@ -156,6 +157,7 @@ const Leases = () => {
         baseUrl = "https://ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
+      console.log(updatedLease);
 
       const response = await axios.patch(
         `${baseUrl}/api/leases.php`,
@@ -217,61 +219,105 @@ const Leases = () => {
               >
                 <FontAwesomeIcon icon={faEdit} />
               </button>
-              <button
-                className={`${
-                  theme === "dark" ? "text-white" : "text-gray-800"
-                } hover:text-red-500`}
-              >
-                <FontAwesomeIcon icon={faTrash} />
-              </button>
             </div>
             <div>
               <h2 className="text-2xl font-bold mb-4">{lease.LeaseName}</h2>
-              <p className="mb-2">
-                <strong>LeaseID:</strong> {lease.LeaseID}
-              </p>
-              <p className="mb-2">
-                <strong>Pumper:</strong> {lease.PumperID}
-              </p>
-              <p className="mb-2">
-                <strong>Relief:</strong> {lease.ReliefID}
-              </p>
-              <p className="mb-2">
-                <strong>District:</strong> {lease.District}
-              </p>
-              <p className="mb-2">
-                <strong>RRC:</strong> {lease.RRC}
-              </p>
-              <p className="mb-2">
-                <strong>Field Name:</strong> {lease.FieldName}
-              </p>
-              <p className="mb-2">
-                <strong>Tag 1:</strong> {lease.Tag1}
-              </p>
-              <p className="mb-2">
-                <strong>Tag 2:</strong> {lease.Tag2}
-              </p>
-              <p className="mb-2">
-                <strong>Tag 3:</strong> {lease.Tag3}
-              </p>
-              <p className="mb-2">
-                <strong>Tag 4:</strong> {lease.Tag4}
-              </p>
-              <p className="mb-2">
-                <strong>Purchaser:</strong> {lease.Purchaser}
-              </p>
-              <p className="mb-2">
-                <strong>Purchaser Lease No:</strong> {lease.PurchaserLeaseNo}
-              </p>
-              <p className="mb-2">
-                <strong>Max Inj:</strong> {lease.MaxInj}
-              </p>
-              <p className="mb-2">
-                <strong>Max Pressure:</strong> {lease.MaxPressure}
-              </p>
-              <p className="mb-2">
-                <strong>External Property #:</strong> {lease.PropertyNum}
-              </p>
+              {lease.LeaseID && (
+                <p className="mb-2">
+                  <strong>LeaseID:</strong> {lease.LeaseID}
+                </p>
+              )}
+              {lease.PumperID && (
+                <p className="mb-2">
+                  <strong>Pumper:</strong> {lease.PumperID}
+                </p>
+              )}
+              {lease.Active && (
+                <p className="mb-2">
+                  <strong>Active:</strong> {lease.Active}
+                </p>
+              )}
+              {lease.ReliefID && (
+                <p className="mb-2">
+                  <strong>Relief:</strong> {lease.ReliefID}
+                </p>
+              )}
+              {lease.District && (
+                <p className="mb-2">
+                  <strong>District:</strong> {lease.District}
+                </p>
+              )}
+              {lease.RRC && (
+                <p className="mb-2">
+                  <strong>RRC:</strong> {lease.RRC}
+                </p>
+              )}
+              {lease.FieldName && (
+                <p className="mb-2">
+                  <strong>Field Name:</strong> {lease.FieldName}
+                </p>
+              )}
+              {lease.Tag1 && (
+                <p className="mb-2">
+                  <strong>Tag 1:</strong> {lease.Tag1}
+                </p>
+              )}
+              {lease.Tag2 && (
+                <p className="mb-2">
+                  <strong>Tag 2:</strong> {lease.Tag2}
+                </p>
+              )}
+              {lease.Tag3 && (
+                <p className="mb-2">
+                  <strong>Tag 3:</strong> {lease.Tag3}
+                </p>
+              )}
+              {lease.Tag4 && (
+                <p className="mb-2">
+                  <strong>Tag 4:</strong> {lease.Tag4}
+                </p>
+              )}
+              {lease.Purchaser && (
+                <p className="mb-2">
+                  <strong>Purchaser:</strong> {lease.Purchaser}
+                </p>
+              )}
+              {lease.PurchaserLeaseNo && (
+                <p className="mb-2">
+                  <strong>Purchaser Lease No:</strong> {lease.PurchaserLeaseNo}
+                </p>
+              )}
+              {lease.MaxInj && (
+                <p className="mb-2">
+                  <strong>Max Inj:</strong> {lease.MaxInj}
+                </p>
+              )}
+              {lease.MaxPressure && (
+                <p className="mb-2">
+                  <strong>Max Pressure:</strong> {lease.MaxPressure}
+                </p>
+              )}
+              {lease.PropertyNum && (
+                <p className="mb-2">
+                  <strong>External Property #:</strong> {lease.PropertyNum}
+                </p>
+              )}
+              {lease.Wells && lease.Wells.length > 0 && (
+                <p className="mb-2">
+                  <strong>Wells:</strong>{" "}
+                  {lease.Wells.map((well) => (
+                    <span key={well.UniqID}> {well.WellID}</span>
+                  ))}
+                </p>
+              )}
+              {lease.Tanks && lease.Tanks.length > 0 && (
+                <p className="mb-2">
+                  <strong>Tanks:</strong>{" "}
+                  {lease.Tanks.map((tank) => (
+                    <span key={tank.UniqID}> {tank.TankID}</span>
+                  ))}
+                </p>
+              )}
             </div>
           </animated.div>
         ))}
@@ -327,6 +373,8 @@ const EditLeaseModal = ({
   const [pumperOptions, setPumperOptions] = useState([]);
   const [reliefOptions, setReliefOptions] = useState([]);
   const [subdomain, setSubdomain] = useState("");
+  const [tanks, setTanks] = useState(lease.Tanks || []);
+  const [wells, setWells] = useState(lease.Wells || []);
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -379,6 +427,61 @@ const EditLeaseModal = ({
     }
   };
 
+  const handleTankChange = (index, field, value) => {
+    const updatedTanks = [...tanks];
+    updatedTanks[index][field] = value;
+    setTanks(updatedTanks);
+  };
+
+  const handleWellChange = (index, field, value) => {
+    const updatedWells = [...wells];
+    updatedWells[index][field] = value;
+    setWells(updatedWells);
+  };
+  const handleAddTank = () => {
+    setTanks([
+      ...tanks,
+      {
+        UniqID: "",
+        LeaseID: lease.LeaseID,
+        TankID: "",
+        Size: "",
+        BBLSperInch: "",
+        Active: "Y",
+        TankType: "T",
+        GasCoeff: "",
+        ExcludeDrawsFromProd: "N",
+        WPTankNum: "",
+      },
+    ]);
+  };
+
+  const handleAddWell = () => {
+    setWells([
+      ...wells,
+      {
+        UniqID: "",
+        LeaseID: lease.LeaseID,
+        WellID: "",
+        Active: "Y",
+        PropertyNum: "",
+        AllocPct: "",
+      },
+    ]);
+  };
+
+  const handleRemoveTank = (index) => {
+    const updatedTanks = [...tanks];
+    updatedTanks.splice(index, 1);
+    setTanks(updatedTanks);
+  };
+
+  const handleRemoveWell = (index) => {
+    const updatedWells = [...wells];
+    updatedWells.splice(index, 1);
+    setWells(updatedWells);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     onSave(e);
@@ -399,10 +502,13 @@ const EditLeaseModal = ({
             theme === "light" ? "bg-white" : "bg-gray-700"
           }`}
         >
-          <form onSubmit={handleSubmit} className="px-8 pt-6 pb-8 mb-4">
-            <div className="flex justify-between items-center border-b pb-4 mb-4">
+          <form
+            onSubmit={handleSubmit}
+            className="max-w-3xl mx-auto p-8 bg-white shadow-lg rounded-lg"
+          >
+            <div className="flex justify-between items-center border-b pb-4 mb-6">
               <h3
-                className={`text-2xl font-semibold ${
+                className={`text-3xl font-semibold ${
                   theme === "light" ? "text-gray-900" : "text-white"
                 }`}
               >
@@ -411,64 +517,40 @@ const EditLeaseModal = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="text-red-500 hover:text-red-700"
+                className="text-red-500 hover:text-red-700 focus:outline-none"
               >
-                <FontAwesomeIcon icon={faTimes} />
+                <FontAwesomeIcon icon={faTimes} size="lg" />
               </button>
             </div>
-            <div className="flex space-x-4 mb-4">
-              <button
-                type="button"
-                onClick={() => setActiveTab("basic")}
-                className={`px-4 py-2 rounded-lg focus:outline-none ${
-                  activeTab === "basic"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-300 text-gray-700"
-                }`}
-              >
-                Basic Info
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("additional")}
-                className={`px-4 py-2 rounded-lg focus:outline-none ${
-                  activeTab === "additional"
-                    ? "bg-blue-500 text-white"
-                    : "bg-gray-300 text-gray-700"
-                }`}
-              >
-                Additional Info
-              </button>
+
+            <div className="flex space-x-4 mb-8">
+              {["basic", "additional", "tanks-wells"].map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2 rounded-lg focus:outline-none ${
+                    activeTab === tab
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-300 text-gray-700"
+                  } transition duration-150`}
+                >
+                  {tab === "basic"
+                    ? "Basic Info"
+                    : tab === "additional"
+                    ? "Additional Info"
+                    : "Edit Tanks/Wells"}
+                </button>
+              ))}
             </div>
+
             {activeTab === "basic" && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label
-                    htmlFor="LeaseID"
-                    className={`block text-sm font-medium leading-5 ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
-                  >
-                    Lease ID
-                  </label>
-                  <input
-                    type="text"
-                    name="LeaseID"
-                    value={formData.LeaseID}
-                    onChange={(e) =>
-                      setFormData({ ...formData, LeaseID: e.target.value })
-                    }
-                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-6">
+                {/* Lease Name */}
                 <div>
                   <label
                     htmlFor="LeaseName"
-                    className={`block text-sm font-medium leading-5 ${
+                    className={`block text-sm font-medium ${
                       theme === "light" ? "text-gray-700" : "text-white"
                     }`}
                   >
@@ -483,15 +565,17 @@ const EditLeaseModal = ({
                     }
                     className={`mt-1 form-input block w-full px-3 py-2 ${
                       theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
                   />
                 </div>
+
+                {/* Pumper */}
                 <div>
                   <label
                     htmlFor="PumperID"
-                    className={`block text-sm font-medium leading-5 ${
+                    className={`block text-sm font-medium ${
                       theme === "light" ? "text-gray-700" : "text-white"
                     }`}
                   >
@@ -499,17 +583,16 @@ const EditLeaseModal = ({
                   </label>
                   <select
                     name="PumperID"
-                    value={formData.PumperID || ""}
+                    value={formData.PumperID}
                     onChange={(e) =>
                       setFormData({ ...formData, PumperID: e.target.value })
                     }
                     className={`mt-1 form-select block w-full px-3 py-2 ${
                       theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
                   >
-                    <option value="">Select Pumper</option>
                     {pumperOptions.map((pumper) => (
                       <option key={pumper.UserID} value={pumper.UserID}>
                         {pumper.FullName}
@@ -517,10 +600,12 @@ const EditLeaseModal = ({
                     ))}
                   </select>
                 </div>
+
+                {/* Relief */}
                 <div>
                   <label
                     htmlFor="ReliefID"
-                    className={`block text-sm font-medium leading-5 ${
+                    className={`block text-sm font-medium ${
                       theme === "light" ? "text-gray-700" : "text-white"
                     }`}
                   >
@@ -534,11 +619,13 @@ const EditLeaseModal = ({
                     }
                     className={`mt-1 form-select block w-full px-3 py-2 ${
                       theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
                   >
-                    <option value="">Select Relief</option>
+                    <option value="">
+                      {formData.ReliefID ? "Remove Relief" : "Select Relief"}
+                    </option>
                     {reliefOptions.map((relief) => (
                       <option key={relief.UserID} value={relief.UserID}>
                         {relief.FullName}
@@ -546,130 +633,106 @@ const EditLeaseModal = ({
                     ))}
                   </select>
                 </div>
+
+                {/* Active */}
+                <div>
+                  <label
+                    htmlFor="Active"
+                    className={`block text-sm font-medium ${
+                      theme === "light" ? "text-gray-700" : "text-white"
+                    }`}
+                  >
+                    Active
+                  </label>
+                  <select
+                    name="Active"
+                    value={formData.Active || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, Active: e.target.value })
+                    }
+                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                      theme === "light"
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
+                  >
+                    <option value="Y">Yes</option>
+                    <option value="N">No</option>
+                  </select>
+                </div>
               </div>
             )}
+
             {activeTab === "additional" && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
+                {/* Lease ID */}
                 <div>
                   <label
-                    htmlFor="Tag1"
-                    className={`block text-sm font-medium leading-5 ${
+                    htmlFor="LeaseID"
+                    className={`block text-sm font-medium ${
                       theme === "light" ? "text-gray-700" : "text-white"
                     }`}
                   >
-                    Tag 1
+                    Lease ID
                   </label>
-                  <select
-                    name="Tag1"
-                    value={formData.Tag1 || ""}
+                  <input
+                    type="text"
+                    name="LeaseID"
+                    value={formData.LeaseID}
                     onChange={(e) =>
-                      setFormData({ ...formData, Tag1: e.target.value })
+                      setFormData({ ...formData, LeaseID: e.target.value })
                     }
-                    className={`mt-1 form-select block w-full px-3 py-2 ${
+                    className={`mt-1 form-input block w-full px-3 py-2 ${
                       theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                  >
-                    <option value="">Select Tag 1</option>
-                    {tagOptions.map((tag) => (
-                      <option key={tag.TagID} value={tag.TagID}>
-                        {tag.TagID} - {tag.TagDesc}
-                      </option>
-                    ))}
-                  </select>
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
+                  />
                 </div>
-                <div>
-                  <label
-                    htmlFor="Tag2"
-                    className={`block text-sm font-medium leading-5 ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
-                  >
-                    Tag 2
-                  </label>
-                  <select
-                    name="Tag2"
-                    value={formData.Tag2 || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, Tag2: e.target.value })
-                    }
-                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                  >
-                    <option value="">Select Tag 2</option>
-                    {tagOptions.map((tag) => (
-                      <option key={tag.TagID} value={tag.TagID}>
-                        {tag.TagID} - {tag.TagDesc}
+
+                {/* Tags */}
+                {[1, 2, 3, 4].map((tagNum) => (
+                  <div key={tagNum}>
+                    <label
+                      htmlFor={`Tag${tagNum}`}
+                      className={`block text-sm font-medium ${
+                        theme === "light" ? "text-gray-700" : "text-white"
+                      }`}
+                    >
+                      Tag {tagNum}
+                    </label>
+                    <select
+                      name={`Tag${tagNum}`}
+                      value={formData[`Tag${tagNum}`] || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          [`Tag${tagNum}`]: e.target.value,
+                        })
+                      }
+                      className={`mt-1 form-select block w-full px-3 py-2 ${
+                        theme === "light"
+                          ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                          : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                      } transition duration-150`}
+                    >
+                      <option value="">
+                        {formData[`Tag${tagNum}`] ? "Remove Tag" : "Select Tag"}
                       </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label
-                    htmlFor="Tag3"
-                    className={`block text-sm font-medium leading-5 ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
-                  >
-                    Tag 3
-                  </label>
-                  <select
-                    name="Tag3"
-                    value={formData.Tag3 || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, Tag3: e.target.value })
-                    }
-                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                  >
-                    <option value="">Select Tag 3</option>
-                    {tagOptions.map((tag) => (
-                      <option key={tag.TagID} value={tag.TagID}>
-                        {tag.TagID} - {tag.TagDesc}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label
-                    htmlFor="Tag4"
-                    className={`block text-sm font-medium leading-5 ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
-                  >
-                    Tag 4
-                  </label>
-                  <select
-                    name="Tag4"
-                    value={formData.Tag4 || ""}
-                    onChange={(e) =>
-                      setFormData({ ...formData, Tag4: e.target.value })
-                    }
-                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
-                  >
-                    <option value="">Select Tag 4</option>
-                    {tagOptions.map((tag) => (
-                      <option key={tag.TagID} value={tag.TagID}>
-                        {tag.TagID} - {tag.TagDesc}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                      {tagOptions.map((tag) => (
+                        <option key={tag.TagID} value={tag.TagID}>
+                          {tag.TagID} - {tag.TagDesc}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+
+                {/* Purchaser */}
                 <div>
                   <label
                     htmlFor="Purchaser"
-                    className={`block text-sm font-medium leading-5 ${
+                    className={`block text-sm font-medium ${
                       theme === "light" ? "text-gray-700" : "text-white"
                     }`}
                   >
@@ -681,11 +744,15 @@ const EditLeaseModal = ({
                     onChange={onInputChange}
                     className={`mt-1 form-select block w-full px-3 py-2 ${
                       theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
                   >
-                    <option value="">Select Purchaser</option>
+                    <option value="">
+                      {formData.Purchaser
+                        ? "Remove Purchaser"
+                        : "Select Purchaser"}
+                    </option>
                     {purchasers
                       .filter(
                         (purchaser) =>
@@ -701,10 +768,12 @@ const EditLeaseModal = ({
                       ))}
                   </select>
                 </div>
+
+                {/* Purchaser Lease No */}
                 <div>
                   <label
                     htmlFor="PurchaserLeaseNo"
-                    className={`block text-sm font-medium leading-5 ${
+                    className={`block text-sm font-medium ${
                       theme === "light" ? "text-gray-700" : "text-white"
                     }`}
                   >
@@ -717,15 +786,17 @@ const EditLeaseModal = ({
                     onChange={onInputChange}
                     className={`mt-1 form-input block w-full px-3 py-2 ${
                       theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
                   />
                 </div>
+
+                {/* Max Inj */}
                 <div>
                   <label
                     htmlFor="MaxInj"
-                    className={`block text-sm font-medium leading-5 ${
+                    className={`block text-sm font-medium ${
                       theme === "light" ? "text-gray-700" : "text-white"
                     }`}
                   >
@@ -738,15 +809,17 @@ const EditLeaseModal = ({
                     onChange={onInputChange}
                     className={`mt-1 form-input block w-full px-3 py-2 ${
                       theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
                   />
                 </div>
+
+                {/* Max Pressure */}
                 <div>
                   <label
                     htmlFor="MaxPressure"
-                    className={`block text-sm font-medium leading-5 ${
+                    className={`block text-sm font-medium ${
                       theme === "light" ? "text-gray-700" : "text-white"
                     }`}
                   >
@@ -759,15 +832,17 @@ const EditLeaseModal = ({
                     onChange={onInputChange}
                     className={`mt-1 form-input block w-full px-3 py-2 ${
                       theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
                   />
                 </div>
+
+                {/* External Property # */}
                 <div>
                   <label
                     htmlFor="PropertyNum"
-                    className={`block text-sm font-medium leading-5 ${
+                    className={`block text-sm font-medium ${
                       theme === "light" ? "text-gray-700" : "text-white"
                     }`}
                   >
@@ -780,43 +855,271 @@ const EditLeaseModal = ({
                     onChange={onInputChange}
                     className={`mt-1 form-input block w-full px-3 py-2 ${
                       theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:shadow-outline-blue focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150 ease-in-out sm:text-sm sm:leading-5`}
+                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                    } transition duration-150`}
                   />
                 </div>
               </div>
             )}
+
+            {activeTab === "tanks-wells" && (
+              <div className="space-y-8">
+                <div>
+                  <h4 className="text-2xl font-semibold mb-4">Tanks</h4>
+                  {tanks.map((tank, index) => (
+                    <div
+                      key={index}
+                      className="mb-4 border rounded-lg p-4 shadow-md bg-white dark:bg-gray-800"
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <h5 className="text-lg font-medium text-gray-900 dark:text-white">
+                          Tank {index + 1}
+                        </h5>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTank(index)}
+                          className="text-red-500 hover:text-red-700 focus:outline-none"
+                        >
+                          <FontAwesomeIcon icon={faTrash} /> Remove
+                        </button>
+                      </div>
+                      {/* Tank fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label
+                            htmlFor={`TankID-${index}`}
+                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                          >
+                            Tank ID
+                          </label>
+                          <input
+                            type="text"
+                            name={`TankID-${index}`}
+                            value={tank.TankID}
+                            onChange={(e) =>
+                              handleTankChange(e, index, "TankID")
+                            }
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`Size-${index}`}
+                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                          >
+                            Size
+                          </label>
+                          <input
+                            type="number"
+                            name={`Size-${index}`}
+                            value={tank.Size}
+                            onChange={(e) => handleTankChange(e, index, "Size")}
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`BBLSperInch-${index}`}
+                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                          >
+                            BBLS per Inch
+                          </label>
+                          <input
+                            type="number"
+                            step="0.001"
+                            name={`BBLSperInch-${index}`}
+                            value={tank.BBLSperInch}
+                            onChange={(e) =>
+                              handleTankChange(e, index, "BBLSperInch")
+                            }
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`TankType-${index}`}
+                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                          >
+                            Tank Type
+                          </label>
+                          <select
+                            name={`TankType-${index}`}
+                            value={tank.TankType}
+                            onChange={(e) =>
+                              handleTankChange(e, index, "TankType")
+                            }
+                            className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          >
+                            <option value="T">T</option>
+                            <option value="F">F</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`Active-${index}`}
+                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                          >
+                            Active
+                          </label>
+                          <select
+                            name={`Active-${index}`}
+                            value={tank.Active}
+                            onChange={(e) =>
+                              handleTankChange(e, index, "Active")
+                            }
+                            className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          >
+                            <option value="Y">Yes</option>
+                            <option value="N">No</option>
+                          </select>
+                        </div>
+                        {/* Add other tank fields here */}
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddTank}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105"
+                  >
+                    <FontAwesomeIcon icon={faPlus} /> Add Tank
+                  </button>
+                </div>
+
+                <div>
+                  <h4 className="text-2xl font-semibold mb-4">Wells</h4>
+                  {wells.map((well, index) => (
+                    <div
+                      key={index}
+                      className="mb-4 border rounded-lg p-4 shadow-md bg-white dark:bg-gray-800"
+                    >
+                      <div className="flex justify-between items-center mb-4">
+                        <h5 className="text-lg font-medium text-gray-900 dark:text-white">
+                          Well {index + 1}
+                        </h5>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveWell(index)}
+                          className="text-red-500 hover:text-red-700 focus:outline-none"
+                        >
+                          <FontAwesomeIcon icon={faTrash} /> Remove
+                        </button>
+                      </div>
+                      {/* Well fields */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label
+                            htmlFor={`WellID-${index}`}
+                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                          >
+                            Well ID
+                          </label>
+                          <input
+                            type="text"
+                            name={`WellID-${index}`}
+                            value={well.WellID}
+                            onChange={(e) =>
+                              handleWellChange(e, index, "WellID")
+                            }
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`PropertyNum-${index}`}
+                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                          >
+                            Property Number
+                          </label>
+                          <input
+                            type="text"
+                            name={`PropertyNum-${index}`}
+                            value={well.PropertyNum}
+                            onChange={(e) =>
+                              handleWellChange(e, index, "PropertyNum")
+                            }
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`AllocPct-${index}`}
+                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                          >
+                            Allocation Percentage
+                          </label>
+                          <input
+                            type="number"
+                            step="0.0001"
+                            name={`AllocPct-${index}`}
+                            value={well.AllocPct}
+                            onChange={(e) =>
+                              handleWellChange(e, index, "AllocPct")
+                            }
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`Active-${index}`}
+                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                          >
+                            Active
+                          </label>
+                          <select
+                            name={`Active-${index}`}
+                            value={well.Active}
+                            onChange={(e) =>
+                              handleWellChange(e, index, "Active")
+                            }
+                            className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          >
+                            <option value="Y">Yes</option>
+                            <option value="N">No</option>
+                          </select>
+                        </div>
+                        {/* Add other well fields here */}
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddWell}
+                    className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105"
+                  >
+                    <FontAwesomeIcon icon={faPlus} /> Add Well
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div
-              className={`mt-6 px-4 py-3 sm:px-6 flex justify-center space-x-4 ${
+              className={`mt-8 flex justify-center space-x-4 ${
                 theme === "light" ? "bg-gray-50" : "bg-gray-700"
-              }`}
+              } px-4 py-3 sm:px-6`}
             >
-              <span className="flex w-full sm:w-auto">
-                <button
-                  type="submit"
-                  className={`inline-flex items-center justify-center w-full px-6 py-3 text-base font-semibold rounded-lg shadow-md ${
-                    theme === "light"
-                      ? "text-white bg-blue-500 hover:bg-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
-                      : "text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-700 focus:ring-opacity-50"
-                  } transition-all duration-300 ease-in-out transform hover:scale-105`}
-                >
-                  Save
-                </button>
-              </span>
-              <span className="flex w-full sm:w-auto">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className={`inline-flex items-center justify-center w-full px-6 py-3 text-base font-semibold rounded-lg shadow-md ${
-                    theme === "light"
-                      ? "text-gray-700 bg-gray-100 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
-                      : "text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-blue-700 focus:ring-opacity-50"
-                  } transition-all duration-300 ease-in-out transform hover:scale-105`}
-                >
-                  Cancel
-                </button>
-              </span>
+              <button
+                type="submit"
+                className={`inline-flex items-center justify-center w-full px-6 py-3 text-base font-semibold rounded-lg shadow-md ${
+                  theme === "light"
+                    ? "text-white bg-blue-500 hover:bg-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
+                    : "text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-700 focus:ring-opacity-50"
+                } transition-all duration-300 ease-in-out transform hover:scale-105`}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className={`inline-flex items-center justify-center w-full px-6 py-3 text-base font-semibold rounded-lg shadow-md ${
+                  theme === "light"
+                    ? "text-gray-700 bg-gray-100 hover:text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
+                    : "text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-blue-700 focus:ring-opacity-50"
+                } transition-all duration-300 ease-in-out transform hover:scale-105`}
+              >
+                Cancel
+              </button>
             </div>
           </form>
         </div>
