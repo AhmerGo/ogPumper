@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSpring, animated } from "react-spring";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -7,6 +7,8 @@ import {
   faSave,
   faTimes,
   faPlus,
+  faChevronUp,
+  faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "./ThemeContext";
 import axios from "axios";
@@ -138,13 +140,30 @@ const Leases = () => {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, data) => {
     e.preventDefault();
     try {
+      const { tanks, wells } = data; // Extract tanks and wells from the data object
+
+      const formDataTanks = formData.Tanks || [];
+      const formDataWells = formData.Wells || [];
+
+      // Filter out duplicates from formData
+      const filteredTanks = tanks.filter(
+        (tank) =>
+          !formDataTanks.some((formTank) => formTank.UniqID === tank.UniqID)
+      );
+      const filteredWells = wells.filter(
+        (well) =>
+          !formDataWells.some((formWell) => formWell.UniqID === well.UniqID)
+      );
+
       const updatedLease = {
         ...formData,
+        Tanks: [...formDataTanks, ...filteredTanks],
+        Wells: [...formDataWells, ...filteredWells],
       };
-      console.log(updatedLease);
+
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
       let baseUrl;
@@ -157,6 +176,8 @@ const Leases = () => {
         baseUrl = "https://ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
+
+      console.log(`The updated lease:`);
       console.log(updatedLease);
 
       const response = await axios.patch(
@@ -168,6 +189,7 @@ const Leases = () => {
           },
         }
       );
+
       if (response.status === 200) {
         setEditLease(null);
         fetchLeases();
@@ -180,7 +202,6 @@ const Leases = () => {
       // Display an error message to the user
     }
   };
-
   return (
     <div
       className={`container mx-auto mt-5 p-4 rounded shadow ${
@@ -375,6 +396,10 @@ const EditLeaseModal = ({
   const [subdomain, setSubdomain] = useState("");
   const [tanks, setTanks] = useState(lease.Tanks || []);
   const [wells, setWells] = useState(lease.Wells || []);
+  const [expandedTankIndex, setExpandedTankIndex] = useState(null);
+  const [expandedWellIndex, setExpandedWellIndex] = useState(null);
+  const tankSectionRef = useRef(null);
+  const wellSectionRef = useRef(null);
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -397,6 +422,56 @@ const EditLeaseModal = ({
   useEffect(() => {
     fetchOptions();
   }, []);
+
+  const toggleExpandTank = (index) => {
+    setExpandedTankIndex(expandedTankIndex === index ? null : index);
+    if (expandedTankIndex !== index) {
+      setTimeout(() => {
+        tankSectionRef.current.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  };
+
+  const toggleExpandWell = (index) => {
+    setExpandedWellIndex(expandedWellIndex === index ? null : index);
+    if (expandedWellIndex !== index) {
+      setTimeout(() => {
+        wellSectionRef.current.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+  };
+
+  const handleDeleteWell = async (wellId) => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
+
+      const response = await axios.delete(`${baseUrl}/api/leases.php`, {
+        data: { LeaseID: lease.LeaseID, Wells: [{ UniqID: wellId }] },
+      });
+
+      if (response.status === 200) {
+        // Update the local state to remove the deleted well
+        setWells(wells.filter((well) => well.UniqID !== wellId));
+      } else {
+        console.error("Error deleting well:", response.data.message);
+        // Display an error message to the user
+      }
+    } catch (error) {
+      console.error("Error deleting well:", error);
+      // Display an error message to the user
+    }
+  };
 
   const fetchOptions = async () => {
     try {
@@ -454,6 +529,40 @@ const EditLeaseModal = ({
         WPTankNum: "",
       },
     ]);
+    setTimeout(() => {
+      tankSectionRef.current.scrollTop = tankSectionRef.current.scrollHeight;
+    }, 100);
+  };
+  const handleDeleteTank = async (tankId) => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
+
+      const response = await axios.delete(`${baseUrl}/api/leases.php`, {
+        data: { LeaseID: lease.LeaseID, Tanks: [{ UniqID: tankId }] },
+      });
+
+      if (response.status === 200) {
+        // Update the local state to remove the deleted tank
+        setTanks(tanks.filter((tank) => tank.UniqID !== tankId));
+      } else {
+        console.error("Error deleting tank:", response.data.message);
+        // Display an error message to the user
+      }
+    } catch (error) {
+      console.error("Error deleting tank:", error);
+      // Display an error message to the user
+    }
   };
 
   const handleAddWell = () => {
@@ -468,23 +577,14 @@ const EditLeaseModal = ({
         AllocPct: "",
       },
     ]);
-  };
-
-  const handleRemoveTank = (index) => {
-    const updatedTanks = [...tanks];
-    updatedTanks.splice(index, 1);
-    setTanks(updatedTanks);
-  };
-
-  const handleRemoveWell = (index) => {
-    const updatedWells = [...wells];
-    updatedWells.splice(index, 1);
-    setWells(updatedWells);
+    setTimeout(() => {
+      wellSectionRef.current.scrollIntoView({ behavior: "smooth" });
+    }, 100);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(e);
+    onSave(e, { wells, tanks });
   };
 
   return (
@@ -496,17 +596,35 @@ const EditLeaseModal = ({
       }`}
       style={{ background: "rgba(0, 0, 0, 0.5)" }}
     >
-      <div className="relative bg-transparent w-full max-w-3xl mx-auto p-6 rounded-lg">
-        <div
+      <div
+        className={`relative bg-transparent w-full max-w-3xl mx-auto p-6 rounded-lg ${
+          theme === "light" ? "bg-white" : "bg-gray-700"
+        }`}
+        style={{ maxHeight: "700px", overflowY: "auto" }}
+      >
+        {/* <div
           className={`rounded-lg shadow-lg overflow-hidden transform transition-all ${
+            theme === "light" ? "bg-white" : "bg-gray-700"
+          }`}
+        > */}
+        <div
+          className={`relative ${
             theme === "light" ? "bg-white" : "bg-gray-700"
           }`}
         >
           <form
-            onSubmit={handleSubmit}
-            className="max-w-3xl mx-auto p-8 bg-white shadow-lg rounded-lg"
+            onSubmit={(e) => handleSubmit(e, tanks, wells)}
+            className={`max-w-3xl mx-auto p-8 shadow-lg rounded-lg ${
+              theme === "light" ? "bg-white" : "bg-gray-700"
+            }`}
           >
-            <div className="flex justify-between items-center border-b pb-4 mb-6">
+            <div
+              className={`flex justify-between items-center border-b pb-4 mb-6 ${
+                theme === "light"
+                  ? "text-gray-700 border-gray-300"
+                  : "text-white border-gray-600"
+              }`}
+            >
               <h3
                 className={`text-3xl font-semibold ${
                   theme === "light" ? "text-gray-900" : "text-white"
@@ -524,7 +642,7 @@ const EditLeaseModal = ({
             </div>
 
             <div className="flex space-x-4 mb-8">
-              {["basic", "additional", "tanks-wells"].map((tab) => (
+              {["basic", "additional", "tanks", "wells"].map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -539,7 +657,9 @@ const EditLeaseModal = ({
                     ? "Basic Info"
                     : tab === "additional"
                     ? "Additional Info"
-                    : "Edit Tanks/Wells"}
+                    : tab === "tanks"
+                    ? "Tanks"
+                    : "Wells"}
                 </button>
               ))}
             </div>
@@ -863,265 +983,380 @@ const EditLeaseModal = ({
               </div>
             )}
 
-            {activeTab === "tanks-wells" && (
-              <div className="space-y-8">
-                <div>
-                  <h4 className="text-2xl font-semibold mb-4">Tanks</h4>
+            {activeTab === "tanks" && (
+              <>
+                <div ref={tankSectionRef} className="space-y-4">
                   {tanks.map((tank, index) => (
-                    <div
-                      key={index}
-                      className="mb-4 border rounded-lg p-4 shadow-md bg-white dark:bg-gray-800"
-                    >
-                      <div className="flex justify-between items-center mb-4">
-                        <h5 className="text-lg font-medium text-gray-900 dark:text-white">
-                          Tank {index + 1}
-                        </h5>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTank(index)}
-                          className="text-red-500 hover:text-red-700 focus:outline-none"
-                        >
-                          <FontAwesomeIcon icon={faTrash} /> Remove
-                        </button>
+                    <div key={index} className="border rounded-lg p-4">
+                      <div
+                        onClick={() => toggleExpandTank(index)}
+                        className="flex justify-between items-center cursor-pointer"
+                      >
+                        <span className="font-semibold">
+                          Tank {tank.TankID}
+                        </span>
+                        <FontAwesomeIcon
+                          icon={
+                            expandedTankIndex === index
+                              ? faChevronUp
+                              : faChevronDown
+                          }
+                        />
                       </div>
-                      {/* Tank fields */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label
-                            htmlFor={`TankID-${index}`}
-                            className="block text-sm font-medium text-gray-700 dark:text-white"
-                          >
-                            Tank ID
-                          </label>
-                          <input
-                            type="text"
-                            name={`TankID-${index}`}
-                            value={tank.TankID}
-                            onChange={(e) =>
-                              handleTankChange(e, index, "TankID")
-                            }
-                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
-                          />
+                      {expandedTankIndex === index && (
+                        <div className="mt-4 grid grid-cols-2 gap-4">
+                          <div className="col-span-2">
+                            <label
+                              htmlFor="TankID"
+                              className={`block text-sm font-medium ${
+                                theme === "light"
+                                  ? "text-gray-700"
+                                  : "text-white"
+                              }`}
+                            >
+                              Tank ID
+                            </label>
+
+                            <input
+                              type="text"
+                              placeholder="Tank ID"
+                              value={tank.TankID}
+                              onChange={(e) =>
+                                handleTankChange(
+                                  index,
+                                  "TankID",
+                                  e.target.value
+                                )
+                              }
+                              className={`mt-1 form-input block w-full px-3 py-2 ${
+                                theme === "light"
+                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                              } transition duration-150`}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="size"
+                              className={`block text-sm font-medium ${
+                                theme === "light"
+                                  ? "text-gray-700"
+                                  : "text-white"
+                              }`}
+                            >
+                              Size
+                            </label>
+
+                            <input
+                              type="number"
+                              placeholder="Size"
+                              value={tank.Size || 0}
+                              onChange={(e) =>
+                                handleTankChange(index, "Size", e.target.value)
+                              }
+                              className={`mt-1 form-input block w-full px-3 py-2 ${
+                                theme === "light"
+                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                              } transition duration-150`}
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="BBL"
+                              className={`block text-sm font-medium ${
+                                theme === "light"
+                                  ? "text-gray-700"
+                                  : "text-white"
+                              }`}
+                            >
+                              BBLSperInch
+                            </label>
+
+                            <input
+                              type="number"
+                              placeholder="BBLS per Inch"
+                              value={tank.BBLSperInch}
+                              onChange={(e) =>
+                                handleTankChange(
+                                  index,
+                                  "BBLSperInch",
+                                  e.target.value
+                                )
+                              }
+                              className={`mt-1 form-input block w-full px-3 py-2 ${
+                                theme === "light"
+                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                              } transition duration-150`}
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="Type"
+                              className={`block text-sm font-medium ${
+                                theme === "light"
+                                  ? "text-gray-700"
+                                  : "text-white"
+                              }`}
+                            >
+                              Type
+                            </label>
+
+                            <select
+                              value={tank.TankType}
+                              onChange={(e) =>
+                                handleTankChange(
+                                  index,
+                                  "TankType",
+                                  e.target.value
+                                )
+                              }
+                              className={`mt-1 form-input block w-full px-3 py-2 ${
+                                theme === "light"
+                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                              } transition duration-150`}
+                            >
+                              <option value="F">F</option>
+                              <option value="T">T</option>
+                              <option value="W">W</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="TankNum"
+                              className={`block text-sm font-medium ${
+                                theme === "light"
+                                  ? "text-gray-700"
+                                  : "text-white"
+                              }`}
+                            >
+                              Tank Num
+                            </label>
+
+                            <input
+                              type="text"
+                              placeholder="WP Tank Num"
+                              value={tank.WPTankNum}
+                              onChange={(e) =>
+                                handleTankChange(
+                                  index,
+                                  "WPTankNum",
+                                  e.target.value
+                                )
+                              }
+                              className={`mt-1 form-input block w-full px-3 py-2 ${
+                                theme === "light"
+                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                              } transition duration-150`}
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label
+                              htmlFor="active"
+                              className={`block text-sm font-medium ${
+                                theme === "light"
+                                  ? "text-gray-700"
+                                  : "text-white"
+                              }`}
+                            >
+                              Active
+                            </label>
+                            <select
+                              value={tank.Active}
+                              onChange={(e) =>
+                                handleTankChange(
+                                  index,
+                                  "Active",
+                                  e.target.value
+                                )
+                              }
+                              className={`mt-1 form-input block w-full px-3 py-2 ${
+                                theme === "light"
+                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                              } transition duration-150`}
+                              required
+                            >
+                              <option value="Y">Active</option>
+                              <option value="N">Inactive</option>
+                            </select>
+                          </div>
+                          <div className="col-span-2 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTank(tank.UniqID)}
+                              className="p-2 bg-red-500 text-white rounded hover:bg-red-600"
+                            >
+                              <FontAwesomeIcon icon={faTrash} />
+                            </button>
+                          </div>
                         </div>
-                        <div>
-                          <label
-                            htmlFor={`Size-${index}`}
-                            className="block text-sm font-medium text-gray-700 dark:text-white"
-                          >
-                            Size
-                          </label>
-                          <input
-                            type="number"
-                            name={`Size-${index}`}
-                            value={tank.Size}
-                            onChange={(e) => handleTankChange(e, index, "Size")}
-                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor={`BBLSperInch-${index}`}
-                            className="block text-sm font-medium text-gray-700 dark:text-white"
-                          >
-                            BBLS per Inch
-                          </label>
-                          <input
-                            type="number"
-                            step="0.001"
-                            name={`BBLSperInch-${index}`}
-                            value={tank.BBLSperInch}
-                            onChange={(e) =>
-                              handleTankChange(e, index, "BBLSperInch")
-                            }
-                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor={`TankType-${index}`}
-                            className="block text-sm font-medium text-gray-700 dark:text-white"
-                          >
-                            Tank Type
-                          </label>
-                          <select
-                            name={`TankType-${index}`}
-                            value={tank.TankType}
-                            onChange={(e) =>
-                              handleTankChange(e, index, "TankType")
-                            }
-                            className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
-                          >
-                            <option value="T">T</option>
-                            <option value="F">F</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label
-                            htmlFor={`Active-${index}`}
-                            className="block text-sm font-medium text-gray-700 dark:text-white"
-                          >
-                            Active
-                          </label>
-                          <select
-                            name={`Active-${index}`}
-                            value={tank.Active}
-                            onChange={(e) =>
-                              handleTankChange(e, index, "Active")
-                            }
-                            className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
-                          >
-                            <option value="Y">Yes</option>
-                            <option value="N">No</option>
-                          </select>
-                        </div>
-                        {/* Add other tank fields here */}
-                      </div>
+                      )}
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    onClick={handleAddTank}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105"
-                  >
-                    <FontAwesomeIcon icon={faPlus} /> Add Tank
-                  </button>
                 </div>
+              </>
+            )}
 
-                <div>
-                  <h4 className="text-2xl font-semibold mb-4">Wells</h4>
-                  {wells.map((well, index) => (
+            {activeTab === "wells" && (
+              <div ref={wellSectionRef} className="space-y-4 mt-6">
+                {wells.map((well, index) => (
+                  <div key={index} className="border rounded-lg p-4">
                     <div
-                      key={index}
-                      className="mb-4 border rounded-lg p-4 shadow-md bg-white dark:bg-gray-800"
+                      onClick={() => toggleExpandWell(index)}
+                      className="flex justify-between items-center cursor-pointer"
                     >
-                      <div className="flex justify-between items-center mb-4">
-                        <h5 className="text-lg font-medium text-gray-900 dark:text-white">
-                          Well {index + 1}
-                        </h5>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveWell(index)}
-                          className="text-red-500 hover:text-red-700 focus:outline-none"
-                        >
-                          <FontAwesomeIcon icon={faTrash} /> Remove
-                        </button>
-                      </div>
-                      {/* Well fields */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
+                      <span className="font-semibold">Well {well.WellID}</span>
+                      <FontAwesomeIcon
+                        icon={
+                          expandedWellIndex === index
+                            ? faChevronUp
+                            : faChevronDown
+                        }
+                      />
+                    </div>
+                    {expandedWellIndex === index && (
+                      <div className="mt-4 grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
                           <label
-                            htmlFor={`WellID-${index}`}
-                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                            htmlFor="WellID"
+                            className={`block text-sm font-medium ${
+                              theme === "light" ? "text-gray-700" : "text-white"
+                            }`}
                           >
                             Well ID
                           </label>
                           <input
                             type="text"
-                            name={`WellID-${index}`}
+                            placeholder="Well ID"
                             value={well.WellID}
                             onChange={(e) =>
-                              handleWellChange(e, index, "WellID")
+                              handleWellChange(index, "WellID", e.target.value)
                             }
-                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                            className={`mt-1 form-input block w-full px-3 py-2 ${
+                              theme === "light"
+                                ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                                : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                            } transition duration-150`}
+                            required
                           />
                         </div>
                         <div>
                           <label
-                            htmlFor={`PropertyNum-${index}`}
-                            className="block text-sm font-medium text-gray-700 dark:text-white"
-                          >
-                            Property Number
-                          </label>
-                          <input
-                            type="text"
-                            name={`PropertyNum-${index}`}
-                            value={well.PropertyNum}
-                            onChange={(e) =>
-                              handleWellChange(e, index, "PropertyNum")
-                            }
-                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
-                          />
-                        </div>
-                        <div>
-                          <label
-                            htmlFor={`AllocPct-${index}`}
-                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                            htmlFor="AllocPct"
+                            className={`block text-sm font-medium ${
+                              theme === "light" ? "text-gray-700" : "text-white"
+                            }`}
                           >
                             Allocation Percentage
                           </label>
                           <input
                             type="number"
-                            step="0.0001"
-                            name={`AllocPct-${index}`}
+                            placeholder="Allocation Percentage"
                             value={well.AllocPct}
                             onChange={(e) =>
-                              handleWellChange(e, index, "AllocPct")
+                              handleWellChange(
+                                index,
+                                "AllocPct",
+                                e.target.value
+                              )
                             }
-                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                            className={`mt-1 form-input block w-full px-3 py-2 ${
+                              theme === "light"
+                                ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                                : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                            } transition duration-150`}
                           />
                         </div>
                         <div>
                           <label
-                            htmlFor={`Active-${index}`}
-                            className="block text-sm font-medium text-gray-700 dark:text-white"
+                            htmlFor="Active"
+                            className={`block text-sm font-medium ${
+                              theme === "light" ? "text-gray-700" : "text-white"
+                            }`}
                           >
                             Active
                           </label>
                           <select
-                            name={`Active-${index}`}
                             value={well.Active}
                             onChange={(e) =>
-                              handleWellChange(e, index, "Active")
+                              handleWellChange(index, "Active", e.target.value)
                             }
-                            className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                            className={`mt-1 form-input block w-full px-3 py-2 ${
+                              theme === "light"
+                                ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
+                                : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
+                            } transition duration-150`}
+                            required
                           >
-                            <option value="Y">Yes</option>
-                            <option value="N">No</option>
+                            <option value="Y">Active</option>
+                            <option value="N">Inactive</option>
                           </select>
                         </div>
-                        {/* Add other well fields here */}
+                        <div className="col-span-2 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteWell(well.UniqID)}
+                            className="p-2 bg-red-500 text-white rounded hover:bg-red-600"
+                          >
+                            <FontAwesomeIcon icon={faTrash} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={handleAddWell}
-                    className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-all duration-300 ease-in-out transform hover:scale-105"
-                  >
-                    <FontAwesomeIcon icon={faPlus} /> Add Well
-                  </button>
-                </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 
             <div
-              className={`mt-8 flex justify-center space-x-4 ${
-                theme === "light" ? "bg-gray-50" : "bg-gray-700"
-              } px-4 py-3 sm:px-6`}
+              className={`sticky bottom-0 p-4 ${
+                theme === "light"
+                  ? "bg-white bg-opacity-90"
+                  : "bg-gray-700 bg-opacity-90"
+              }`}
             >
-              <button
-                type="submit"
-                className={`inline-flex items-center justify-center w-full px-6 py-3 text-base font-semibold rounded-lg shadow-md ${
-                  theme === "light"
-                    ? "text-white bg-blue-500 hover:bg-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
-                    : "text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-700 focus:ring-opacity-50"
-                } transition-all duration-300 ease-in-out transform hover:scale-105`}
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className={`inline-flex items-center justify-center w-full px-6 py-3 text-base font-semibold rounded-lg shadow-md ${
-                  theme === "light"
-                    ? "text-gray-700 bg-gray-100 hover:text-gray-600 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-opacity-50"
-                    : "text-white bg-gray-600 hover:bg-gray-500 focus:outline-none focus:ring-4 focus:ring-blue-700 focus:ring-opacity-50"
-                } transition-all duration-300 ease-in-out transform hover:scale-105`}
-              >
-                Cancel
-              </button>
+              <div className="flex justify-end space-x-4">
+                {activeTab === "wells" && (
+                  <button
+                    type="button"
+                    onClick={handleAddWell}
+                    className="p-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                  >
+                    <FontAwesomeIcon icon={faPlus} /> Add Well
+                  </button>
+                )}
+                {activeTab === "tanks" && (
+                  <button
+                    type="button"
+                    onClick={handleAddTank}
+                    className="p-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                  >
+                    <FontAwesomeIcon icon={faPlus} /> Add Tank
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </form>
+          {/* </div> */}
         </div>
       </div>
     </div>

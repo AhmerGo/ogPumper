@@ -13,6 +13,10 @@ function SignInPage() {
   const { setUser } = useUser();
   const [successMessage, setSuccessMessage] = useState("");
   const [subdomain, setSubdomain] = useState("");
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [isExistingUser, setIsExistingUser] = useState(null);
+  const [userID, setUserID] = useState("");
+  const [token, setToken] = useState("");
 
   const formAnimation = useSpring({
     opacity: 1,
@@ -27,10 +31,8 @@ function SignInPage() {
       const parts = hostname.split(".");
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        console.log(`sub domain ${subdomainPart}`);
         setSubdomain(subdomainPart);
       } else {
-        console.log(`sub domain ${parts}`);
         setSubdomain("");
       }
     };
@@ -52,10 +54,8 @@ function SignInPage() {
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
       }
 
       const response = await fetch(`${baseUrl}/api/passwordreset.php`, {
@@ -74,7 +74,6 @@ function SignInPage() {
         setSuccessMessage(""); // Clear any previous success message
       }
     } catch (error) {
-      console.error("Error sending password reset email:", error);
       setError("An error occurred while sending password reset email.");
       setSuccessMessage(""); // Clear any previous success message
     }
@@ -90,10 +89,8 @@ function SignInPage() {
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
       }
 
       const response = await fetch(`${baseUrl}/api/login_api.php`, {
@@ -105,7 +102,6 @@ function SignInPage() {
       });
       const data = await response.json();
       const { success, message, user } = data;
-      console.log(data);
       if (success) {
         setUser(user.Role, user.UserID);
         localStorage.setItem("userRole", user.Role);
@@ -115,13 +111,11 @@ function SignInPage() {
         setError(message);
       }
     } catch (error) {
-      console.error("Error signing in:", error);
       setError("An error occurred while signing in.");
     }
   }
 
   const handleGoogleLoginSuccess = (response) => {
-    // Send the token to the backend
     const token = response.credential;
     const hostname = window.location.hostname;
     const parts = hostname.split(".");
@@ -130,10 +124,8 @@ function SignInPage() {
     if (parts.length > 2) {
       const subdomainPart = parts.shift();
       baseUrl = `https://${subdomainPart}.ogpumper.net`;
-      console.log(`Using subdomain URL: ${baseUrl}`);
     } else {
       baseUrl = "https://ogfieldticket.com";
-      console.log(`Using default URL: ${baseUrl}`);
     }
 
     fetch(`${baseUrl}/api/google_login.php`, {
@@ -146,7 +138,50 @@ function SignInPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const { success, message, user } = data;
+          const { user } = data;
+          setUser(user.Role, user.UserID);
+          localStorage.setItem("userRole", user.Role);
+          localStorage.setItem("userID", user.UserID);
+          navigate("/home");
+        } else if (data.message === "User not found") {
+          setShowPrompt(true);
+          setToken(token);
+        } else {
+          setError("Google Sign-In failed.");
+        }
+      })
+      .catch((error) => {
+        setError("An error occurred during Google Sign-In.");
+      });
+  };
+
+  const handleGoogleLoginError = () => {
+    setError("Google Sign-In failed.");
+  };
+
+  const handleExistingUserSubmit = () => {
+    const hostname = window.location.hostname;
+    const parts = hostname.split(".");
+    let baseUrl;
+
+    if (parts.length > 2) {
+      const subdomainPart = parts.shift();
+      baseUrl = `https://${subdomainPart}.ogpumper.net`;
+    } else {
+      baseUrl = "https://ogfieldticket.com";
+    }
+
+    fetch(`${baseUrl}/api/google_login.php`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token, userID }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          const { user } = data;
           setUser(user.Role, user.UserID);
           localStorage.setItem("userRole", user.Role);
           localStorage.setItem("userID", user.UserID);
@@ -156,13 +191,10 @@ function SignInPage() {
         }
       })
       .catch((error) => {
-        console.error("Error during Google Sign-In:", error);
         setError("An error occurred during Google Sign-In.");
       });
-  };
 
-  const handleGoogleLoginError = () => {
-    setError("Google Sign-In failed.");
+    setShowPrompt(false);
   };
 
   return (
@@ -247,6 +279,30 @@ function SignInPage() {
             />
           </div>
         </animated.div>
+
+        {showPrompt && (
+          <div className="modal">
+            <div className="modal-content">
+              <h2>Are you an existing user?</h2>
+              <button onClick={() => setIsExistingUser(true)}>Yes</button>
+              <button onClick={() => setIsExistingUser(false)}>No</button>
+            </div>
+          </div>
+        )}
+
+        {isExistingUser && (
+          <div className="modal">
+            <div className="modal-content">
+              <h2>Enter your User ID</h2>
+              <input
+                type="text"
+                value={userID}
+                onChange={(e) => setUserID(e.target.value)}
+              />
+              <button onClick={handleExistingUserSubmit}>Submit</button>
+            </div>
+          </div>
+        )}
       </div>
     </GoogleOAuthProvider>
   );
