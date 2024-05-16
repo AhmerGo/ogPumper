@@ -270,14 +270,16 @@ function SignInPage() {
               </a>
             </p>
           </form>
-          <div className="flex justify-center mt-6">
-            <GoogleLogin
-              onSuccess={handleGoogleLoginSuccess}
-              onError={handleGoogleLoginError}
-              scope="openid profile email"
-              className="w-full"
-            />
-          </div>
+          {subdomain === "" && (
+            <div className="flex justify-center mt-6">
+              <GoogleLogin
+                onSuccess={handleGoogleLoginSuccess}
+                onError={handleGoogleLoginError}
+                scope="openid profile email"
+                className="w-full"
+              />
+            </div>
+          )}
         </animated.div>
 
         {showPrompt && (
