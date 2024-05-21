@@ -285,12 +285,12 @@ function HomePage() {
                   })}
                 </ul>
 
-                <div className="py-6 flex justify-center items-center">
+                <div className="py-6 flex justify-center items-center flex-wrap space-y-2 md:space-y-0">
                   {paginationAnimation.map((props, number) => (
                     <animated.button
                       key={number}
                       onClick={() => paginate(number + 1)}
-                      className={`mx-2 px-4 py-2 rounded-full focus:outline-none text-base md:text-sm shadow-md transition duration-150 ease-in-out ${
+                      className={`w-8 h-8 md:w-10 md:h-10 flex items-center justify-center mx-1 md:mx-2 px-2 md:px-4 py-2 rounded-full focus:outline-none text-sm md:text-base shadow-md transition duration-150 ease-in-out ${
                         currentPage === number + 1
                           ? theme === "dark"
                             ? "bg-blue-600 text-white"
