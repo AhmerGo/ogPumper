@@ -2,6 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faExclamationCircle,
+  faCheckCircle,
+  faUser,
+  faLock,
+  faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 import logo from "../assets/logo.jpg";
 import { useUser } from "./UserContext";
 
@@ -38,6 +46,7 @@ function SignInPage() {
     };
 
     extractSubdomain();
+    setShowPrompt(true);
   }, []);
 
   const handleForgotPassword = async () => {
@@ -77,6 +86,43 @@ function SignInPage() {
       setError("An error occurred while sending password reset email.");
       setSuccessMessage(""); // Clear any previous success message
     }
+  };
+  const handleCreateNewUser = async () => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+      }
+
+      const response = await fetch(`${baseUrl}/api/google_login.php`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token, password }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const { user } = data;
+        setUser(user.Role, user.UserID);
+        localStorage.setItem("userRole", user.Role);
+        localStorage.setItem("userID", user.UserID);
+        navigate("/home");
+      } else {
+        setError("Failed to create new user");
+      }
+    } catch (error) {
+      setError("An error occurred while creating new user");
+    }
+
+    setShowPrompt(false);
   };
 
   async function handleSignIn(e) {
@@ -216,6 +262,7 @@ function SignInPage() {
                 className="block text-gray-700 font-semibold mb-2 text-base sm:text-lg"
                 htmlFor="username"
               >
+                <FontAwesomeIcon icon={faUser} className="mr-2" />
                 Username
               </label>
               <input
@@ -232,6 +279,7 @@ function SignInPage() {
                 className="block text-gray-700 font-semibold mb-2 text-base sm:text-lg"
                 htmlFor="password"
               >
+                <FontAwesomeIcon icon={faLock} className="mr-2" />
                 Password
               </label>
               <input
@@ -245,12 +293,14 @@ function SignInPage() {
             </div>
             {successMessage && (
               <p className="text-green-500 text-base sm:text-lg animate-pulse">
+                <FontAwesomeIcon icon={faCheckCircle} className="mr-2" />
                 {successMessage}
               </p>
             )}
 
             {error && (
               <p className="text-red-500 text-base sm:text-lg animate-pulse">
+                <FontAwesomeIcon icon={faExclamationCircle} className="mr-2" />
                 {error}
               </p>
             )}
@@ -283,25 +333,111 @@ function SignInPage() {
         </animated.div>
 
         {showPrompt && (
-          <div className="modal">
-            <div className="modal-content">
-              <h2>Are you an existing user?</h2>
-              <button onClick={() => setIsExistingUser(true)}>Yes</button>
-              <button onClick={() => setIsExistingUser(false)}>No</button>
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50">
+            <div className="bg-white rounded-lg shadow-xl p-8 space-y-6 max-w-lg mx-auto text-center relative">
+              <button
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setShowPrompt(false);
+                  setIsExistingUser(null);
+                }}
+              >
+                <FontAwesomeIcon icon={faTimes} className="text-2xl" />
+              </button>
+              <FontAwesomeIcon
+                icon={faExclamationCircle}
+                className="text-red-500 text-4xl mb-4"
+              />
+              <h2 className="text-2xl font-semibold text-gray-700">
+                User Not Found
+              </h2>
+              <p className="text-gray-600">Are you an existing user?</p>
+              <div className="flex justify-center space-x-4 mt-4">
+                <button
+                  className="bg-blue-500 text-white py-2 px-6 rounded-md hover:bg-blue-600 transition duration-300 shadow-md"
+                  onClick={() => setIsExistingUser(true)}
+                >
+                  Yes
+                </button>
+                <button
+                  className="bg-red-500 text-white py-2 px-6 rounded-md hover:bg-red-600 transition duration-300 shadow-md"
+                  onClick={() => setIsExistingUser(false)}
+                >
+                  No
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {isExistingUser && (
-          <div className="modal">
-            <div className="modal-content">
-              <h2>Enter your User ID</h2>
+        {isExistingUser !== null && isExistingUser && (
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50">
+            <div className="bg-white rounded-lg shadow-xl p-8 space-y-6 max-w-lg mx-auto text-center relative">
+              <button
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setShowPrompt(false);
+                  setIsExistingUser(null);
+                }}
+              >
+                <FontAwesomeIcon icon={faTimes} className="text-2xl" />
+              </button>
+              <FontAwesomeIcon
+                icon={faUser}
+                className="text-blue-500 text-4xl mb-4"
+              />
+              <h2 className="text-2xl font-semibold text-gray-700">
+                Enter your User ID
+              </h2>
               <input
                 type="text"
                 value={userID}
                 onChange={(e) => setUserID(e.target.value)}
+                className="w-full border-gray-300 border-2 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
+                placeholder="User ID"
               />
-              <button onClick={handleExistingUserSubmit}>Submit</button>
+              <button
+                className="bg-green-500 text-white py-2 px-6 rounded-md hover:bg-green-600 transition duration-300 shadow-md mt-4"
+                onClick={handleExistingUserSubmit}
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isExistingUser !== null && !isExistingUser && (
+          <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50">
+            <div className="bg-white rounded-lg shadow-xl p-8 space-y-6 max-w-lg mx-auto text-center relative">
+              <button
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                onClick={() => {
+                  setShowPrompt(false);
+                  setIsExistingUser(null);
+                }}
+              >
+                <FontAwesomeIcon icon={faTimes} className="text-2xl" />
+              </button>
+              <FontAwesomeIcon
+                icon={faLock}
+                className="text-yellow-500 text-4xl mb-4"
+              />
+              <h2 className="text-2xl font-semibold text-gray-700">
+                Create a New Password
+              </h2>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full border-gray-300 border-2 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
+                placeholder="New Password"
+              />
+              <button
+                className="bg-green-500 text-white py-2 px-6 rounded-md hover:bg-green-600 transition duration-300 shadow-md mt-4"
+                onClick={handleCreateNewUser}
+              >
+                Submit
+              </button>
             </div>
           </div>
         )}
