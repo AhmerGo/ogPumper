@@ -20,11 +20,6 @@ function HomePage() {
   const [subdomain, setSubdomain] = useState("");
   const [showUnbilled, setShowUnbilled] = useState(false);
 
-  const [buttonAnimation, setButtonAnimation] = useSpring(() => ({
-    scale: 1,
-    config: { tension: 300, friction: 10 },
-  }));
-
   useEffect(() => {
     const extractSubdomain = () => {
       const hostname = window.location.hostname;
@@ -98,8 +93,6 @@ function HomePage() {
 
   const fetchTickets = useCallback(async () => {
     try {
-      console.log(userRole + "  and " + userID);
-
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
       let baseUrl;
@@ -115,6 +108,7 @@ function HomePage() {
 
       const response = await fetch(`${baseUrl}/api/tickets.php`);
       const data = await response.json();
+
       let filteredTickets = data;
 
       if (userRole === "P") {
@@ -221,7 +215,7 @@ function HomePage() {
                       <button
                         onClick={handleToggle}
                         className={`inline-flex items-center justify-center font-bold py-2 px-4 rounded-full shadow-lg transition duration-200 ease-in-out transform hover:scale-105 ${
-                          showUnbilled && theme == "dark"
+                          showUnbilled && theme === "dark"
                             ? "bg-blue-600 hover:bg-blue-700 text-white"
                             : showUnbilled && theme !== "dark"
                             ? "bg-white hover:bg-gray-100 text-blue-600"

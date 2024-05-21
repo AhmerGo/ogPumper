@@ -46,7 +46,6 @@ function SignInPage() {
     };
 
     extractSubdomain();
-    setShowPrompt(true);
   }, []);
 
   const handleForgotPassword = async () => {

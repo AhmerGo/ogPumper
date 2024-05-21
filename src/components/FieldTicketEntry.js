@@ -14,6 +14,7 @@ function FieldTicketEntry() {
   const navigate = useNavigate();
 
   const [formFields, setFormFields] = useState({
+    leaseID: state?.leaseID || "",
     ticketDate: state?.ticketDate || "",
     lease: state?.lease || "",
     well: state?.well || "",
@@ -24,7 +25,6 @@ function FieldTicketEntry() {
 
   const [items, setItems] = useState([]);
   const [ticketTypes, setTicketTypes] = useState([]);
-  const [leases, setLeases] = useState([]);
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -32,10 +32,8 @@ function FieldTicketEntry() {
       const parts = hostname.split(".");
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        console.log(`sub domain ${subdomainPart}`);
         setSubdomain(subdomainPart);
       } else {
-        console.log(`sub domain ${parts}`);
         setSubdomain("");
       }
     };
@@ -45,7 +43,6 @@ function FieldTicketEntry() {
   }, []);
 
   useEffect(() => {
-    console.log(state);
     const fetchHighestTicketNumber = async () => {
       try {
         const hostname = window.location.hostname;
@@ -55,10 +52,8 @@ function FieldTicketEntry() {
         if (parts.length > 2) {
           const subdomainPart = parts.shift();
           baseUrl = `https://${subdomainPart}.ogpumper.net`;
-          console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
           baseUrl = "https://ogfieldticket.com";
-          console.log(`Using default URL: ${baseUrl}`);
         }
         const response = await fetch(`${baseUrl}/api/tickets.php`);
         const data = await response.json();
@@ -78,32 +73,6 @@ function FieldTicketEntry() {
   }, [subdomain]);
 
   useEffect(() => {
-    const fetchLeases = async () => {
-      try {
-        const hostname = window.location.hostname;
-        const parts = hostname.split(".");
-        let baseUrl;
-
-        if (parts.length > 2) {
-          const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogpumper.net`;
-          console.log(`Using subdomain URL: ${baseUrl}`);
-        } else {
-          baseUrl = "https://ogfieldticket.com";
-          console.log(`Using default URL: ${baseUrl}`);
-        }
-        const response = await fetch(`${baseUrl}/api/leases.php`);
-        const data = await response.json();
-        setLeases(data);
-      } catch (error) {
-        console.error("Error fetching leases:", error);
-      }
-    };
-
-    fetchLeases();
-  }, [subdomain]);
-
-  useEffect(() => {
     const fetchTicketTypes = async () => {
       try {
         const hostname = window.location.hostname;
@@ -113,10 +82,8 @@ function FieldTicketEntry() {
         if (parts.length > 2) {
           const subdomainPart = parts.shift();
           baseUrl = `https://${subdomainPart}.ogpumper.net`;
-          console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
           baseUrl = "https://ogfieldticket.com";
-          console.log(`Using default URL: ${baseUrl}`);
         }
         const response = await fetch(`${baseUrl}/api/jobs.php`);
         const data = await response.json();
@@ -147,7 +114,6 @@ function FieldTicketEntry() {
           )
         );
       } else {
-        // Optionally, provide feedback for invalid input
         console.warn("Quantity must be a positive number");
       }
     }
@@ -169,12 +135,6 @@ function FieldTicketEntry() {
 
       const jobTypeID = selectedTicketType ? selectedTicketType.JobTypeID : "";
 
-      const selectedLease = leases.find(
-        (lease) => lease.LeaseName === formFields.lease
-      );
-
-      const leaseID = selectedLease ? selectedLease.LeaseID : "";
-
       const updatedItems = items.map((item) => ({
         ...item,
         quantity: item.quantity || item.ItemQuantity || 0,
@@ -191,7 +151,7 @@ function FieldTicketEntry() {
         },
         body: JSON.stringify({
           ...formFields,
-          lease: leaseID,
+          lease: formFields.leaseID,
           JobTypeID: jobTypeID,
           userID: userID,
           items: updatedItems,
@@ -276,11 +236,34 @@ function FieldTicketEntry() {
         </button>
 
         <div className="px-6 py-8 md:px-12 md:py-16">
-          <h2 className="text-3xl md:text-4xl font-extrabold mb-8 md:mb-10 text-center transition-colors duration-500">
+          <h2
+            className={`text-4xl font-extrabold ${
+              theme === "dark" ? "text-gray-200" : "text-gray-800"
+            } mb-10 text-center`}
+          >
             Field Ticket
           </h2>
           {/* Desktop layout */}
           <div className="hidden sm:grid grid-cols-3 gap-8 mb-8 items-center text-center">
+            <div>
+              <p
+                className={`text-lg ${
+                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                }`}
+              >
+                Ticket Number:{" "}
+                <span
+                  className={
+                    theme === "dark"
+                      ? "font-semibold text-gray-300"
+                      : "font-semibold text-gray-700"
+                  }
+                >
+                  {formFields.ticketNumber || "N/A"}
+                </span>
+              </p>
+            </div>
+
             <div>
               <p
                 className={`text-lg ${
@@ -353,28 +336,27 @@ function FieldTicketEntry() {
                 </span>
               </p>
             </div>
-            <div>
-              <p
-                className={`text-lg ${
-                  theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                }`}
-              >
-                Ticket Number:{" "}
-                <span
-                  className={
-                    theme === "dark"
-                      ? "font-semibold text-gray-300"
-                      : "font-semibold text-gray-700"
-                  }
-                >
-                  {formFields.ticketNumber || "N/A"}
-                </span>
-              </p>
-            </div>
           </div>
           {/* Mobile layout */}
           <div className="sm:hidden">
             <div className="grid grid-cols-2 gap-4">
+              {/* Ticket Number Section */}
+              <div className="flex flex-col items-center">
+                <p
+                  className={`font-bold ${
+                    theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                  } text-center`}
+                >
+                  Ticket Number
+                </p>
+                <span
+                  className={`block text-center ${
+                    theme === "dark" ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
+                  {formFields.ticketNumber || "N/A"}
+                </span>
+              </div>
               {/* Date Section */}
               <div className="flex flex-col items-center">
                 <p
@@ -393,6 +375,7 @@ function FieldTicketEntry() {
                 </span>
               </div>
               {/* Lease Section */}
+
               <div className="flex flex-col items-center">
                 <p
                   className={`font-bold ${
@@ -409,6 +392,7 @@ function FieldTicketEntry() {
                   {formFields.lease || "N/A"}
                 </span>
               </div>
+
               {/* Well Section */}
               <div className="flex flex-col items-center">
                 <p
@@ -443,31 +427,14 @@ function FieldTicketEntry() {
                   {formFields.ticketType || "N/A"}
                 </span>
               </div>
-              {/* Ticket Number Section */}
-              <div className="flex flex-col items-center">
-                <p
-                  className={`font-bold ${
-                    theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                  } text-center`}
-                >
-                  Ticket Number
-                </p>
-                <span
-                  className={`block text-center ${
-                    theme === "dark" ? "text-gray-300" : "text-gray-700"
-                  }`}
-                >
-                  {formFields.ticketNumber || "N/A"}
-                </span>
-              </div>
             </div>
           </div>
           {items.map((item, index) => (
             <div
               key={index}
-              className={`md:flex md:items-center md:justify-between ${
-                theme === "dark" ? "bg-gray-700" : "bg-gray-100"
-              } p-4 md:p-6 rounded-lg mb-4 md:mb-8`}
+              className={`flex flex-col md:flex-row justify-between items-center ${
+                theme === "dark" ? "bg-gray-700" : "bg-gray-200"
+              } p-4 rounded-lg mb-4 shadow-md`}
             >
               <div className="mb-4 md:mb-0 text-center md:text-left">
                 <h4 className="text-xl md:text-2xl font-semibold transition-colors duration-500">

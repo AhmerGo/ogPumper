@@ -612,7 +612,7 @@ const EditLeaseModal = ({
         className={`relative bg-transparent w-full max-w-3xl mx-auto p-6 rounded-lg ${
           theme === "light" ? "bg-white" : "bg-gray-700"
         }`}
-        style={{ maxHeight: "700px", overflowY: "auto" }}
+        style={{ maxHeight: "800px", overflowY: "auto" }}
       >
         {/* <div
           className={`rounded-lg shadow-lg overflow-hidden transform transition-all ${

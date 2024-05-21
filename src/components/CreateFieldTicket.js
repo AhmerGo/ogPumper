@@ -63,7 +63,6 @@ function CreateFieldTicket() {
       }
       const response = await fetch(`${baseUrl}/api/leases.php`);
       let data = await response.json();
-      console.log("Fetched leases:", data);
 
       data.sort((a, b) => {
         const aNum = parseInt(a.LeaseName, 10);
@@ -172,17 +171,19 @@ function CreateFieldTicket() {
       : "";
 
     const selectedLease = leases.find((l) => l.LeaseID === lease);
+    console.log("Select");
     const leaseName = selectedLease ? selectedLease.LeaseName : "";
-
-    const ticketNumber = Math.floor(Math.random() * 10000);
+    const leaseID = selectedLease ? selectedLease.LeaseID : "";
+    console.log(leaseID);
+    console.log(leaseName);
 
     navigate("/field-ticket-entry", {
       state: {
+        leaseID,
         ticketDate,
         lease: leaseName,
         well,
         ticketType: ticketTypeDescription,
-        ticketNumber,
         noteDefault,
       },
     });
