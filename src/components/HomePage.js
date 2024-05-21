@@ -1,130 +1,12 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import { useSpring, useTrail, animated, config } from "react-spring";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useUser } from "./UserContext";
 import { debounce } from "lodash";
-
-import {
-  faTasks,
-  faMapMarkerAlt,
-  faCalendarAlt,
-  faBriefcase,
-  faPlus,
-  faUser,
-} from "@fortawesome/free-solid-svg-icons";
-
-function TicketItem({ ticket, index, theme, onClick, searchQuery }) {
-  const [hoverAnimation, setHoverAnimation] = useSpring(() => ({
-    scale: 1,
-    config: { tension: 300, friction: 10 },
-  }));
-
-  const [year, month, day] = ticket.TicketDate.split("-");
-  const localDate = new Date(year, month - 1, day);
-  const { userRole, userID } = useUser();
-
-  const formattedDate = localDate.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  const highlightText = (text) => {
-    if (!searchQuery) return text;
-    const regex = new RegExp(`(${searchQuery})`, "gi");
-    return text.split(regex).map((part, i) =>
-      i % 2 === 0 ? (
-        part
-      ) : (
-        <mark key={i} className="bg-yellow-200 text-black">
-          {part}
-        </mark>
-      )
-    );
-  };
-
-  return (
-    <animated.li
-      className={`flex flex-col md:flex-row justify-between items-center p-6 ${
-        index % 2 === 0
-          ? theme === "dark"
-            ? "bg-gray-800 text-white"
-            : "bg-white text-gray-800"
-          : theme === "dark"
-          ? "bg-gray-700 text-white"
-          : "bg-gray-100 text-gray-800"
-      } rounded-lg m-4 shadow-lg cursor-pointer`}
-      style={{
-        transform: hoverAnimation.scale.interpolate((s) => `scale(${s})`),
-      }}
-      onMouseEnter={() => setHoverAnimation({ scale: 1.05 })}
-      onMouseLeave={() => setHoverAnimation({ scale: 1 })}
-      onClick={onClick}
-    >
-      <div className="flex-grow mb-4 md:mb-0">
-        <h3 className="text-2xl md:text-3xl font-bold mb-2 text-center md:text-left">
-          <Link
-            to="/view-field-ticket"
-            state={ticket}
-            className="text-blue-500 hover:text-blue-600"
-          >
-            Ticket: {ticket.Ticket}
-          </Link>
-        </h3>
-        <div className="text-gray-500 mt-2 text-lg md:text-xl">
-          <div className="flex items-center justify-center md:justify-start">
-            <FontAwesomeIcon
-              icon={faMapMarkerAlt}
-              className="mr-2"
-              fixedWidth
-            />
-            <>
-              {ticket.WellID !== null ? (
-                <span>
-                  {ticket.LeaseName} # {ticket.WellID}
-                </span>
-              ) : (
-                <span>{ticket.LeaseName}</span>
-              )}
-            </>
-          </div>
-          <div className="flex items-center justify-center md:justify-start">
-            <FontAwesomeIcon icon={faCalendarAlt} className="mr-2" fixedWidth />
-            <span> {formattedDate}</span>
-          </div>
-          <div className="flex items-center justify-center md:justify-start">
-            <FontAwesomeIcon icon={faBriefcase} className="mr-2" fixedWidth />
-            <span> {ticket.JobDescription}</span>
-          </div>
-
-          {userRole !== "P" && (
-            <div className="flex items-center justify-center md:justify-start">
-              <FontAwesomeIcon icon={faUser} className="mr-2" fixedWidth />
-              <span className="font-semibold">
-                {" "}
-                {ticket.UserID
-                  ? ticket.UserID.charAt(0).toUpperCase() +
-                    ticket.UserID.slice(1)
-                  : "N/A"}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick();
-        }}
-        className="text-lg md:text-xl text-primary-500 hover:text-primary-600 font-semibold py-2 px-4 rounded-lg border border-primary-500 hover:border-primary-600 transition duration-150 ease-in-out"
-      >
-        View Details →
-      </button>
-    </animated.li>
-  );
-}
+import TicketItem from "./TicketItem"; // Import the memoized component
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 
 function HomePage() {
   const [tickets, setTickets] = useState([]);
@@ -136,6 +18,7 @@ function HomePage() {
   const { userRole, userID } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [subdomain, setSubdomain] = useState("");
+  const [showUnbilled, setShowUnbilled] = useState(false);
 
   const [buttonAnimation, setButtonAnimation] = useSpring(() => ({
     scale: 1,
@@ -157,6 +40,11 @@ function HomePage() {
     };
 
     extractSubdomain();
+
+    const savedShowUnbilled = localStorage.getItem("showUnbilled");
+    if (savedShowUnbilled !== null) {
+      setShowUnbilled(JSON.parse(savedShowUnbilled));
+    }
   }, []);
 
   const pageAnimation = useSpring({
@@ -186,9 +74,27 @@ function HomePage() {
     }
   );
 
-  const handleSearchChange = (event) => {
-    debouncedSearch(event.target.value);
-  };
+  const debouncedSearch = useCallback(
+    debounce((query) => {
+      setSearchQuery(query);
+    }, 300),
+    []
+  );
+
+  const handleSearchChange = useCallback(
+    (event) => {
+      debouncedSearch(event.target.value);
+    },
+    [debouncedSearch]
+  );
+
+  const handleToggle = useCallback(() => {
+    setShowUnbilled((prevState) => {
+      const newState = !prevState;
+      localStorage.setItem("showUnbilled", JSON.stringify(newState));
+      return newState;
+    });
+  }, []);
 
   const fetchTickets = useCallback(async () => {
     try {
@@ -217,6 +123,13 @@ function HomePage() {
         );
       }
 
+      filteredTickets = filteredTickets.filter(
+        (ticket) =>
+          (userRole !== "P" || ticket.Billed !== "Y") &&
+          (!showUnbilled || ticket.Billed !== "Y") &&
+          (userRole !== "P" || ticket.UserID === userID)
+      );
+
       if (searchQuery) {
         const lowercaseQuery = searchQuery.toLowerCase();
         filteredTickets = filteredTickets.filter((ticket) =>
@@ -237,24 +150,21 @@ function HomePage() {
       console.error("Error fetching tickets:", error);
       setLoading(false);
     }
-  }, [userRole, searchQuery, subdomain, userID]);
+  }, [userRole, searchQuery, subdomain, userID, showUnbilled]);
 
   useEffect(() => {
     fetchTickets();
-  }, [fetchTickets, subdomain, userRole, userID, searchQuery]);
+    window.scrollTo(0, 0);
+  }, [fetchTickets, subdomain, userRole, userID, searchQuery, showUnbilled]);
 
-  const handleViewDetailsClick = (ticket) => {
-    navigate("/view-field-ticket", { state: ticket });
-  };
-
-  const debouncedSearch = useCallback(
-    debounce((query) => {
-      setSearchQuery(query);
-    }, 300),
-    []
+  const handleViewDetailsClick = useCallback(
+    (ticket) => {
+      navigate("/view-field-ticket", { state: ticket });
+    },
+    [navigate]
   );
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const paginate = useCallback((pageNumber) => setCurrentPage(pageNumber), []);
 
   return (
     <>
@@ -280,9 +190,7 @@ function HomePage() {
               className="flex flex-col justify-start items-center pt-10"
               style={{
                 opacity: pageAnimation.opacity,
-                transform: pageAnimation.scale.interpolate(
-                  (s) => `scale(${s})`
-                ),
+                transform: pageAnimation.scale.to((s) => `scale(${s})`),
               }}
             >
               <div
@@ -307,10 +215,34 @@ function HomePage() {
                   >
                     Ticket Dashboard
                   </h2>
+
+                  {userRole !== "P" && (
+                    <div className="absolute top-4 right-4 flex items-center space-x-2">
+                      <button
+                        onClick={handleToggle}
+                        className={`inline-flex items-center justify-center font-bold py-2 px-4 rounded-full shadow-lg transition duration-200 ease-in-out transform hover:scale-105 ${
+                          showUnbilled && theme == "dark"
+                            ? "bg-blue-600 hover:bg-blue-700 text-white"
+                            : showUnbilled && theme !== "dark"
+                            ? "bg-white hover:bg-gray-100 text-blue-600"
+                            : theme === "dark"
+                            ? "bg-blue-600 hover:bg-blue-700 text-white"
+                            : "bg-white hover:bg-gray-100 text-blue-600"
+                        }`}
+                      >
+                        <FontAwesomeIcon
+                          icon={showUnbilled ? faEye : faEyeSlash}
+                          className="mr-2"
+                        />
+                        {showUnbilled ? "Unbilled" : "Billed"}
+                      </button>
+                    </div>
+                  )}
+
                   <div className="mb-6">
                     <input
                       type="text"
-                      placeholder="Search by ticket fields eg. 05-06, circulate, etc  "
+                      placeholder="Search by ticket fields eg. 05-06, circulate, etc"
                       onChange={handleSearchChange}
                       className={`w-full max-w-lg px-4 py-2 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 ${
                         theme === "dark"
@@ -319,7 +251,6 @@ function HomePage() {
                       }`}
                     />
                   </div>
-
                   <div className="flex justify-center space-x-4">
                     <Link
                       to="/create-field-ticket"

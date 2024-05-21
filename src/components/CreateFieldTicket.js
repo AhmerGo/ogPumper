@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import { useSpring, animated } from "react-spring";
+import debounce from "lodash.debounce";
 
 function CreateFieldTicket() {
   const navigate = useNavigate();
@@ -40,53 +41,56 @@ function CreateFieldTicket() {
     config: { mass: 1, tension: 280, friction: 25 },
   });
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Adjust this if you want the end of today as the limit
+  const today = useMemo(() => {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }, []);
 
-  useEffect(() => {
-    const fetchLeases = async () => {
-      try {
-        const hostname = window.location.hostname;
-        const parts = hostname.split(".");
-        let baseUrl;
+  const fetchLeases = useCallback(async () => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
 
-        if (parts.length > 2) {
-          const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogpumper.net`;
-          console.log(`Using subdomain URL: ${baseUrl}`);
-        } else {
-          baseUrl = "https://ogfieldticket.com";
-          console.log(`Using default URL: ${baseUrl}`);
-        }
-        const response = await fetch(`${baseUrl}/api/leases.php`);
-        let data = await response.json();
-        console.log("Fetched leases:", data);
-
-        // Sort leases numerically first, then alphabetically
-        data.sort((a, b) => {
-          const aNum = parseInt(a.LeaseName, 10);
-          const bNum = parseInt(b.LeaseName, 10);
-          if (isNaN(aNum) && isNaN(bNum)) {
-            return a.LeaseName.localeCompare(b.LeaseName);
-          }
-          if (isNaN(aNum)) return 1;
-          if (isNaN(bNum)) return -1;
-          if (aNum === bNum) {
-            return a.LeaseName.localeCompare(b.LeaseName);
-          }
-          return aNum - bNum;
-        });
-
-        setLeases(data);
-      } catch (error) {
-        console.error("Error fetching leases:", error);
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
       }
-    };
-    fetchLeases(); // Ensure fetchLeases is called regardless of the subdomain
-  }, [subdomain]);
+      const response = await fetch(`${baseUrl}/api/leases.php`);
+      let data = await response.json();
+      console.log("Fetched leases:", data);
+
+      data.sort((a, b) => {
+        const aNum = parseInt(a.LeaseName, 10);
+        const bNum = parseInt(b.LeaseName, 10);
+        if (isNaN(aNum) && isNaN(bNum)) {
+          return a.LeaseName.localeCompare(b.LeaseName);
+        }
+        if (isNaN(aNum)) return 1;
+        if (isNaN(bNum)) return -1;
+        if (aNum === bNum) {
+          return a.LeaseName.localeCompare(b.LeaseName);
+        }
+        return aNum - bNum;
+      });
+
+      setLeases(data);
+    } catch (error) {
+      console.error("Error fetching leases:", error);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchWells = async () => {
+    fetchLeases();
+  }, [fetchLeases]);
+
+  const fetchWells = useCallback(
+    debounce(async (lease) => {
       if (lease) {
         try {
           const hostname = window.location.hostname;
@@ -113,36 +117,41 @@ function CreateFieldTicket() {
       } else {
         setWells([]);
       }
-    };
-    fetchWells(); // Ensure fetchWells is called regardless of the subdomain
-  }, [lease, subdomain]);
+    }, 300),
+    []
+  );
 
   useEffect(() => {
-    const fetchTicketTypes = async () => {
-      try {
-        const hostname = window.location.hostname;
-        const parts = hostname.split(".");
-        let baseUrl;
+    fetchWells(lease);
+  }, [lease, fetchWells]);
 
-        if (parts.length > 2) {
-          const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogpumper.net`;
-          console.log(`Using subdomain URL: ${baseUrl}`);
-        } else {
-          baseUrl = "https://ogfieldticket.com";
-          console.log(`Using default URL: ${baseUrl}`);
-        }
+  const fetchTicketTypes = useCallback(async () => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
 
-        const response = await fetch(`${baseUrl}/api/jobs.php`);
-        const data = await response.json();
-        console.log(data);
-        setTicketTypes(data);
-      } catch (error) {
-        console.error("Error fetching ticket types:", error);
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
       }
-    };
-    fetchTicketTypes(); // Ensure fetchTicketTypes is called regardless of the subdomain
-  }, [subdomain]);
+
+      const response = await fetch(`${baseUrl}/api/jobs.php`);
+      const data = await response.json();
+      console.log(data);
+      setTicketTypes(data);
+    } catch (error) {
+      console.error("Error fetching ticket types:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTicketTypes();
+  }, [fetchTicketTypes]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -251,7 +260,7 @@ function CreateFieldTicket() {
               <DatePicker
                 selected={ticketDate}
                 onChange={(date) => setTicketDate(date)}
-                maxDate={today} // This restricts users from selecting a date beyond today
+                maxDate={today}
                 className={`form-input w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 transition-colors duration-500 ${
                   theme === "dark"
                     ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
@@ -361,8 +370,8 @@ function CreateFieldTicket() {
               Submit
             </animated.button>
             <animated.button
-              type="button" // Changed from 'submit' to 'button'
-              onClick={() => navigate("/home")} // Redirect to home page
+              type="button"
+              onClick={() => navigate("/home")}
               style={{
                 opacity: pageAnimation.opacity,
                 transform: pageAnimation.y.interpolate(

@@ -155,10 +155,6 @@ function SignInPage() {
       });
   };
 
-  const handleGoogleLoginError = () => {
-    setError("Google Sign-In failed.");
-  };
-
   const handleExistingUserSubmit = () => {
     const hostname = window.location.hostname;
     const parts = hostname.split(".");
@@ -176,7 +172,7 @@ function SignInPage() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ token, userID }),
+      body: JSON.stringify({ token, userID, password }),
     })
       .then((res) => res.json())
       .then((data) => {
@@ -195,6 +191,10 @@ function SignInPage() {
       });
 
     setShowPrompt(false);
+  };
+
+  const handleGoogleLoginError = () => {
+    setError("Google Sign-In failed.");
   };
 
   return (

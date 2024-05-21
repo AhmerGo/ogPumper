@@ -461,8 +461,11 @@ const EditLeaseModal = ({
       });
 
       if (response.status === 200) {
-        // Update the local state to remove the deleted well
-        setWells(wells.filter((well) => well.UniqID !== wellId));
+        // Update the form data state to remove the deleted well
+        setFormData({
+          ...formData,
+          Wells: formData.Wells.filter((well) => well.UniqID !== wellId),
+        });
       } else {
         console.error("Error deleting well:", response.data.message);
         // Display an error message to the user
@@ -514,25 +517,29 @@ const EditLeaseModal = ({
     setWells(updatedWells);
   };
   const handleAddTank = () => {
-    setTanks([
-      ...tanks,
-      {
-        UniqID: "",
-        LeaseID: lease.LeaseID,
-        TankID: "",
-        Size: "",
-        BBLSperInch: "",
-        Active: "Y",
-        TankType: "T",
-        GasCoeff: "",
-        ExcludeDrawsFromProd: "N",
-        WPTankNum: "",
-      },
-    ]);
+    setFormData({
+      ...formData,
+      Tanks: [
+        ...formData.Tanks,
+        {
+          UniqID: "",
+          LeaseID: lease.LeaseID,
+          TankID: "",
+          Size: "",
+          BBLSperInch: "",
+          Active: "Y",
+          TankType: "T",
+          GasCoeff: "",
+          ExcludeDrawsFromProd: "N",
+          WPTankNum: "",
+        },
+      ],
+    });
     setTimeout(() => {
       tankSectionRef.current.scrollTop = tankSectionRef.current.scrollHeight;
     }, 100);
   };
+
   const handleDeleteTank = async (tankId) => {
     try {
       const hostname = window.location.hostname;
@@ -553,8 +560,11 @@ const EditLeaseModal = ({
       });
 
       if (response.status === 200) {
-        // Update the local state to remove the deleted tank
-        setTanks(tanks.filter((tank) => tank.UniqID !== tankId));
+        // Update the form data state to remove the deleted tank
+        setFormData({
+          ...formData,
+          Tanks: formData.Tanks.filter((tank) => tank.UniqID !== tankId),
+        });
       } else {
         console.error("Error deleting tank:", response.data.message);
         // Display an error message to the user
@@ -566,26 +576,27 @@ const EditLeaseModal = ({
   };
 
   const handleAddWell = () => {
-    setWells([
-      ...wells,
-      {
-        UniqID: "",
-        LeaseID: lease.LeaseID,
-        WellID: "",
-        Active: "Y",
-        PropertyNum: "",
-        AllocPct: "",
-      },
-    ]);
+    setFormData({
+      ...formData,
+      Wells: [
+        ...formData.Wells,
+        {
+          UniqID: "",
+          LeaseID: lease.LeaseID,
+          WellID: "",
+          Active: "Y",
+          PropertyNum: "",
+          AllocPct: "",
+        },
+      ],
+    });
     setTimeout(() => {
       wellSectionRef.current.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     onSave(e, { wells, tanks });
-    setFormData(lease); // Reset the form data to the original lease values
   };
 
   return (
@@ -987,7 +998,7 @@ const EditLeaseModal = ({
             {activeTab === "tanks" && (
               <>
                 <div ref={tankSectionRef} className="space-y-4">
-                  {tanks.map((tank, index) => (
+                  {formData.Tanks.map((tank, index) => (
                     <div key={index} className="border rounded-lg p-4">
                       <div
                         onClick={() => toggleExpandTank(index)}
@@ -1023,11 +1034,14 @@ const EditLeaseModal = ({
                               placeholder="Tank ID"
                               value={tank.TankID}
                               onChange={(e) =>
-                                handleTankChange(
-                                  index,
-                                  "TankID",
-                                  e.target.value
-                                )
+                                setFormData({
+                                  ...formData,
+                                  Tanks: formData.Tanks.map((t, i) =>
+                                    i === index
+                                      ? { ...t, TankID: e.target.value }
+                                      : t
+                                  ),
+                                })
                               }
                               className={`mt-1 form-input block w-full px-3 py-2 ${
                                 theme === "light"
@@ -1054,7 +1068,14 @@ const EditLeaseModal = ({
                               placeholder="Size"
                               value={tank.Size || 0}
                               onChange={(e) =>
-                                handleTankChange(index, "Size", e.target.value)
+                                setFormData({
+                                  ...formData,
+                                  Tanks: formData.Tanks.map((t, i) =>
+                                    i === index
+                                      ? { ...t, Size: e.target.value }
+                                      : t
+                                  ),
+                                })
                               }
                               className={`mt-1 form-input block w-full px-3 py-2 ${
                                 theme === "light"
@@ -1080,11 +1101,14 @@ const EditLeaseModal = ({
                               placeholder="BBLS per Inch"
                               value={tank.BBLSperInch}
                               onChange={(e) =>
-                                handleTankChange(
-                                  index,
-                                  "BBLSperInch",
-                                  e.target.value
-                                )
+                                setFormData({
+                                  ...formData,
+                                  Tanks: formData.Tanks.map((t, i) =>
+                                    i === index
+                                      ? { ...t, BBLSperInch: e.target.value }
+                                      : t
+                                  ),
+                                })
                               }
                               className={`mt-1 form-input block w-full px-3 py-2 ${
                                 theme === "light"
@@ -1108,11 +1132,14 @@ const EditLeaseModal = ({
                             <select
                               value={tank.TankType}
                               onChange={(e) =>
-                                handleTankChange(
-                                  index,
-                                  "TankType",
-                                  e.target.value
-                                )
+                                setFormData({
+                                  ...formData,
+                                  Tanks: formData.Tanks.map((t, i) =>
+                                    i === index
+                                      ? { ...t, TankType: e.target.value }
+                                      : t
+                                  ),
+                                })
                               }
                               className={`mt-1 form-input block w-full px-3 py-2 ${
                                 theme === "light"
@@ -1142,11 +1169,14 @@ const EditLeaseModal = ({
                               placeholder="WP Tank Num"
                               value={tank.WPTankNum}
                               onChange={(e) =>
-                                handleTankChange(
-                                  index,
-                                  "WPTankNum",
-                                  e.target.value
-                                )
+                                setFormData({
+                                  ...formData,
+                                  Tanks: formData.Tanks.map((t, i) =>
+                                    i === index
+                                      ? { ...t, WPTankNum: e.target.value }
+                                      : t
+                                  ),
+                                })
                               }
                               className={`mt-1 form-input block w-full px-3 py-2 ${
                                 theme === "light"
@@ -1169,11 +1199,14 @@ const EditLeaseModal = ({
                             <select
                               value={tank.Active}
                               onChange={(e) =>
-                                handleTankChange(
-                                  index,
-                                  "Active",
-                                  e.target.value
-                                )
+                                setFormData({
+                                  ...formData,
+                                  Tanks: formData.Tanks.map((t, i) =>
+                                    i === index
+                                      ? { ...t, Active: e.target.value }
+                                      : t
+                                  ),
+                                })
                               }
                               className={`mt-1 form-input block w-full px-3 py-2 ${
                                 theme === "light"
@@ -1205,7 +1238,7 @@ const EditLeaseModal = ({
 
             {activeTab === "wells" && (
               <div ref={wellSectionRef} className="space-y-4 mt-6">
-                {wells.map((well, index) => (
+                {formData.Wells?.map((well, index) => (
                   <div key={index} className="border rounded-lg p-4">
                     <div
                       onClick={() => toggleExpandWell(index)}
@@ -1236,7 +1269,14 @@ const EditLeaseModal = ({
                             placeholder="Well ID"
                             value={well.WellID}
                             onChange={(e) =>
-                              handleWellChange(index, "WellID", e.target.value)
+                              setFormData({
+                                ...formData,
+                                Wells: formData.Wells.map((w, i) =>
+                                  i === index
+                                    ? { ...w, WellID: e.target.value }
+                                    : w
+                                ),
+                              })
                             }
                             className={`mt-1 form-input block w-full px-3 py-2 ${
                               theme === "light"
@@ -1260,11 +1300,14 @@ const EditLeaseModal = ({
                             placeholder="Allocation Percentage"
                             value={well.AllocPct}
                             onChange={(e) =>
-                              handleWellChange(
-                                index,
-                                "AllocPct",
-                                e.target.value
-                              )
+                              setFormData({
+                                ...formData,
+                                Wells: formData.Wells.map((w, i) =>
+                                  i === index
+                                    ? { ...w, AllocPct: e.target.value }
+                                    : w
+                                ),
+                              })
                             }
                             className={`mt-1 form-input block w-full px-3 py-2 ${
                               theme === "light"
@@ -1285,7 +1328,14 @@ const EditLeaseModal = ({
                           <select
                             value={well.Active}
                             onChange={(e) =>
-                              handleWellChange(index, "Active", e.target.value)
+                              setFormData({
+                                ...formData,
+                                Wells: formData.Wells.map((w, i) =>
+                                  i === index
+                                    ? { ...w, Active: e.target.value }
+                                    : w
+                                ),
+                              })
                             }
                             className={`mt-1 form-input block w-full px-3 py-2 ${
                               theme === "light"
@@ -1345,7 +1395,6 @@ const EditLeaseModal = ({
                   type="button"
                   onClick={() => {
                     onClose();
-                    setFormData(lease); // Reset the form data to the original lease values
                   }}
                   className="p-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
                 >

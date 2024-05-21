@@ -723,9 +723,9 @@ const ViewFieldTicket = () => {
                   {userRole !== "P" && (
                     <animated.p
                       style={itemAnimation}
-                      className={`text-center ${
+                      className={`font-bold ${
                         theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      }`}
+                      } text-center`}
                     >
                       Billed:{" "}
                       <span
