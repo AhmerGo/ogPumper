@@ -212,9 +212,10 @@ function HomePage() {
 
                   {userRole !== "P" && (
                     <div className="absolute top-4 right-4 flex items-center space-x-2">
+                      {/* Desktop Version */}
                       <button
                         onClick={handleToggle}
-                        className={`inline-flex items-center justify-center font-bold py-2 px-4 rounded-full shadow-lg transition duration-200 ease-in-out transform hover:scale-105 ${
+                        className={`hidden sm:inline-flex items-center justify-center font-bold py-2 px-4 rounded-full shadow-lg transition duration-200 ease-in-out transform hover:scale-105 ${
                           showUnbilled && theme === "dark"
                             ? "bg-blue-600 hover:bg-blue-700 text-white"
                             : showUnbilled && theme !== "dark"
@@ -230,6 +231,9 @@ function HomePage() {
                         />
                         {showUnbilled ? "Unbilled" : "Billed"}
                       </button>
+
+                      {/* Mobile Version */}
+                      <div className="hidden sm:block"></div>
                     </div>
                   )}
 

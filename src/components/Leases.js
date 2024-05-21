@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEdit,
   faTrash,
-  faSave,
   faTimes,
   faPlus,
   faChevronUp,
@@ -22,7 +21,7 @@ const Leases = () => {
   const [leasesPerPage] = useState(10);
   const [editLease, setEditLease] = useState(null);
   const [formData, setFormData] = useState({});
-  const [subdomain, setSubdomain] = useState("");
+  const [setSubdomain] = useState("");
   const [purchasers, setPurchasers] = useState([]);
 
   useEffect(() => {
@@ -393,9 +392,9 @@ const EditLeaseModal = ({
   const [tagOptions, setTagOptions] = useState([]);
   const [pumperOptions, setPumperOptions] = useState([]);
   const [reliefOptions, setReliefOptions] = useState([]);
-  const [subdomain, setSubdomain] = useState("");
-  const [tanks, setTanks] = useState(lease.Tanks || []);
-  const [wells, setWells] = useState(lease.Wells || []);
+  const [setSubdomain] = useState("");
+  const [tanks] = useState(lease.Tanks || []);
+  const [wells] = useState(lease.Wells || []);
   const [expandedTankIndex, setExpandedTankIndex] = useState(null);
   const [expandedWellIndex, setExpandedWellIndex] = useState(null);
   const tankSectionRef = useRef(null);
@@ -505,17 +504,6 @@ const EditLeaseModal = ({
     }
   };
 
-  const handleTankChange = (index, field, value) => {
-    const updatedTanks = [...tanks];
-    updatedTanks[index][field] = value;
-    setTanks(updatedTanks);
-  };
-
-  const handleWellChange = (index, field, value) => {
-    const updatedWells = [...wells];
-    updatedWells[index][field] = value;
-    setWells(updatedWells);
-  };
   const handleAddTank = () => {
     setFormData({
       ...formData,
