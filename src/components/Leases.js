@@ -21,7 +21,7 @@ const Leases = () => {
   const [leasesPerPage] = useState(10);
   const [editLease, setEditLease] = useState(null);
   const [formData, setFormData] = useState({});
-  const [setSubdomain] = useState("");
+  const [subdomain, setSubdomain] = useState("");
   const [purchasers, setPurchasers] = useState([]);
 
   useEffect(() => {
@@ -392,7 +392,7 @@ const EditLeaseModal = ({
   const [tagOptions, setTagOptions] = useState([]);
   const [pumperOptions, setPumperOptions] = useState([]);
   const [reliefOptions, setReliefOptions] = useState([]);
-  const [setSubdomain] = useState("");
+  const [subdomain, setSubdomain] = useState("");
   const [tanks] = useState(lease.Tanks || []);
   const [wells] = useState(lease.Wells || []);
   const [expandedTankIndex, setExpandedTankIndex] = useState(null);
