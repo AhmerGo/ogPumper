@@ -18,7 +18,7 @@ function HomePage() {
   const { userRole, userID } = useUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [subdomain, setSubdomain] = useState("");
-  const [showUnbilled, setShowUnbilled] = useState(false);
+  const [showUnbilled, setShowUnbilled] = useState(true); // Default to "unbilled"
   const [highestTicketNumber, setHighestTicketNumber] = useState(null);
 
   useEffect(() => {
@@ -196,6 +196,7 @@ function HomePage() {
     },
     [navigate, highestTicketNumber]
   );
+
   const handleCreateNewTicket = useCallback(() => {
     navigate(`/create-field-ticket/${highestTicketNumber}`);
   }, [navigate, highestTicketNumber]);
