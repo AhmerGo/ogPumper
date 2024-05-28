@@ -665,7 +665,7 @@ const ItemsAnimation = ({
   const handleDeleteItem = (itemId) => {
     console.log(itemId);
     const baseUrl = subdomain
-      ? `https://${subdomain}.ogpumper.net`
+      ? `https://${subdomain}.ogfieldticket.com`
       : "https://ogfieldticket.com";
 
     const data = {

@@ -110,9 +110,7 @@ function UserProfile() {
         if (data.success) {
           setUser(editedUser);
           setEditMode(false);
-          console.log("User profile updated successfully");
         } else {
-          console.error("Failed to update user profile");
         }
       } else {
         console.error("Error updating user profile:", response.statusText);
@@ -142,7 +140,7 @@ function UserProfile() {
         Sec: password, // Assuming 'Sec' is your backend field for password
       };
       const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
+        ? `https://${subdomain}.ogfieldticket.com`
         : "https://ogfieldticket.com";
 
       const response = await axios.patch(
@@ -150,7 +148,6 @@ function UserProfile() {
         updatedUser
       );
       if (response.data.success) {
-        console.log("Password changed successfully");
         setPassword("");
         setConfirmPassword("");
         setShowPasswordChange(false); // Hide password fields after change

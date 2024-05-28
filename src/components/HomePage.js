@@ -19,6 +19,7 @@ function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [showUnbilled, setShowUnbilled] = useState(false);
+  const [highestTicketNumber, setHighestTicketNumber] = useState(null);
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -100,30 +101,58 @@ function HomePage() {
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
       }
 
-      const response = await fetch(`${baseUrl}/api/tickets.php`);
-      const data = await response.json();
+      const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
+      let fetchedTickets = [];
 
-      let filteredTickets = data;
+      if (navigator.onLine) {
+        const response = await fetch(`${baseUrl}/api/tickets.php`);
+        const data = await response.json();
 
-      if (userRole === "P") {
-        filteredTickets = data.filter(
-          (ticket) => ticket.Billed !== "Y" && ticket.UserID === userID
+        // Merge stored tickets with fetched tickets, avoiding duplicates
+        const mergedTickets = [...data, ...storedTickets].reduce(
+          (acc, ticket) => {
+            if (!acc.find((t) => t.Ticket === ticket.Ticket)) {
+              acc.push(ticket);
+            }
+            return acc;
+          },
+          []
         );
+
+        // Store merged tickets in local storage
+        localStorage.setItem("tickets", JSON.stringify(mergedTickets));
+        fetchedTickets = mergedTickets;
+      } else {
+        fetchedTickets = storedTickets;
       }
 
-      filteredTickets = filteredTickets.filter(
-        (ticket) =>
-          (userRole !== "P" || ticket.Billed !== "Y") &&
-          (!showUnbilled || ticket.Billed !== "Y") &&
-          (userRole !== "P" || ticket.UserID === userID)
-      );
+      const highestTicket = (
+        fetchedTickets.reduce((max, ticket) => {
+          return Number(ticket.Ticket) > max ? Number(ticket.Ticket) : max;
+        }, Number(fetchedTickets[0]?.Ticket || 0)) + 1
+      ).toString();
 
+      // Filter tickets based on role, billing status, and user ID
+      let filteredTickets = fetchedTickets.filter((ticket) => {
+        const isUnbilled = ticket.Billed !== "Y";
+        const isCurrentUser = ticket.UserID === userID;
+
+        const matchesUserRole = userRole !== "P" || isCurrentUser;
+        const matchesBillingStatus =
+          userRole === "P"
+            ? isUnbilled
+            : showUnbilled
+            ? isUnbilled
+            : !isUnbilled;
+
+        return matchesUserRole && matchesBillingStatus;
+      });
+
+      // Apply search query
       if (searchQuery) {
         const lowercaseQuery = searchQuery.toLowerCase();
         filteredTickets = filteredTickets.filter((ticket) =>
@@ -133,30 +162,43 @@ function HomePage() {
         );
       }
 
-      setTickets(
-        filteredTickets.sort(
-          (a, b) => new Date(b.TicketDate) - new Date(a.TicketDate)
-        )
-      );
+      // Sort tickets by Ticket number first, then by TicketDate
+      filteredTickets.sort((a, b) => {
+        const ticketNumberComparison = b.Ticket - a.Ticket;
+        if (ticketNumberComparison !== 0) {
+          return ticketNumberComparison;
+        }
+        return new Date(b.TicketDate) - new Date(a.TicketDate);
+      });
 
+      setHighestTicketNumber(highestTicket);
+
+      setTickets(filteredTickets);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching tickets:", error);
       setLoading(false);
     }
-  }, [userRole, searchQuery, subdomain, userID, showUnbilled]);
+  }, [userRole, searchQuery, userID, showUnbilled]);
 
   useEffect(() => {
     fetchTickets();
     window.scrollTo(0, 0);
+    window.addEventListener("online", fetchTickets);
+    return () => window.removeEventListener("online", fetchTickets);
   }, [fetchTickets, subdomain, userRole, userID, searchQuery, showUnbilled]);
 
   const handleViewDetailsClick = useCallback(
     (ticket) => {
-      navigate("/view-field-ticket", { state: ticket });
+      navigate("/view-field-ticket", {
+        state: { ticket, highestTicketNumber },
+      });
     },
-    [navigate]
+    [navigate, highestTicketNumber]
   );
+  const handleCreateNewTicket = useCallback(() => {
+    navigate(`/create-field-ticket/${highestTicketNumber}`);
+  }, [navigate, highestTicketNumber]);
 
   const paginate = useCallback((pageNumber) => setCurrentPage(pageNumber), []);
 
@@ -250,8 +292,8 @@ function HomePage() {
                     />
                   </div>
                   <div className="flex justify-center space-x-4">
-                    <Link
-                      to="/create-field-ticket"
+                    <div
+                      onClick={handleCreateNewTicket}
                       className={`inline-flex items-center justify-center font-bold py-3 px-6 rounded-full shadow-lg transition duration-200 ease-in-out pop-effect ${
                         theme === "dark"
                           ? "bg-blue-600 hover:bg-blue-700 text-white"
@@ -260,7 +302,7 @@ function HomePage() {
                     >
                       <FontAwesomeIcon icon={faPlus} className="mr-2" />
                       Create New Ticket
-                    </Link>
+                    </div>
                   </div>
                 </animated.div>
                 <ul

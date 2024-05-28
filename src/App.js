@@ -28,10 +28,10 @@ function App() {
               }
             />
             <Route
-              path="/create-field-ticket"
+              path="/create-field-ticket/:highestTicketNumber"
               element={
                 <Layout>
-                  <CreateFieldTicket />
+                  <CreateFieldTicket />{" "}
                 </Layout>
               }
             />

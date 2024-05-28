@@ -141,91 +141,61 @@ const ViewFieldTicket = () => {
     delay: 600,
   });
 
+  const initializeTicketState = (ticketData) => {
+    if (!ticketData.Items) {
+      setTicket({ ...ticketData, Items: [] });
+      return;
+    }
+
+    // Initialize itemsMap with correct UseQuantity values
+    const itemsMap = new Map(
+      ticketData.Items.map((item) => [
+        item.JobItemID,
+        {
+          ItemCost: parseFloat(item.ItemCost),
+          UseQuantity: item.UseQuantity === "Y" || item.UseQuantity === true,
+        },
+      ])
+    );
+    setItemsMap(itemsMap);
+
+    const updatedItems = ticketData.Items.map((item) => {
+      const itemData = itemsMap.get(item.JobItemID) || {
+        ItemCost: 0,
+        UseQuantity: false,
+      };
+      const quantity = itemData.UseQuantity ? parseFloat(item.Quantity) : 1;
+      const totalCost = (itemData.ItemCost * quantity).toFixed(2);
+      return { ...item, totalCost, UseQuantity: itemData.UseQuantity };
+    });
+
+    setTicket({ ...ticketData, Items: updatedItems });
+    setFormattedDate(
+      new Date(ticketData.TicketDate).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    );
+    setFieldNote(ticketData.Note || "");
+  };
+
   useEffect(() => {
     if (location.state) {
-      setTicket(location.state);
-      formatDate(location.state.TicketDate);
-      setFieldNote(location.state.Note || "");
+      initializeTicketState(location.state.ticket);
+    } else {
+      const cachedTicket = JSON.parse(localStorage.getItem("currentTicket"));
+      if (cachedTicket) {
+        initializeTicketState(cachedTicket);
+      }
     }
   }, [location.state]);
-
   useEffect(() => {
-    const fetchItemCosts = async () => {
-      console.log(userRole);
-      // Early return if ticket or ticket.JobTypeID is not available.
-      if (!ticket || !ticket.JobTypeID) {
-        console.log("Ticket or JobTypeID not available");
-        return;
-      }
+    if (ticket) {
+      console.log(ticket); // Log the updated ticket state
+    }
+  }, [ticket]);
 
-      try {
-        const hostname = window.location.hostname;
-        const parts = hostname.split(".");
-        let baseUrl;
-
-        if (parts.length > 2) {
-          const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogpumper.net`;
-          console.log(`Using subdomain URL: ${baseUrl}`);
-        } else {
-          baseUrl = "https://ogfieldticket.com";
-          console.log(`Using default URL: ${baseUrl}`);
-        }
-
-        console.log(`The base url is  ${baseUrl}`);
-
-        const response = await fetch(
-          `${baseUrl}/api/jobitem.php?id=${ticket.JobTypeID}`
-        );
-
-        const data = await response.json();
-        console.log(data.items);
-
-        if (data.success) {
-          // Create a map of JobItemID to an object containing ItemCost and UseQuantity for easy lookup.
-          const itemsMap = new Map(
-            data.items.map((item) => [
-              item.ItemID,
-              {
-                ItemCost: parseFloat(item.ItemCost),
-                UseQuantity: item.UseQuantity === "Y",
-              },
-            ])
-          );
-          console.log(itemsMap);
-          setItemsMap(itemsMap); // Store the itemsMap in the component's state
-
-          // Calculate the total cost for each ticket item based on UseQuantity.
-          const updatedItems = ticket.Items.map((item) => {
-            const itemData = itemsMap.get(item.JobItemID) || {
-              ItemCost: 0,
-              UseQuantity: false,
-            };
-            const quantity = itemData.UseQuantity ? item.Quantity : 1;
-            const totalCost = (
-              itemData.ItemCost * parseFloat(quantity)
-            ).toFixed(2);
-            return { ...item, totalCost, UseQuantity: itemData.UseQuantity };
-          });
-
-          // Update your ticket's state with these updated items
-          setTicket((prevTicket) => {
-            const updatedTicket = {
-              ...prevTicket,
-              Items: updatedItems,
-            };
-            console.log(updatedTicket); // Log the updated ticket state
-            return updatedTicket;
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching item costs:", error);
-      }
-    };
-
-    fetchItemCosts();
-    // Using ticket?.JobTypeID in the dependency array ensures the effect only reruns when JobTypeID changes.
-  }, [ticket?.JobTypeID]);
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "long", day: "numeric" };
     const date = new Date(dateString);
@@ -236,17 +206,11 @@ const ViewFieldTicket = () => {
     const { name, value } = e.target;
     const parsedValue = parseFloat(value);
 
-    if (name === "Quantity" && parsedValue <= 0) {
-      // Optionally, provide feedback for invalid input
-      console.warn("Quantity must be a positive number");
-      return;
-    }
-
     setTicket((prevTicket) => {
       const updatedItems = prevTicket.Items.map((item) => {
         if (item.TicketLine === itemId) {
           const updatedItem = { ...item, [name]: value };
-          if (item.UseQuantity) {
+          if (name === "Quantity" && item.UseQuantity) {
             const itemData = itemsMap.get(item.JobItemID) || {
               ItemCost: 0,
               UseQuantity: false,
@@ -272,17 +236,14 @@ const ViewFieldTicket = () => {
 
   const handleCancelClick = () => {
     setIsEditing(false);
-    setFieldNote(location.state.Note || "");
-
-    // Preserve the calculated total costs and UseQuantity
-    setTicket((prevTicket) => ({
-      ...location.state,
-      Items: prevTicket.Items.map((item, index) => ({
-        ...location.state.Items[index],
-        totalCost: item.totalCost,
-        UseQuantity: item.UseQuantity, // Preserve the UseQuantity property
-      })),
-    }));
+    if (location.state) {
+      initializeTicketState(location.state.ticket);
+    } else {
+      const cachedTicket = JSON.parse(localStorage.getItem("currentTicket"));
+      if (cachedTicket) {
+        initializeTicketState(cachedTicket);
+      }
+    }
   };
 
   const handleSaveClick = async () => {
@@ -295,11 +256,18 @@ const ViewFieldTicket = () => {
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
       }
+
+      const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
+      const updatedStoredTickets = storedTickets.map((t) =>
+        t.Ticket === ticket.Ticket ? updatedTicket : t
+      );
+      localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
+
+      // Update local storage cache for current ticket
+      localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
 
       const response = await fetch(
         `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
@@ -348,6 +316,19 @@ const ViewFieldTicket = () => {
       );
 
       if (response.ok) {
+        // Remove ticket from local storage
+        const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
+        const updatedStoredTickets = storedTickets.filter(
+          (t) => t.Ticket !== ticket.Ticket
+        );
+        localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
+
+        // Remove current ticket from local storage if it matches the deleted ticket
+        const currentTicket = JSON.parse(localStorage.getItem("currentTicket"));
+        if (currentTicket && currentTicket.Ticket === ticket.Ticket) {
+          localStorage.removeItem("currentTicket");
+        }
+
         navigate("/home");
       } else {
         console.error("Error deleting ticket:", response.statusText);
@@ -369,7 +350,7 @@ const ViewFieldTicket = () => {
     try {
       const updatedTicket = { ...ticket, Billed: "Y" };
       const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
+        ? `https://${subdomain}.ogfieldticket.com`
         : "https://ogfieldticket.com";
 
       const response = await fetch(
@@ -742,7 +723,7 @@ const ViewFieldTicket = () => {
                 </div>
               </div>
             </div>{" "}
-            {ticket.Items &&
+            {ticket?.Items?.length > 0 &&
               ticket.Items.map((item) => (
                 <animated.div
                   key={item.TicketLine}

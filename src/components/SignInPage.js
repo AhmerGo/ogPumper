@@ -124,6 +124,19 @@ function SignInPage() {
     setShowPrompt(false);
   };
 
+  function hashPassword(password) {
+    // Simplified hash function; replace with a stronger algorithm in production
+    let hash = 0,
+      i,
+      chr;
+    for (i = 0; i < password.length; i++) {
+      chr = password.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0; // Convert to 32-bit integer
+    }
+    return hash.toString();
+  }
+
   async function handleSignIn(e) {
     e.preventDefault();
     try {
@@ -137,26 +150,67 @@ function SignInPage() {
       } else {
         baseUrl = "https://ogfieldticket.com";
       }
-
-      const response = await fetch(`${baseUrl}/api/login_api.php`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
-      const data = await response.json();
-      const { success, message, user } = data;
-      if (success) {
-        setUser(user.Role, user.UserID);
-        localStorage.setItem("userRole", user.Role);
-        localStorage.setItem("userID", user.UserID);
-        navigate("/home");
+      if (!navigator.onLine) {
+        handleOfflineSignIn(e);
       } else {
-        setError(message);
+        const response = await fetch(`${baseUrl}/api/login_api.php`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        });
+        const data = await response.json();
+        const { success, message, user } = data;
+        if (success) {
+          setUser(user.Role, user.UserID);
+          localStorage.setItem("userRole", user.Role);
+          localStorage.setItem("userID", user.UserID);
+          localStorage.setItem(
+            "credentials",
+            JSON.stringify({
+              username,
+              password: hashPassword(password),
+              role: user.Role,
+              userID: user.UserID,
+            })
+          );
+
+          navigate("/home");
+        } else {
+          setError(message);
+        }
       }
     } catch (error) {
       setError("An error occurred while signing in.");
+    }
+  }
+
+  function handleOfflineSignIn() {
+    const storedCredentials = JSON.parse(localStorage.getItem("credentials"));
+    if (storedCredentials) {
+      const {
+        username: storedUsername,
+        password: storedPasswordHash,
+        role,
+        userID,
+      } = storedCredentials;
+      const enteredPasswordHash = hashPassword(password);
+
+      if (
+        username === storedUsername &&
+        enteredPasswordHash === storedPasswordHash
+      ) {
+        setUser(role, userID);
+        localStorage.setItem("userRole", role);
+        localStorage.setItem("userID", userID);
+
+        navigate("/home");
+      } else {
+        setError("Invalid credentials. Please sign in online first.");
+      }
+    } else {
+      setError("No saved credentials available. Please sign in online first.");
     }
   }
 

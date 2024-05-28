@@ -1,5 +1,3 @@
-// src/serviceWorker.js
-
 const isLocalhost = Boolean(
   window.location.hostname === "localhost" ||
     window.location.hostname === "[::1]" ||
@@ -29,6 +27,12 @@ export function register(config) {
         registerValidSW(swUrl, config);
       }
     });
+
+    window.addEventListener("online", () => {
+      navigator.serviceWorker.ready.then((registration) => {
+        registration.sync.register("replay-queued-requests");
+      });
+    });
   }
 }
 
@@ -45,8 +49,7 @@ function registerValidSW(swUrl, config) {
           if (installingWorker.state === "installed") {
             if (navigator.serviceWorker.controller) {
               console.log(
-                "New content is available and will be used when all " +
-                  "tabs for this page are closed. See https://cra.link/PWA."
+                "New content is available and will be used when all tabs for this page are closed. See https://cra.link/PWA."
               );
 
               if (config && config.onUpdate) {
@@ -62,6 +65,10 @@ function registerValidSW(swUrl, config) {
           }
         };
       };
+
+      if ("SyncManager" in window) {
+        registration.sync.register("replay-queued-requests");
+      }
     })
     .catch((error) => {
       console.error("Error during service worker registration:", error);

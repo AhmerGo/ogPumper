@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import { useSpring, animated } from "react-spring";
 import debounce from "lodash.debounce";
@@ -13,7 +13,9 @@ function CreateFieldTicket() {
   const [lease, setLease] = useState("");
   const [well, setWell] = useState("");
   const [ticketType, setTicketType] = useState("");
+  const location = useLocation();
 
+  const { highestTicketNumber } = useParams();
   const [leases, setLeases] = useState([]);
   const [wells, setWells] = useState([]);
   const [ticketTypes, setTicketTypes] = useState([]);
@@ -141,7 +143,6 @@ function CreateFieldTicket() {
 
       const response = await fetch(`${baseUrl}/api/jobs.php`);
       const data = await response.json();
-      console.log(data);
       setTicketTypes(data);
     } catch (error) {
       console.error("Error fetching ticket types:", error);
@@ -171,11 +172,8 @@ function CreateFieldTicket() {
       : "";
 
     const selectedLease = leases.find((l) => l.LeaseID === lease);
-    console.log("Select");
     const leaseName = selectedLease ? selectedLease.LeaseName : "";
     const leaseID = selectedLease ? selectedLease.LeaseID : "";
-    console.log(leaseID);
-    console.log(leaseName);
 
     navigate("/field-ticket-entry", {
       state: {
@@ -185,6 +183,7 @@ function CreateFieldTicket() {
         well,
         ticketType: ticketTypeDescription,
         noteDefault,
+        highestTicketNumber, // Add highestTicketNumber to the state
       },
     });
   };

@@ -10,6 +10,7 @@ function FieldTicketEntry() {
   const { theme } = useTheme();
   const { userRole, userID } = useUser();
   const [subdomain, setSubdomain] = useState("");
+  const QUEUE_NAME = "request-queue";
 
   const navigate = useNavigate();
 
@@ -19,7 +20,7 @@ function FieldTicketEntry() {
     lease: state?.lease || "",
     well: state?.well || "",
     ticketType: state?.ticketType || "",
-    ticketNumber: "",
+    ticketNumber: (state?.highestTicketNumber).toString(),
     note: state?.noteDefault || "",
   });
 
@@ -41,36 +42,6 @@ function FieldTicketEntry() {
     extractSubdomain();
     window.scrollTo(0, 0);
   }, []);
-
-  useEffect(() => {
-    const fetchHighestTicketNumber = async () => {
-      try {
-        const hostname = window.location.hostname;
-        const parts = hostname.split(".");
-        let baseUrl;
-
-        if (parts.length > 2) {
-          const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogpumper.net`;
-        } else {
-          baseUrl = "https://ogfieldticket.com";
-        }
-        const response = await fetch(`${baseUrl}/api/tickets.php`);
-        const data = await response.json();
-        const highestTicketNumber = Math.max(
-          ...data.map((ticket) => parseInt(ticket.Ticket))
-        );
-        setFormFields((prevFields) => ({
-          ...prevFields,
-          ticketNumber: (highestTicketNumber + 1).toString(),
-        }));
-      } catch (error) {
-        console.error("Error fetching highest ticket number:", error);
-      }
-    };
-
-    fetchHighestTicketNumber();
-  }, [subdomain]);
 
   useEffect(() => {
     const fetchTicketTypes = async () => {
@@ -125,6 +96,8 @@ function FieldTicketEntry() {
     config: { mass: 1, tension: 280, friction: 25 },
   });
 
+  // src/components/MyComponent.js
+
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
 
@@ -140,23 +113,61 @@ function FieldTicketEntry() {
         quantity: item.quantity || item.ItemQuantity || 0,
       }));
 
+      const formattedDate = new Date().toISOString().split("T")[0];
+
       const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
+        ? `https://${subdomain}.ogfieldticket.com`
         : "https://ogfieldticket.com";
+
+      const ticketData = {
+        ...formFields,
+        lease: formFields.leaseID,
+        JobTypeID: jobTypeID,
+        userID: userID,
+        items: updatedItems,
+        note: formFields.note,
+      };
+      const updatedOfflineItems = updatedItems.map((item, index) => ({
+        ItemCost: item.ItemCost,
+        JobTypeID: ticketData.JobTypeID,
+        ItemDescription: item.ItemDescription || "",
+        JobItemID: item.ItemDescription,
+        Note: item.note || null,
+        Quantity: item.quantity || item.ItemQuantity || 0,
+        Ticket: formFields.ticketNumber,
+        TicketLine: index.toString(),
+        UOM: item.UOM || "",
+        UseCost: item.UseCost,
+        UseQuantity: item.UseQuantity,
+        ItemQuantity: item.ItemQuantity,
+      }));
+
+      const normalizedTicket = {
+        Billed: "N",
+        LeaseID: ticketData.lease,
+        TicketDate: formattedDate,
+        LeaseName: formFields.lease,
+        WellID: ticketData.well || null,
+        Comments: ticketData.note || "",
+        JobDescription: ticketData.ticketType,
+        JoTbypeID: ticketData.JobTypeID,
+        Items: updatedOfflineItems,
+        Note: ticketData.note || "",
+        UserID: ticketData.userID,
+        Ticket: formFields.ticketNumber,
+      };
+
+      // Save ticket to local storage
+      const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
+      storedTickets.push(normalizedTicket);
+      localStorage.setItem("tickets", JSON.stringify(storedTickets));
 
       const response = await fetch(`${baseUrl}/api/tickets.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formFields,
-          lease: formFields.leaseID,
-          JobTypeID: jobTypeID,
-          userID: userID,
-          items: updatedItems,
-          note: formFields.note,
-        }),
+        body: JSON.stringify(ticketData),
       });
 
       if (response.ok) {
