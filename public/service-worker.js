@@ -12,6 +12,7 @@ const urlsToCache = [
   "/favicon.ico",
   "/icons/logo192.png",
   "/icons/logo512.png",
+  "https://stasney.ogpumper.net",
 ];
 
 self.addEventListener("install", (event) => {
@@ -24,32 +25,67 @@ self.addEventListener("install", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request.method;
+  const url = new URL(event.request.url);
+
   if (event.request.method === "GET") {
-    event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (
-            !response ||
-            response.status !== 200 ||
-            response.type !== "basic"
-          ) {
-            return caches.match(event.request).then((cacheResponse) => {
-              return cacheResponse || response;
+    if (
+      url.hostname.startsWith("subdomain") ||
+      url.hostname === "ogpumper.net"
+    ) {
+      // Handle requests for subdomains or ogpumper.net
+      event.respondWith(
+        fetch(event.request)
+          .then((response) => {
+            if (
+              !response ||
+              response.status !== 200 ||
+              response.type !== "basic"
+            ) {
+              return caches.match(event.request).then((cacheResponse) => {
+                return cacheResponse || response;
+              });
+            }
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
             });
-          }
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
-        })
-        .catch(() => {
-          // Use cache only when offline
-          if (!navigator.onLine) {
-            return caches.match(event.request);
-          }
-        })
-    );
+            return response;
+          })
+          .catch(() => {
+            // Use cache only when offline
+            if (!navigator.onLine) {
+              return caches.match(event.request);
+            }
+          })
+      );
+    } else {
+      // Handle requests for the main domain
+      event.respondWith(
+        fetch(event.request)
+          .then((response) => {
+            if (
+              !response ||
+              response.status !== 200 ||
+              response.type !== "basic"
+            ) {
+              return caches.match(event.request).then((cacheResponse) => {
+                return cacheResponse || response;
+              });
+            }
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+            return response;
+          })
+          .catch(() => {
+            // Use cache only when offline
+            if (!navigator.onLine) {
+              return caches.match(event.request);
+            }
+          })
+      );
+    }
   } else if (req === "POST" || req === "DELETE" || req === "PATCH") {
     event.respondWith(
       fetch(event.request.clone()).catch(() => {
