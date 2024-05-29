@@ -31,7 +31,7 @@ self.addEventListener("fetch", (event) => {
           if (
             !response ||
             response.status !== 200 ||
-            response.type !== "basic"
+            (response.type !== "basic" && response.type !== "cors")
           ) {
             return caches.match(event.request).then((cacheResponse) => {
               return cacheResponse || response;
