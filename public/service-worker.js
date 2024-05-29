@@ -27,23 +27,28 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method === "GET") {
     event.respondWith(
       caches.match(event.request).then((cacheResponse) => {
-        return (
-          cacheResponse ||
-          fetch(event.request).then((response) => {
+        const fetchPromise = fetch(event.request)
+          .then((networkResponse) => {
             if (
-              !response ||
-              response.status !== 200 ||
-              (response.type !== "basic" && response.type !== "cors")
+              !networkResponse ||
+              networkResponse.status !== 200 ||
+              (networkResponse.type !== "basic" &&
+                networkResponse.type !== "cors")
             ) {
-              return response;
+              return networkResponse;
             }
-            const responseToCache = response.clone();
+            const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(event.request, responseToCache);
             });
-            return response;
+            return networkResponse;
           })
-        );
+          .catch(() => {
+            return cacheResponse;
+          });
+
+        // Return cache response or network fetch if cache is not available
+        return cacheResponse || fetchPromise;
       })
     );
   } else if (["POST", "DELETE", "PATCH"].includes(event.request.method)) {
