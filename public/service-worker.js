@@ -20,37 +20,33 @@ self.addEventListener("install", (event) => {
       return cache.addAll(urlsToCache);
     })
   );
+  self.skipWaiting(); // Ensures the service worker activates immediately
 });
 
 self.addEventListener("fetch", (event) => {
-  const req = event.request.method;
   if (event.request.method === "GET") {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          if (
-            !response ||
-            response.status !== 200 ||
-            (response.type !== "basic" && response.type !== "cors")
-          ) {
-            return caches.match(event.request).then((cacheResponse) => {
-              return cacheResponse || response;
+      caches.match(event.request).then((cacheResponse) => {
+        return (
+          cacheResponse ||
+          fetch(event.request).then((response) => {
+            if (
+              !response ||
+              response.status !== 200 ||
+              (response.type !== "basic" && response.type !== "cors")
+            ) {
+              return response;
+            }
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
             });
-          }
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-          return response;
-        })
-        .catch(() => {
-          // Use cache only when offline
-          if (!navigator.onLine) {
-            return caches.match(event.request);
-          }
-        })
+            return response;
+          })
+        );
+      })
     );
-  } else if (req === "POST" || req === "DELETE" || req === "PATCH") {
+  } else if (["POST", "DELETE", "PATCH"].includes(event.request.method)) {
     event.respondWith(
       fetch(event.request.clone()).catch(() => {
         return event.request
@@ -79,6 +75,7 @@ self.addEventListener("activate", (event) => {
       );
     })
   );
+  self.clients.claim(); // Ensures the service worker takes control immediately
 });
 
 async function enqueueRequest(request, body) {
