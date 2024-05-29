@@ -350,7 +350,7 @@ const ViewFieldTicket = () => {
     try {
       const updatedTicket = { ...ticket, Billed: "Y" };
       const baseUrl = subdomain
-        ? `https://${subdomain}.ogfieldticket.com`
+        ? `https://${subdomain}.ogpumper.net`
         : "https://ogfieldticket.com";
 
       const response = await fetch(

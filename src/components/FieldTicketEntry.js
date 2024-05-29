@@ -116,7 +116,7 @@ function FieldTicketEntry() {
       const formattedDate = new Date().toISOString().split("T")[0];
 
       const baseUrl = subdomain
-        ? `https://${subdomain}.ogfieldticket.com`
+        ? `https://${subdomain}.ogpumper.net`
         : "https://ogfieldticket.com";
 
       const ticketData = {

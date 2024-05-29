@@ -140,7 +140,7 @@ function UserProfile() {
         Sec: password, // Assuming 'Sec' is your backend field for password
       };
       const baseUrl = subdomain
-        ? `https://${subdomain}.ogfieldticket.com`
+        ? `https://${subdomain}.ogpumper.net`
         : "https://ogfieldticket.com";
 
       const response = await axios.patch(
