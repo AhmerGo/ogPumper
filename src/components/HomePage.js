@@ -107,13 +107,23 @@ function HomePage() {
 
       const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
       let fetchedTickets = [];
+      let nextTicketID = null;
 
       if (navigator.onLine) {
         const response = await fetch(`${baseUrl}/api/tickets.php`);
         const data = await response.json();
 
+        // Extract the next ticket ID and tickets
+        const tickets = data.filter((ticket) => {
+          if (ticket.isNextTicketID) {
+            nextTicketID = ticket.Ticket;
+            return false;
+          }
+          return true;
+        });
+
         // Merge stored tickets with fetched tickets, avoiding duplicates
-        const mergedTickets = [...data, ...storedTickets].reduce(
+        const mergedTickets = [...tickets, ...storedTickets].reduce(
           (acc, ticket) => {
             if (!acc.find((t) => t.Ticket === ticket.Ticket)) {
               acc.push(ticket);
@@ -128,13 +138,16 @@ function HomePage() {
         fetchedTickets = mergedTickets;
       } else {
         fetchedTickets = storedTickets;
-      }
 
-      const highestTicket = (
-        fetchedTickets.reduce((max, ticket) => {
-          return Number(ticket.Ticket) > max ? Number(ticket.Ticket) : max;
-        }, Number(fetchedTickets[0]?.Ticket || 0)) + 1
-      ).toString();
+        // Calculate the highest ticket number from stored tickets
+        const highestTicket = (
+          fetchedTickets.reduce((max, ticket) => {
+            return Number(ticket.Ticket) > max ? Number(ticket.Ticket) : max;
+          }, Number(fetchedTickets[0]?.Ticket || 0)) + 1
+        ).toString();
+
+        nextTicketID = highestTicket;
+      }
 
       // Filter tickets based on role, billing status, and user ID
       let filteredTickets = fetchedTickets.filter((ticket) => {
@@ -171,7 +184,7 @@ function HomePage() {
         return new Date(b.TicketDate) - new Date(a.TicketDate);
       });
 
-      setHighestTicketNumber(highestTicket);
+      setHighestTicketNumber(nextTicketID.toString());
 
       setTickets(filteredTickets);
       setLoading(false);
