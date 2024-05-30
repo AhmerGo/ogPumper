@@ -98,7 +98,7 @@ const ViewFieldTicket = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
-  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+  const MAX_FILE_SIZE = 6 * 1024 * 1024; // 5MB
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -348,15 +348,21 @@ const ViewFieldTicket = () => {
   };
 
   const onImageChange = (event) => {
-    const files = Array.from(event.target.files);
-    const validFiles = files.filter((file) => file.size <= MAX_FILE_SIZE);
+    const files = event.target.files;
+    if (!files) {
+      return;
+    }
+
+    const validFiles = Array.from(files).filter(
+      (file) => file.size <= MAX_FILE_SIZE
+    );
 
     if (validFiles.length !== files.length) {
       alert("Some files are too large. Maximum file size is 2MB.");
     }
 
     if (validFiles.length > 0) {
-      handleImageUpload(validFiles);
+      handleImageUpload({ target: { files: validFiles } });
     } else {
       // Clear the file input if no valid files
       fileInputRef.current.value = "";
@@ -382,7 +388,6 @@ const ViewFieldTicket = () => {
 
     setUploadedImages([...uploadedImages, ...newImages]);
   };
-
   const openModal = (image) => {
     setSelectedImage(image);
     setIsModalOpen(true);
@@ -940,7 +945,7 @@ const ViewFieldTicket = () => {
             <div className="mb-8 flex flex-col items-center w-full space-y-4 md:flex-row md:space-y-0 md:space-x-8 md:justify-center">
               <div className="mb-4 md:w-1/3">
                 <label className="block font-medium text-base md:text-lg mb-2">
-                  Upload Images:
+                  Uploaded Images:
                 </label>
                 <input
                   type="file"
