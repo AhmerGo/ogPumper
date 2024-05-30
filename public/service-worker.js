@@ -26,30 +26,30 @@ self.addEventListener("install", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method === "GET") {
     event.respondWith(
-      caches.match(event.request).then((cacheResponse) => {
-        const fetchPromise = fetch(event.request)
-          .then((networkResponse) => {
+      (async () => {
+        if (!navigator.onLine) {
+          const cacheResponse = await caches.match(event.request);
+          return cacheResponse || fetch(event.request);
+        } else {
+          try {
+            const networkResponse = await fetch(event.request);
             if (
-              !networkResponse ||
-              networkResponse.status !== 200 ||
-              (networkResponse.type !== "basic" &&
-                networkResponse.type !== "cors")
+              networkResponse &&
+              networkResponse.status === 200 &&
+              (networkResponse.type === "basic" ||
+                networkResponse.type === "cors")
             ) {
-              return networkResponse;
-            }
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
+              const responseToCache = networkResponse.clone();
+              const cache = await caches.open(CACHE_NAME);
               cache.put(event.request, responseToCache);
-            });
+            }
             return networkResponse;
-          })
-          .catch(() => {
+          } catch (error) {
+            const cacheResponse = await caches.match(event.request);
             return cacheResponse;
-          });
-
-        // Return cache response or network fetch if cache is not available
-        return cacheResponse || fetchPromise;
-      })
+          }
+        }
+      })()
     );
   } else if (["POST", "DELETE", "PATCH"].includes(event.request.method)) {
     event.respondWith(
