@@ -523,6 +523,7 @@ const ViewFieldTicket = () => {
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
       let baseUrl;
+
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
@@ -534,7 +535,8 @@ const ViewFieldTicket = () => {
       const encodedImageDirectory = encodeURIComponent(
         imageDirectory.replace(/^\.\.\//, "")
       );
-
+      console.log("STASNEY DOM");
+      console.log(subdomain);
       const response = await fetch(
         `${baseUrl}/api/tickets.php?imageDirectory=${encodedImageDirectory}`
       );
