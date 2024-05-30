@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import { useSpring, animated } from "react-spring";
 import { useUser } from "./UserContext";
+import Cropper from "react-easy-crop";
+import Modal from "react-modal";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faSearchPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 
 function FieldTicketEntry() {
   const { state } = useLocation();
@@ -10,7 +14,10 @@ function FieldTicketEntry() {
   const { theme } = useTheme();
   const { userRole, userID } = useUser();
   const [subdomain, setSubdomain] = useState("");
-  const QUEUE_NAME = "request-queue";
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const fileInputRef = useRef(null);
 
   const navigate = useNavigate();
 
@@ -89,14 +96,42 @@ function FieldTicketEntry() {
       }
     }
   };
+  const handleDeleteImage = (index) => {
+    setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // Clear the file input field
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const files = e.target.files;
+    const newImages = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith("image/")) {
+        newImages.push(URL.createObjectURL(file));
+      }
+    }
+
+    setUploadedImages([...uploadedImages, ...newImages]);
+  };
+
+  const openModal = (image) => {
+    setSelectedImage(image);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedImage(null);
+  };
 
   const pageAnimation = useSpring({
     from: { opacity: 0, y: 50 },
     to: { opacity: 1, y: 0 },
     config: { mass: 1, tension: 280, friction: 25 },
   });
-
-  // src/components/MyComponent.js
 
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
@@ -508,6 +543,98 @@ function FieldTicketEntry() {
               rows={4}
             ></textarea>
           </div>
+          <div className="mb-8 flex flex-col md:flex-row items-center justify-center md:space-x-8 w-full">
+            <div className="mb-4 md:w-1/3">
+              <label className="block font-medium text-base md:text-lg mb-2">
+                Upload Images:
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                ref={fileInputRef}
+                className={`form-input px-3 py-1.5 md:px-4 md:py-2 rounded-md transition-colors duration-500 ${
+                  theme === "dark"
+                    ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
+                    : "border border-gray-300 focus:ring-gray-500"
+                }`}
+              />
+            </div>
+
+            {/* Image preview */}
+            <div className="md:w-2/3 flex justify-center">
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {uploadedImages.map((image, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={image}
+                      alt={`uploaded ${index}`}
+                      onClick={() => openModal(image)}
+                      className="w-full h-64 md:h-80 object-cover rounded-lg shadow-md cursor-pointer"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-30 sm:bg-opacity-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300 space-x-2">
+                      <button
+                        onClick={() => openModal(image)}
+                        className="text-white hover:text-gray-300 focus:outline-none"
+                      >
+                        <FontAwesomeIcon icon={faSearchPlus} size="lg" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteImage(index)}
+                        className="text-white hover:text-gray-300 focus:outline-none"
+                      >
+                        <FontAwesomeIcon icon={faTrashAlt} size="lg" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Image Modal */}
+            <Modal
+              isOpen={isModalOpen}
+              onRequestClose={closeModal}
+              contentLabel="Image Zoom Modal"
+              className="flex items-center justify-center h-full"
+              overlayClassName="fixed inset-0 bg-black bg-opacity-50 z-40"
+            >
+              <div className="bg-white p-4 rounded-lg shadow-lg max-w-xl mx-auto z-50 relative">
+                {selectedImage && (
+                  <div className="relative">
+                    <img
+                      src={selectedImage}
+                      alt="Selected"
+                      className="w-full h-auto max-h-screen object-cover"
+                    />
+                    <div className="absolute top-0 right-0 p-2">
+                      <button
+                        onClick={closeModal}
+                        className="text-gray-800 hover:text-gray-600 focus:outline-none"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          className="w-6 h-6"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Modal>
+          </div>
+
           <div className="text-center">
             <button
               onClick={handleFinalSubmit}
