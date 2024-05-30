@@ -248,29 +248,39 @@ function FieldTicketEntry() {
       storedTickets.push(normalizedTicket);
       localStorage.setItem("tickets", JSON.stringify(storedTickets));
 
-      const formData = new FormData();
-      formData.append("ticketData", JSON.stringify(ticketData));
-
       const imagePromises = uploadedImages.map((image, index) => {
         return fetch(image)
           .then((response) => response.blob())
           .then((blob) => {
-            const file = new File([blob], `image_${index}.jpg`, {
-              type: "image/jpeg",
+            return new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                resolve({
+                  name: `uploads/ticket_${formFields.ticketNumber}/image_${index}.jpg`,
+                  data: reader.result.split(",")[1], // Remove the Base64 prefix
+                  type: blob.type,
+                });
+              };
+              reader.readAsDataURL(blob);
             });
-            formData.append(
-              "images[]",
-              file,
-              `uploads/ticket_${formFields.ticketNumber}/image_${index}.jpg`
-            );
           });
       });
 
+      const imageFiles = await Promise.all(imagePromises);
+
       await Promise.all(imagePromises);
+
+      const payload = {
+        ticketData,
+        images: imageFiles,
+      };
 
       const response = await fetch(`${baseUrl}/api/tickets.php`, {
         method: "POST",
-        body: formData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
