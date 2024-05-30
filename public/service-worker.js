@@ -84,22 +84,12 @@ self.addEventListener("activate", (event) => {
 });
 
 async function enqueueRequest(request, body) {
-  let queuedRequest;
-  if (request.method === "POST") {
-    queuedRequest = {
-      url: request.url,
-      method: request.method,
-      headers: [...request.headers.entries()],
-      body: JSON.stringify(body), // Store the body as a JSON string
-    };
-  } else {
-    queuedRequest = {
-      url: request.url,
-      method: request.method,
-      headers: [...request.headers.entries()],
-      body: body,
-    };
-  }
+  const queuedRequest = {
+    url: request.url,
+    method: request.method,
+    headers: [...request.headers.entries()],
+    body: body,
+  };
 
   const cache = await caches.open(QUEUE_NAME);
   const id = new Date().toISOString();
