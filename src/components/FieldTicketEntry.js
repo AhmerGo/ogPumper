@@ -151,7 +151,6 @@ function FieldTicketEntry() {
       fileInputRef.current.click();
     }
   };
-
   const handleImageUpload = (e) => {
     const files = e.target.files;
     const newImages = [];
@@ -719,7 +718,6 @@ function FieldTicketEntry() {
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       multiple
                       onChange={(e) => {
                         console.log("Files selected: ", e.target.files);
