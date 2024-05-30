@@ -133,9 +133,21 @@ function HomePage() {
           []
         );
 
+        // Sort merged tickets by Ticket number first, then by TicketDate
+        mergedTickets.sort((a, b) => {
+          const ticketNumberComparison = b.Ticket - a.Ticket;
+          if (ticketNumberComparison !== 0) {
+            return ticketNumberComparison;
+          }
+          return new Date(b.TicketDate) - new Date(a.TicketDate);
+        });
+
+        // Keep only the 20 most recent tickets
+        const recentTickets = mergedTickets.slice(0, 20);
+
         // Store merged tickets in local storage
-        localStorage.setItem("tickets", JSON.stringify(mergedTickets));
-        fetchedTickets = mergedTickets;
+        localStorage.setItem("tickets", JSON.stringify(recentTickets));
+        fetchedTickets = recentTickets;
       } else {
         fetchedTickets = storedTickets;
 
