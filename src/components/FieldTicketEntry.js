@@ -702,24 +702,26 @@ function FieldTicketEntry() {
                       <div className="flex items-center justify-center h-full">
                         {uploadedImages.length === 0 ? (
                           <>
-                            <FontAwesomeIcon
-                              icon={faCamera}
-                              size="3x"
+                            <button
+                              className="focus:outline-none"
                               onClick={() => triggerFileInput(true)}
-                            />
-                            <FontAwesomeIcon
-                              icon={faFolderOpen}
-                              size="3x"
-                              className="ml-4"
+                            >
+                              <FontAwesomeIcon icon={faCamera} size="3x" />
+                            </button>
+                            <button
+                              className="focus:outline-none ml-4"
                               onClick={() => triggerFileInput(false)}
-                            />
+                            >
+                              <FontAwesomeIcon icon={faFolderOpen} size="3x" />
+                            </button>
                           </>
                         ) : (
-                          <FontAwesomeIcon
-                            icon={faPlusCircle}
-                            size="3x"
+                          <button
+                            className="focus:outline-none"
                             onClick={() => triggerFileInput(false)}
-                          />
+                          >
+                            <FontAwesomeIcon icon={faPlusCircle} size="3x" />
+                          </button>
                         )}
                       </div>
                     </div>
