@@ -14,71 +14,69 @@ import { UserProvider } from "./components/UserContext";
 import Admin from "./components/admin";
 function App() {
   return (
-    <Router>
-      <UserProvider>
-        <ThemeProvider>
-          <Routes>
-            <Route path="/" element={<SignInPage />} />
-            <Route
-              path="/home"
-              element={
-                <Layout>
-                  <HomePage />
-                </Layout>
-              }
-            />
-            <Route
-              path="/create-field-ticket/:highestTicketNumber"
-              element={
-                <Layout>
-                  <CreateFieldTicket />{" "}
-                </Layout>
-              }
-            />
-            <Route
-              path="/view-field-ticket"
-              element={
-                <Layout>
-                  <Summary />
-                </Layout>
-              }
-            />
-            <Route
-              path="/field-ticket-entry"
-              element={
-                <Layout>
-                  <FieldTicketEntry />
-                </Layout>
-              }
-            />
-            <Route
-              path="/job-form"
-              element={
-                <Layout>
-                  <JobForm />
-                </Layout>
-              }
-            />
-            <Route
-              path="/profile-details"
-              element={
-                <Layout>
-                  <Details />
-                </Layout>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <Layout>
-                  <Admin />
-                </Layout>
-              }
-            />
-          </Routes>
-        </ThemeProvider>
-      </UserProvider>
-    </Router>
+    <UserProvider>
+      <ThemeProvider>
+        <Routes>
+          <Route path="/" element={<SignInPage />} />
+          <Route
+            path="/home"
+            element={
+              <Layout>
+                <HomePage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/create-field-ticket/:highestTicketNumber"
+            element={
+              <Layout>
+                <CreateFieldTicket />{" "}
+              </Layout>
+            }
+          />
+          <Route
+            path="/view-field-ticket"
+            element={
+              <Layout>
+                <Summary />
+              </Layout>
+            }
+          />
+          <Route
+            path="/field-ticket-entry"
+            element={
+              <Layout>
+                <FieldTicketEntry />
+              </Layout>
+            }
+          />
+          <Route
+            path="/job-form"
+            element={
+              <Layout>
+                <JobForm />
+              </Layout>
+            }
+          />
+          <Route
+            path="/profile-details"
+            element={
+              <Layout>
+                <Details />
+              </Layout>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <Layout>
+                <Admin />
+              </Layout>
+            }
+          />
+        </Routes>
+      </ThemeProvider>
+    </UserProvider>
   );
 }
 

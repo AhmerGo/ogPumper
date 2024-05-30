@@ -98,11 +98,23 @@ async function enqueueRequest(request, body) {
     new Response(JSON.stringify(queuedRequest))
   );
 }
+
 self.addEventListener("sync", (event) => {
   if (event.tag === "replay-queued-requests") {
     event.waitUntil(replayQueuedRequests());
   }
 });
+
+async function notifyClients() {
+  const clients = await self.clients.matchAll();
+  clients.forEach((client) => {
+    client.postMessage({
+      type: "UPDATE_AVAILABLE",
+      message:
+        "New content is now available, would you like to refresh the page?",
+    });
+  });
+}
 
 async function replayQueuedRequests() {
   const cache = await caches.open(QUEUE_NAME);
@@ -154,21 +166,10 @@ async function replayQueuedRequests() {
     // Introduce a 100 ms delay before sending the next request
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
-}
 
-async function notifyClients() {
-  const clients = await self.clients.matchAll();
-  clients.forEach((client) => {
-    client.postMessage({
-      type: "UPDATE_AVAILABLE",
-      message:
-        "New content is now available, would you like to refresh the page?",
-    });
-  });
+  notifyClients(); // Notify clients after replaying all requests
 }
 
 self.addEventListener("online", () => {
-  self.registration.sync.register("replay-queued-requests").then(() => {
-    notifyClients(); // Notify clients when network is back
-  });
+  self.registration.sync.register("replay-queued-requests");
 });
