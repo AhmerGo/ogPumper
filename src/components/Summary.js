@@ -6,7 +6,13 @@ import { useUser } from "./UserContext";
 import { MdHome } from "react-icons/md";
 import Modal from "react-modal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearchPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
+import {
+  faSearchPlus,
+  faTrashAlt,
+  faCamera,
+  faFolderOpen,
+  faPlusCircle,
+} from "@fortawesome/free-solid-svg-icons";
 
 const ConfirmationModal = ({
   isOpen,
@@ -100,6 +106,7 @@ const ViewFieldTicket = () => {
   const fileInputRef = useRef(null);
   const MAX_FILE_SIZE = 6 * 1024 * 1024; // 5MB
 
+  const [retrievedImages, setRetrievedImages] = useState([]);
   useEffect(() => {
     const extractSubdomain = () => {
       const hostname = window.location.hostname;
@@ -192,10 +199,12 @@ const ViewFieldTicket = () => {
   useEffect(() => {
     if (location.state) {
       initializeTicketState(location.state.ticket);
+      fetchTicketImages(location.state.ticket.ImageDirectory);
     } else {
       const cachedTicket = JSON.parse(localStorage.getItem("currentTicket"));
       if (cachedTicket) {
         initializeTicketState(cachedTicket);
+        fetchTicketImages(cachedTicket.ImageDirectory);
       }
     }
   }, [location.state]);
@@ -209,6 +218,77 @@ const ViewFieldTicket = () => {
     const options = { year: "numeric", month: "long", day: "numeric" };
     const date = new Date(dateString);
     setFormattedDate(date.toLocaleDateString(undefined, options));
+  };
+  const handleDeleteImage = async (index) => {
+    const imageToDelete = uploadedImages[index];
+
+    if (!imageToDelete) {
+      console.error("Image to delete is undefined");
+      return;
+    }
+
+    // Remove the selected image from the uploadedImages array
+    const updatedImages = uploadedImages.filter((_, i) => i !== index);
+    setUploadedImages(updatedImages);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""; // Clear the file input field
+    }
+
+    try {
+      // Check if the user is online
+      if (navigator.onLine) {
+        // Prepare the PATCH request payload
+        const patchData = {
+          Ticket: ticket.Ticket,
+          removedImages: [imageToDelete.split("/").pop()], // Only send the image name
+        };
+
+        // Determine the base URL based on the subdomain
+        const hostname = window.location.hostname;
+        const parts = hostname.split(".");
+        let baseUrl;
+
+        if (parts.length > 2) {
+          const subdomainPart = parts.shift();
+          baseUrl = `https://${subdomainPart}.ogpumper.net`;
+          console.log(`Using subdomain URL: ${baseUrl}`);
+        } else {
+          baseUrl = "https://ogfieldticket.com";
+          console.log(`Using default URL: ${baseUrl}`);
+        }
+
+        const response = await fetch(
+          `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(patchData),
+          }
+        );
+
+        if (response.ok) {
+          console.log("Image deleted successfully:", imageToDelete);
+          // Update the ticket in local storage
+          const storedTickets =
+            JSON.parse(localStorage.getItem("tickets")) || [];
+          const updatedStoredTickets = storedTickets.map((t) =>
+            t.Ticket === ticket.Ticket
+              ? { ...ticket, ImageDirectory: updatedImages.join(",") }
+              : t
+          );
+          localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
+        } else {
+          console.error("Error deleting image:", response.statusText);
+        }
+      } else {
+        console.warn("User is offline. Changes will be synced when online.");
+      }
+    } catch (error) {
+      console.error("Error deleting image:", error);
+    }
   };
 
   const handleChange = (e, itemId) => {
@@ -269,35 +349,92 @@ const ViewFieldTicket = () => {
         baseUrl = "https://ogfieldticket.com";
       }
 
-      const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
-      const updatedStoredTickets = storedTickets.map((t) =>
-        t.Ticket === ticket.Ticket ? updatedTicket : t
-      );
-      localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
-
-      // Update local storage cache for current ticket
       localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
 
-      const response = await fetch(
-        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updatedTicket),
-        }
-      );
+      const isOnline = navigator.onLine;
+      const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
 
-      if (response.ok) {
-        setIsEditing(false);
+      if (isOnline) {
+        const patchData = {
+          ...updatedTicket,
+          addedImages: [],
+          removedImages: [],
+        };
+
+        // Extract image names from retrievedImages
+        const existingImageNames = Array.isArray(retrievedImages)
+          ? retrievedImages.map((image) => image.split("/").pop())
+          : [];
+        const addedImages = Array.isArray(uploadedImages)
+          ? uploadedImages.filter(
+              (image) => !existingImageNames.includes(image.split("/").pop())
+            )
+          : [];
+
+        for (const addedImage of addedImages) {
+          const imageName = addedImage.split("/").pop();
+          if (existingImageNames.includes(imageName)) continue;
+
+          const response = await fetch(addedImage);
+          const blob = await response.blob();
+          const reader = new FileReader();
+          const base64Data = await new Promise((resolve) => {
+            reader.onloadend = () => resolve(reader.result.split(",")[1]);
+            reader.readAsDataURL(blob);
+          });
+
+          const fileExtension = (addedImage.match(/\.\w+$/) || [".jpg"])[0];
+          patchData.addedImages.push({
+            name: `${Date.now()}_${
+              patchData.addedImages.length
+            }${fileExtension}`,
+            data: base64Data,
+          });
+        }
+
+        const removedImages = existingImageNames.filter(
+          (image) =>
+            !Array.isArray(uploadedImages) ||
+            !uploadedImages.map((img) => img.split("/").pop()).includes(image)
+        );
+        patchData.removedImages = removedImages;
+
+        const response = await fetch(
+          `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(patchData),
+          }
+        );
+
+        if (response.ok) {
+          const updatedStoredTickets = storedTickets.map((t) =>
+            t.Ticket === ticket.Ticket
+              ? { ...updatedTicket, ImageDirectory: uploadedImages.join(",") }
+              : t
+          );
+          localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
+          setIsEditing(false);
+        } else {
+          console.error("Error updating ticket:", response.statusText);
+        }
       } else {
-        console.error("Error updating ticket:", response.statusText);
+        const updatedStoredTickets = storedTickets.map((t) =>
+          t.Ticket === ticket.Ticket
+            ? { ...updatedTicket, ImageDirectory: uploadedImages.join(",") }
+            : t
+        );
+        localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
+        setIsEditing(false);
       }
     } catch (error) {
       console.error("Error updating ticket:", error);
     }
   };
+
   const handleDeleteClick = () => {
     setShowConfirmation(true);
   };
@@ -317,15 +454,37 @@ const ViewFieldTicket = () => {
         console.log(`Using default URL: ${baseUrl}`);
       }
 
-      const response = await fetch(
-        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
-        {
-          method: "DELETE",
-        }
-      );
+      if (navigator.onLine) {
+        const response = await fetch(
+          `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
+          {
+            method: "DELETE",
+          }
+        );
 
-      if (response.ok) {
-        // Remove ticket from local storage
+        if (response.ok) {
+          // Remove ticket from local storage
+          const storedTickets =
+            JSON.parse(localStorage.getItem("tickets")) || [];
+          const updatedStoredTickets = storedTickets.filter(
+            (t) => t.Ticket !== ticket.Ticket
+          );
+          localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
+
+          // Remove current ticket from local storage if it matches the deleted ticket
+          const currentTicket = JSON.parse(
+            localStorage.getItem("currentTicket")
+          );
+          if (currentTicket && currentTicket.Ticket === ticket.Ticket) {
+            localStorage.removeItem("currentTicket");
+          }
+
+          navigate("/home");
+        } else {
+          console.error("Error deleting ticket:", response.statusText);
+        }
+      } else {
+        // User is offline, remove ticket from local storage
         const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
         const updatedStoredTickets = storedTickets.filter(
           (t) => t.Ticket !== ticket.Ticket
@@ -339,14 +498,48 @@ const ViewFieldTicket = () => {
         }
 
         navigate("/home");
-      } else {
-        console.error("Error deleting ticket:", response.statusText);
       }
     } catch (error) {
       console.error("Error deleting ticket:", error);
     }
   };
 
+  const handleImageChange = (event) => {
+    const files = Array.from(event.target.files);
+    const imageUrls = files.map((file) => URL.createObjectURL(file));
+    setUploadedImages((prevImages) => {
+      if (Array.isArray(prevImages)) {
+        return [...prevImages, ...imageUrls];
+      } else {
+        return imageUrls;
+      }
+    });
+    onImageChange(event);
+  };
+
+  const fetchTicketImages = async (imageDirectory) => {
+    try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogpumper.net`
+        : "https://ogfieldticket.com";
+      const encodedImageDirectory = encodeURIComponent(
+        imageDirectory.replace(/^\.\.\//, "")
+      );
+
+      const response = await fetch(
+        `${baseUrl}/api/tickets.php?imageDirectory=${encodedImageDirectory}`
+      );
+      const data = await response.json();
+      setRetrievedImages(data.images);
+      console.log(data);
+      console.log("xx");
+      console.log(JSON.stringify(data.images));
+      console.log(retrievedImages);
+      setUploadedImages(data.images); // Set initial state for uploadedImages
+    } catch (error) {
+      console.error("Error fetching ticket images:", error);
+    }
+  };
   const onImageChange = (event) => {
     const files = event.target.files;
     if (!files) {
@@ -380,16 +573,22 @@ const ViewFieldTicket = () => {
       }
     }
 
-    setUploadedImages([...uploadedImages, ...newImages]);
+    if (Array.isArray(uploadedImages)) {
+      setUploadedImages([...uploadedImages, ...newImages]);
+    } else {
+      setUploadedImages(newImages);
+    }
   };
 
-  const handleDeleteImage = (index) => {
-    const updatedImages = uploadedImages.filter((_, i) => i !== index);
-    setUploadedImages(updatedImages);
-  };
-  const triggerFileInput = (capture) => {
-    fileInputRef.current.setAttribute("capture", capture ? "environment" : "");
-    fileInputRef.current.click();
+  const triggerFileInput = (useCamera) => {
+    if (fileInputRef.current) {
+      if (useCamera) {
+        fileInputRef.current.setAttribute("capture", "environment");
+      } else {
+        fileInputRef.current.removeAttribute("capture");
+      }
+      fileInputRef.current.click();
+    }
   };
 
   const openModal = (image) => {
@@ -946,81 +1145,131 @@ const ViewFieldTicket = () => {
                 </div>
               </animated.div>
             )}{" "}
-            <div className="mb-8 flex flex-col md:flex-row items-center justify-center md:space-x-8 w-full">
-              <div className="mb-4 md:w-1/3">
-                <label className="block font-medium text-base md:text-lg mb-2">
-                  Upload Images:
+            <div className="flex flex-col items-center justify-center w-full px-4">
+              <div className="mb-4 w-full max-w-5xl">
+                <label
+                  className={`block font-medium text-lg mb-4 text-center ${
+                    theme === "dark" ? "text-gray-300" : "text-black"
+                  }`}
+                >
+                  Ticket Images:
                 </label>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => triggerFileInput(true)}
-                    className={`px-4 py-2 rounded-md transition-colors duration-500 ${
-                      theme === "dark"
-                        ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
-                        : "border border-gray-300 focus:ring-gray-500"
-                    }`}
-                  >
-                    Use Camera
-                  </button>
-                  <button
-                    onClick={() => triggerFileInput(false)}
-                    className={`px-4 py-2 rounded-md transition-colors duration-500 ${
-                      theme === "dark"
-                        ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
-                        : "border border-gray-300 focus:ring-gray-500"
-                    }`}
-                  >
-                    Use Gallery
-                  </button>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={onImageChange}
-                  ref={fileInputRef}
-                  className="hidden"
-                />
-              </div>
+                <div className="flex items-center justify-center w-full relative">
+                  {Array.isArray(uploadedImages) &&
+                    uploadedImages.length > 0 &&
+                    uploadedImages.map((image, index) => {
+                      let zIndex;
+                      if (index === uploadedImages.length - 1) {
+                        zIndex = 2; // Most recent image
+                      } else if (index === uploadedImages.length - 2) {
+                        zIndex = 1; // Second most recent image
+                      } else {
+                        zIndex = 0; // All other images
+                      }
 
-              {/* Image preview */}
-              <div className="w-full md:w-2/3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {uploadedImages.map((image, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={image}
-                        alt={`uploaded ${index}`}
-                        onClick={() => openModal(image)}
-                        className="w-full h-64 md:h-80 object-cover rounded-lg shadow-md cursor-pointer"
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-30 sm:bg-opacity-50 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300 space-x-2">
-                        <button
-                          onClick={() => openModal(image)}
-                          className="text-white hover:text-gray-300 focus:outline-none"
+                      return (
+                        <div
+                          key={index}
+                          className={`relative w-48 h-64 transform transition-transform duration-300 hover:scale-105 ${
+                            index === 0 ? "-ml-2" : "-ml-10"
+                          } mt-4`}
+                          style={{
+                            zIndex,
+                          }}
                         >
-                          <FontAwesomeIcon icon={faSearchPlus} size="lg" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteImage(index)}
-                          className="text-white hover:text-gray-300 focus:outline-none"
-                        >
-                          <FontAwesomeIcon icon={faTrashAlt} size="lg" />
-                        </button>
+                          <img
+                            src={image}
+                            alt={`uploaded ${index}`}
+                            className="w-full h-full object-cover rounded-lg shadow-md cursor-pointer"
+                            onClick={() => openModal(image)}
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center space-x-4 opacity-100 sm:opacity-0 sm:hover:opacity-100 transition-opacity duration-300">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openModal(image);
+                              }}
+                              className="text-white hover:text-gray-300 focus:outline-none"
+                            >
+                              <FontAwesomeIcon icon={faSearchPlus} size="lg" />
+                            </button>
+                            {isEditing && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteImage(index);
+                                }}
+                                className="text-white hover:text-gray-300 focus:outline-none"
+                              >
+                                <FontAwesomeIcon icon={faTrashAlt} size="lg" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {isEditing && (
+                    <div
+                      onClick={() => triggerFileInput(false)}
+                      className={`relative w-48 h-64 p-6 rounded-lg border-2 cursor-pointer transition-colors duration-500 z-10 ${
+                        theme === "dark"
+                          ? "bg-gray-800 border-gray-700 hover:bg-gray-700 text-white"
+                          : "bg-white border-gray-300 hover:bg-gray-100 text-black"
+                      } ${
+                        Array.isArray(uploadedImages) &&
+                        uploadedImages.length > 0
+                          ? "-ml-10 mt-4"
+                          : "mt-4"
+                      }`}
+                    >
+                      <div className="flex items-center justify-center h-full">
+                        {Array.isArray(uploadedImages) &&
+                        uploadedImages.length === 0 ? (
+                          <>
+                            <FontAwesomeIcon icon={faCamera} size="3x" />
+                            <FontAwesomeIcon
+                              icon={faFolderOpen}
+                              size="3x"
+                              className="ml-4"
+                            />
+                          </>
+                        ) : (
+                          <FontAwesomeIcon icon={faPlusCircle} size="3x" />
+                        )}
                       </div>
                     </div>
-                  ))}
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      console.log("Files selected: ", e.target.files);
+                      handleImageChange(e);
+                    }}
+                    ref={fileInputRef}
+                    className="hidden"
+                  />
                 </div>
               </div>
+
               {/* Image Modal */}
               <Modal
                 isOpen={isModalOpen}
                 onRequestClose={closeModal}
                 contentLabel="Image Zoom Modal"
                 className="flex items-center justify-center h-full"
-                overlayClassName="fixed inset-0 bg-black bg-opacity-50 z-40"
+                overlayClassName={`fixed inset-0 z-40 ${
+                  theme === "dark"
+                    ? "bg-black bg-opacity-80"
+                    : "bg-black bg-opacity-50"
+                }`}
               >
-                <div className="bg-white p-4 rounded-lg shadow-lg max-w-xl mx-auto z-50 relative">
+                <div
+                  className={`p-4 rounded-lg shadow-lg max-w-3xl mx-auto z-50 relative ${
+                    theme === "dark" ? "bg-gray-800" : "bg-white"
+                  }`}
+                >
                   {selectedImage && (
                     <div className="relative">
                       <img
