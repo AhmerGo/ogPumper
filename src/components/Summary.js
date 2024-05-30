@@ -368,12 +368,6 @@ const ViewFieldTicket = () => {
       fileInputRef.current.value = "";
     }
   };
-  const handleDeleteImage = (index) => {
-    setUploadedImages(uploadedImages.filter((_, i) => i !== index));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Clear the file input field
-    }
-  };
 
   const handleImageUpload = (e) => {
     const files = e.target.files;
@@ -388,6 +382,16 @@ const ViewFieldTicket = () => {
 
     setUploadedImages([...uploadedImages, ...newImages]);
   };
+
+  const handleDeleteImage = (index) => {
+    const updatedImages = uploadedImages.filter((_, i) => i !== index);
+    setUploadedImages(updatedImages);
+  };
+  const triggerFileInput = (capture) => {
+    fileInputRef.current.setAttribute("capture", capture ? "environment" : "");
+    fileInputRef.current.click();
+  };
+
   const openModal = (image) => {
     setSelectedImage(image);
     setIsModalOpen(true);
@@ -942,23 +946,40 @@ const ViewFieldTicket = () => {
                 </div>
               </animated.div>
             )}{" "}
-            <div className="mb-8 flex flex-col items-center w-full space-y-4 md:flex-row md:space-y-0 md:space-x-8 md:justify-center">
+            <div className="mb-8 flex flex-col md:flex-row items-center justify-center md:space-x-8 w-full">
               <div className="mb-4 md:w-1/3">
                 <label className="block font-medium text-base md:text-lg mb-2">
-                  Uploaded Images:
+                  Upload Images:
                 </label>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => triggerFileInput(true)}
+                    className={`px-4 py-2 rounded-md transition-colors duration-500 ${
+                      theme === "dark"
+                        ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
+                        : "border border-gray-300 focus:ring-gray-500"
+                    }`}
+                  >
+                    Use Camera
+                  </button>
+                  <button
+                    onClick={() => triggerFileInput(false)}
+                    className={`px-4 py-2 rounded-md transition-colors duration-500 ${
+                      theme === "dark"
+                        ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
+                        : "border border-gray-300 focus:ring-gray-500"
+                    }`}
+                  >
+                    Use Gallery
+                  </button>
+                </div>
                 <input
                   type="file"
                   accept="image/*"
-                  capture
                   multiple
                   onChange={onImageChange}
                   ref={fileInputRef}
-                  className={`form-input px-3 py-1.5 md:px-4 md:py-2 rounded-md transition-colors duration-500 ${
-                    theme === "dark"
-                      ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
-                      : "border border-gray-300 focus:ring-gray-500"
-                  }`}
+                  className="hidden"
                 />
               </div>
 
@@ -991,7 +1012,6 @@ const ViewFieldTicket = () => {
                   ))}
                 </div>
               </div>
-
               {/* Image Modal */}
               <Modal
                 isOpen={isModalOpen}
