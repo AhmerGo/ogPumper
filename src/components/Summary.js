@@ -535,17 +535,13 @@ const ViewFieldTicket = () => {
       const encodedImageDirectory = encodeURIComponent(
         imageDirectory.replace(/^\.\.\//, "")
       );
-      console.log("STASNEY DOM");
-      console.log(subdomain);
       const response = await fetch(
         `${baseUrl}/api/tickets.php?imageDirectory=${encodedImageDirectory}`
       );
+      console.log("stasneyDom");
+      console.log(baseUrl);
       const data = await response.json();
       setRetrievedImages(data.images);
-      console.log(data);
-      console.log("xx");
-      console.log(JSON.stringify(data.images));
-      console.log(retrievedImages);
       setUploadedImages(data.images); // Set initial state for uploadedImages
     } catch (error) {
       console.error("Error fetching ticket images:", error);
