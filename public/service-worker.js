@@ -155,6 +155,20 @@ async function replayQueuedRequests() {
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
+
+async function notifyClients() {
+  const clients = await self.clients.matchAll();
+  clients.forEach((client) => {
+    client.postMessage({
+      type: "UPDATE_AVAILABLE",
+      message:
+        "New content is now available, would you like to refresh the page?",
+    });
+  });
+}
+
 self.addEventListener("online", () => {
-  self.registration.sync.register("replay-queued-requests");
+  self.registration.sync.register("replay-queued-requests").then(() => {
+    notifyClients(); // Notify clients when network is back
+  });
 });
