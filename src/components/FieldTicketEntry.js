@@ -274,10 +274,6 @@ function FieldTicketEntry() {
       });
 
       if (response.ok) {
-        const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
-        storedTickets.push(normalizedTicket);
-        localStorage.setItem("tickets", JSON.stringify(storedTickets));
-
         navigate("/home");
       } else {
         console.error("Error submitting ticket:", response.statusText);
