@@ -1245,6 +1245,7 @@ const ViewFieldTicket = () => {
                   <input
                     type="file"
                     accept="image/*"
+                    capture="environment"
                     multiple
                     onChange={(e) => {
                       console.log("Files selected: ", e.target.files);

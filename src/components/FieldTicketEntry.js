@@ -716,18 +716,19 @@ function FieldTicketEntry() {
                         )}
                       </div>
                     </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      multiple
+                      onChange={(e) => {
+                        console.log("Files selected: ", e.target.files);
+                        handleImageChange(e);
+                      }}
+                      ref={fileInputRef}
+                      className="hidden"
+                    />
                   </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => {
-                      console.log("Files selected: ", e.target.files);
-                      handleImageChange(e);
-                    }}
-                    ref={fileInputRef}
-                    className="hidden"
-                  />
                 </div>
 
                 {/* Image Modal */}
