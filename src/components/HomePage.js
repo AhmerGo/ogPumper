@@ -143,7 +143,7 @@ function HomePage() {
         });
 
         // Keep only the 50 most recent tickets
-        const recentTickets = mergedTickets.slice(50);
+        const recentTickets = mergedTickets.slice(0, 30);
 
         // Store merged tickets in local storage
         localStorage.setItem("tickets", JSON.stringify(recentTickets));
