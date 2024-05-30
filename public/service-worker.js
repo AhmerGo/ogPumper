@@ -84,12 +84,22 @@ self.addEventListener("activate", (event) => {
 });
 
 async function enqueueRequest(request, body) {
-  const queuedRequest = {
-    url: request.url,
-    method: request.method,
-    headers: [...request.headers.entries()],
-    body: body,
-  };
+  let queuedRequest;
+  if (request.method === "POST") {
+    queuedRequest = {
+      url: request.url,
+      method: request.method,
+      headers: [...request.headers.entries()],
+      body: JSON.stringify(body), // Store the body as a JSON string
+    };
+  } else {
+    queuedRequest = {
+      url: request.url,
+      method: request.method,
+      headers: [...request.headers.entries()],
+      body: body,
+    };
+  }
 
   const cache = await caches.open(QUEUE_NAME);
   const id = new Date().toISOString();
@@ -112,12 +122,12 @@ async function replayQueuedRequests() {
     const response = await cache.match(request);
     const queuedRequest = await response.json();
     const headers = new Headers(queuedRequest.headers);
-    headers.set("Content-Type", "application/json");
+    headers.set("Content-Type", "application/json"); // Set the Content-Type header
 
     const fetchOptions = {
       method: queuedRequest.method,
       headers: headers,
-      body: queuedRequest.body,
+      body: queuedRequest.body, // Use the stored JSON string body
     };
 
     try {
