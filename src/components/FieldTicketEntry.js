@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "./ThemeContext";
 import { useSpring, animated } from "react-spring";
 import { useUser } from "./UserContext";
-import Cropper from "react-easy-crop";
 import Modal from "react-modal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearchPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";

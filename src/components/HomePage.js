@@ -142,8 +142,8 @@ function HomePage() {
           return new Date(b.TicketDate) - new Date(a.TicketDate);
         });
 
-        // Keep only the 20 most recent tickets
-        const recentTickets = mergedTickets.slice(0, 50);
+        // Keep only the 50 most recent tickets
+        const recentTickets = mergedTickets.slice(50);
 
         // Store merged tickets in local storage
         localStorage.setItem("tickets", JSON.stringify(recentTickets));
