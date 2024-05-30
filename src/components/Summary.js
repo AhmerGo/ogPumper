@@ -352,7 +352,7 @@ const ViewFieldTicket = () => {
     const validFiles = files.filter((file) => file.size <= MAX_FILE_SIZE);
 
     if (validFiles.length !== files.length) {
-      alert("Some files are too large. Maximum file size is 5MB.");
+      alert("Some files are too large. Maximum file size is 2MB.");
     }
 
     if (validFiles.length > 0) {
@@ -362,7 +362,6 @@ const ViewFieldTicket = () => {
       fileInputRef.current.value = "";
     }
   };
-
   const handleDeleteImage = (index) => {
     setUploadedImages(uploadedImages.filter((_, i) => i !== index));
     if (fileInputRef.current) {
@@ -939,14 +938,14 @@ const ViewFieldTicket = () => {
               </animated.div>
             )}{" "}
             <div className="mb-8 flex flex-col items-center w-full space-y-4 md:flex-row md:space-y-0 md:space-x-8 md:justify-center">
-              <div className="w-full sm:w-2/3 md:w-1/3">
+              <div className="mb-4 md:w-1/3">
                 <label className="block font-medium text-base md:text-lg mb-2">
-                  Uploaded Images:
+                  Upload Images:
                 </label>
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
+                  capture
                   multiple
                   onChange={onImageChange}
                   ref={fileInputRef}

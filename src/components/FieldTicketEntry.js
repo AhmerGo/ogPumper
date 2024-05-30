@@ -102,7 +102,7 @@ function FieldTicketEntry() {
     const validFiles = files.filter((file) => file.size <= MAX_FILE_SIZE);
 
     if (validFiles.length !== files.length) {
-      alert("Some files are too large. Maximum file size is 5MB.");
+      alert("Some files are too large. Maximum file size is 2MB.");
     }
 
     if (validFiles.length > 0) {
@@ -568,7 +568,7 @@ function FieldTicketEntry() {
               <input
                 type="file"
                 accept="image/*"
-                capture="environment"
+                capture
                 multiple
                 onChange={onImageChange}
                 ref={fileInputRef}
