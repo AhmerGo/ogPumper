@@ -1,6 +1,7 @@
 import React from "react";
 
-const ConfirmModal = ({ message, onConfirm, onCancel }) => {
+const ConfirmModal = ({ show, onConfirm, onCancel, message }) => {
+  if (!show) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">

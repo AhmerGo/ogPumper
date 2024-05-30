@@ -24,6 +24,7 @@ const RootComponent = () => {
 
   const handleReloadConfirm = () => {
     window.location.reload();
+    setShowReloadModal(false);
   };
 
   const handleReloadCancel = () => {
