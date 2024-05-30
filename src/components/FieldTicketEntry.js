@@ -702,45 +702,29 @@ function FieldTicketEntry() {
                       <div className="flex items-center justify-center h-full">
                         {uploadedImages.length === 0 ? (
                           <>
-                            <FontAwesomeIcon icon={faCamera} size="3x" />
+                            <FontAwesomeIcon
+                              icon={faCamera}
+                              size="3x"
+                              onClick={() => triggerFileInput(true)}
+                            />
                             <FontAwesomeIcon
                               icon={faFolderOpen}
                               size="3x"
                               className="ml-4"
+                              onClick={() => triggerFileInput(false)}
                             />
                           </>
                         ) : (
-                          <FontAwesomeIcon icon={faPlusCircle} size="3x" />
+                          <FontAwesomeIcon
+                            icon={faPlusCircle}
+                            size="3x"
+                            onClick={() => triggerFileInput(false)}
+                          />
                         )}
                       </div>
                     </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(e) => {
-                        console.log("Files selected: ", e.target.files);
-                        handleImageChange(e);
-                      }}
-                      ref={fileInputRef}
-                      className="hidden"
-                    />
                   </div>
                   {/* Buttons for triggering file input */}
-                  <div className="flex justify-center mt-4">
-                    <button
-                      onClick={() => triggerFileInput(true)}
-                      className="bg-blue-500 text-white px-4 py-2 rounded-lg mr-2"
-                    >
-                      Use Camera
-                    </button>
-                    <button
-                      onClick={() => triggerFileInput(false)}
-                      className="bg-green-500 text-white px-4 py-2 rounded-lg"
-                    >
-                      Upload from Files
-                    </button>
-                  </div>{" "}
                 </div>
 
                 {/* Image Modal */}
