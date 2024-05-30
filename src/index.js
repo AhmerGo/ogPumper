@@ -7,12 +7,44 @@ import * as serviceWorker from "./serviceWorker";
 import ConfirmModal from "./components/ConfirmModal";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(
-  <React.StrictMode>
-    <Router>
-      <App />
-    </Router>
-  </React.StrictMode>
-);
+const RootComponent = () => {
+  const [showReloadModal, setShowReloadModal] = useState(false);
 
-serviceWorker.register(); // Registering the service worker
+  useEffect(() => {
+    const handleOnline = () => {
+      setShowReloadModal(true);
+    };
+
+    window.addEventListener("online", handleOnline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+    };
+  }, []);
+
+  const handleReloadConfirm = () => {
+    window.location.reload();
+  };
+
+  const handleReloadCancel = () => {
+    setShowReloadModal(false);
+  };
+
+  return (
+    <React.StrictMode>
+      <Router>
+        <App />
+        <ConfirmModal
+          show={showReloadModal}
+          onConfirm={handleReloadConfirm}
+          onCancel={handleReloadCancel}
+          message="You are back online. Reload the page to see the latest updates."
+        />
+      </Router>
+    </React.StrictMode>
+  );
+};
+
+root.render(<RootComponent />);
+
+serviceWorker.register();
