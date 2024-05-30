@@ -351,77 +351,62 @@ const ViewFieldTicket = () => {
 
       localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
 
-      const isOnline = navigator.onLine;
       const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
+      const patchData = {
+        ...updatedTicket,
+        addedImages: [],
+        removedImages: [],
+      };
 
-      if (isOnline) {
-        const patchData = {
-          ...updatedTicket,
-          addedImages: [],
-          removedImages: [],
-        };
+      // Extract image names from retrievedImages
+      const existingImageNames = Array.isArray(retrievedImages)
+        ? retrievedImages.map((image) => image.split("/").pop())
+        : [];
+      const addedImages = Array.isArray(uploadedImages)
+        ? uploadedImages.filter(
+            (image) => !existingImageNames.includes(image.split("/").pop())
+          )
+        : [];
 
-        // Extract image names from retrievedImages
-        const existingImageNames = Array.isArray(retrievedImages)
-          ? retrievedImages.map((image) => image.split("/").pop())
-          : [];
-        const addedImages = Array.isArray(uploadedImages)
-          ? uploadedImages.filter(
-              (image) => !existingImageNames.includes(image.split("/").pop())
-            )
-          : [];
+      for (const addedImage of addedImages) {
+        const imageName = addedImage.split("/").pop();
+        if (existingImageNames.includes(imageName)) continue;
 
-        for (const addedImage of addedImages) {
-          const imageName = addedImage.split("/").pop();
-          if (existingImageNames.includes(imageName)) continue;
+        const response = await fetch(addedImage);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        const base64Data = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result.split(",")[1]);
+          reader.readAsDataURL(blob);
+        });
 
-          const response = await fetch(addedImage);
-          const blob = await response.blob();
-          const reader = new FileReader();
-          const base64Data = await new Promise((resolve) => {
-            reader.onloadend = () => resolve(reader.result.split(",")[1]);
-            reader.readAsDataURL(blob);
-          });
+        const fileExtension = (addedImage.match(/\.\w+$/) || [".jpg"])[0];
+        patchData.addedImages.push({
+          name: `${Date.now()}_${patchData.addedImages.length}${fileExtension}`,
+          data: base64Data,
+        });
+      }
 
-          const fileExtension = (addedImage.match(/\.\w+$/) || [".jpg"])[0];
-          patchData.addedImages.push({
-            name: `${Date.now()}_${
-              patchData.addedImages.length
-            }${fileExtension}`,
-            data: base64Data,
-          });
+      const removedImages = existingImageNames.filter(
+        (image) =>
+          !Array.isArray(uploadedImages) ||
+          !uploadedImages.map((img) => img.split("/").pop()).includes(image)
+      );
+      patchData.removedImages = removedImages;
+
+      // Send the patch request regardless of online status
+      const response = await fetch(
+        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(patchData),
         }
+      );
 
-        const removedImages = existingImageNames.filter(
-          (image) =>
-            !Array.isArray(uploadedImages) ||
-            !uploadedImages.map((img) => img.split("/").pop()).includes(image)
-        );
-        patchData.removedImages = removedImages;
-
-        const response = await fetch(
-          `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(patchData),
-          }
-        );
-
-        if (response.ok) {
-          const updatedStoredTickets = storedTickets.map((t) =>
-            t.Ticket === ticket.Ticket
-              ? { ...updatedTicket, ImageDirectory: uploadedImages.join(",") }
-              : t
-          );
-          localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
-          setIsEditing(false);
-        } else {
-          console.error("Error updating ticket:", response.statusText);
-        }
-      } else {
+      if (response.ok) {
         const updatedStoredTickets = storedTickets.map((t) =>
           t.Ticket === ticket.Ticket
             ? { ...updatedTicket, ImageDirectory: uploadedImages.join(",") }
@@ -429,6 +414,8 @@ const ViewFieldTicket = () => {
         );
         localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
         setIsEditing(false);
+      } else {
+        console.error("Error updating ticket:", response.statusText);
       }
     } catch (error) {
       console.error("Error updating ticket:", error);
