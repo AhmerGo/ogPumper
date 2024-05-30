@@ -98,6 +98,7 @@ const ViewFieldTicket = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -343,6 +344,22 @@ const ViewFieldTicket = () => {
       }
     } catch (error) {
       console.error("Error deleting ticket:", error);
+    }
+  };
+
+  const onImageChange = (event) => {
+    const files = Array.from(event.target.files);
+    const validFiles = files.filter((file) => file.size <= MAX_FILE_SIZE);
+
+    if (validFiles.length !== files.length) {
+      alert("Some files are too large. Maximum file size is 5MB.");
+    }
+
+    if (validFiles.length > 0) {
+      handleImageUpload(validFiles);
+    } else {
+      // Clear the file input if no valid files
+      fileInputRef.current.value = "";
     }
   };
 
@@ -929,10 +946,11 @@ const ViewFieldTicket = () => {
                 <input
                   type="file"
                   accept="image/*"
+                  capture="environment"
                   multiple
-                  onChange={handleImageUpload}
+                  onChange={onImageChange}
                   ref={fileInputRef}
-                  className={`form-input w-full px-3 py-1.5 md:px-4 md:py-2 rounded-md transition-colors duration-500 ${
+                  className={`form-input px-3 py-1.5 md:px-4 md:py-2 rounded-md transition-colors duration-500 ${
                     theme === "dark"
                       ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
                       : "border border-gray-300 focus:ring-gray-500"

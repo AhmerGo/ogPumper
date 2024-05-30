@@ -1,6 +1,11 @@
 {
+  "name": "ogField",
   "short_name": "ogField",
-  "name": "ogFieldTicket",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "description": "ogPumper",
   "icons": [
     {
       "src": "icons/favicon.ico",
@@ -23,8 +28,5 @@
       "sizes": "100x100"
     }
   ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "permissions": ["camera"]
 }
