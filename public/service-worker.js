@@ -73,7 +73,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (!cacheWhitelist.includes(cacheName)) {
             return caches.delete(cacheName);
           }
         })
@@ -85,7 +85,7 @@ self.addEventListener("activate", (event) => {
 
 async function enqueueRequest(request, body) {
   const queuedRequest = {
-    url: request.url, // Store the original URL
+    url: request.url,
     method: request.method,
     headers: [...request.headers.entries()],
     body: body,
@@ -94,7 +94,7 @@ async function enqueueRequest(request, body) {
   const cache = await caches.open(QUEUE_NAME);
   const id = new Date().toISOString();
   await cache.put(
-    new Request(`${id}`, { method: "GET" }), // Use the unique identifier as the key
+    new Request(id, { method: "GET" }),
     new Response(JSON.stringify(queuedRequest))
   );
 }
@@ -105,69 +105,32 @@ self.addEventListener("sync", (event) => {
   }
 });
 
-async function notifyClients() {
-  const clients = await self.clients.matchAll();
-  clients.forEach((client) => {
-    client.postMessage({
-      type: "UPDATE_AVAILABLE",
-      message:
-        "New content is now available, would you like to refresh the page?",
-    });
-  });
-}
-
 async function replayQueuedRequests() {
   const cache = await caches.open(QUEUE_NAME);
   const requests = await cache.keys();
-  console.log("Replaying queued requests:", requests); // Debugging line
-
   for (const request of requests) {
     const response = await cache.match(request);
     const queuedRequest = await response.json();
-
-    // Log the queued request for debugging
-    console.log("Queued request:", queuedRequest);
-
-    // Ensure the headers are correctly set
     const headers = new Headers(queuedRequest.headers);
     headers.set("Content-Type", "application/json");
 
     const fetchOptions = {
       method: queuedRequest.method,
       headers: headers,
-      body: queuedRequest.body, // Convert body to string
+      body: queuedRequest.body,
     };
 
-    // Log fetch options for debugging
-    console.log("Fetch options:", fetchOptions);
-
     try {
-      const networkResponse = await fetch(queuedRequest.url, fetchOptions); // Use the original URL
-
-      // Log the network response for debugging
-      console.log("Network response:", networkResponse);
-
-      // Check if the response is not ok and log the response body
-      if (!networkResponse.ok) {
-        const errorBody = await networkResponse.text();
-        console.error("Network response was not ok:", networkResponse);
-        console.error("Response body:", errorBody);
-      } else {
-        console.log(
-          "Request sent successfully, removing from queue:",
-          queuedRequest.url
-        ); // Debugging line
+      const networkResponse = await fetch(queuedRequest.url, fetchOptions);
+      if (networkResponse.ok) {
         await cache.delete(request);
       }
     } catch (error) {
       console.error("Replay queued request failed", error);
     }
 
-    // Introduce a 100 ms delay before sending the next request
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100)); // Delay before next request
   }
-
-  notifyClients(); // Notify clients after replaying all requests
 }
 
 self.addEventListener("online", () => {
