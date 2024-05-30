@@ -519,9 +519,18 @@ const ViewFieldTicket = () => {
 
   const fetchTicketImages = async (imageDirectory) => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      // Determine the base URL based on the subdomain
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
       const encodedImageDirectory = encodeURIComponent(
         imageDirectory.replace(/^\.\.\//, "")
       );
@@ -612,9 +621,18 @@ const ViewFieldTicket = () => {
   const handleBillConfirm = async () => {
     try {
       const updatedTicket = { ...ticket, Billed: "Y" };
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        console.log(`Using subdomain URL: ${baseUrl}`);
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+        console.log(`Using default URL: ${baseUrl}`);
+      }
 
       const response = await fetch(
         `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
