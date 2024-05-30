@@ -640,14 +640,13 @@ function FieldTicketEntry() {
                   <div className="flex items-center justify-center w-full relative">
                     {uploadedImages.length > 0 &&
                       uploadedImages.map((image, index) => {
-                        // Calculate the zIndex so that the most recent image has the second highest zIndex
                         let zIndex;
                         if (index === uploadedImages.length - 1) {
-                          zIndex = 2; // Most recent image
+                          zIndex = 2;
                         } else if (index === uploadedImages.length - 2) {
-                          zIndex = 1; // Second most recent image
+                          zIndex = 1;
                         } else {
-                          zIndex = 0; // All other images
+                          zIndex = 0;
                         }
 
                         return (
@@ -655,7 +654,7 @@ function FieldTicketEntry() {
                             key={index}
                             className={`relative w-48 h-64 transform transition-transform duration-300 hover:scale-105 ${
                               index === 0 ? "-ml-2" : "-ml-10"
-                            } mt-4`} // Adjust the margins here for overlap effect
+                            } mt-4`}
                             style={{
                               zIndex,
                             }}
@@ -698,7 +697,7 @@ function FieldTicketEntry() {
                         theme === "dark"
                           ? "bg-gray-800 border-gray-700 hover:bg-gray-700 text-white"
                           : "bg-white border-gray-300 hover:bg-gray-100 text-black"
-                      } ${uploadedImages.length > 0 ? "-ml-10 mt-4" : "mt-4"}`} // Adjust the margins here for overlap effect
+                      } ${uploadedImages.length > 0 ? "-ml-10 mt-4" : "mt-4"}`}
                     >
                       <div className="flex items-center justify-center h-full">
                         {uploadedImages.length === 0 ? (
@@ -727,6 +726,21 @@ function FieldTicketEntry() {
                       className="hidden"
                     />
                   </div>
+                  {/* Buttons for triggering file input */}
+                  <div className="flex justify-center mt-4">
+                    <button
+                      onClick={() => triggerFileInput(true)}
+                      className="bg-blue-500 text-white px-4 py-2 rounded-lg mr-2"
+                    >
+                      Use Camera
+                    </button>
+                    <button
+                      onClick={() => triggerFileInput(false)}
+                      className="bg-green-500 text-white px-4 py-2 rounded-lg"
+                    >
+                      Upload from Files
+                    </button>
+                  </div>{" "}
                 </div>
 
                 {/* Image Modal */}
