@@ -29,9 +29,6 @@ const Root = () => {
 
   return (
     <React.StrictMode>
-      <Router>
-        <App />
-      </Router>
       {showModal && (
         <ConfirmModal
           message={message}
@@ -39,6 +36,10 @@ const Root = () => {
           onCancel={handleCancel}
         />
       )}
+
+      <Router>
+        <App />
+      </Router>
     </React.StrictMode>
   );
 };
