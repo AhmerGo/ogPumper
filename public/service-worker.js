@@ -1,3 +1,6 @@
+// Import Axios (you might need to adjust this based on your build setup)
+importScripts("https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js");
+
 const CACHE_NAME = "my-app-cache-v1";
 const QUEUE_NAME = "request-queue";
 const urlsToCache = [
@@ -53,16 +56,21 @@ self.addEventListener("fetch", (event) => {
     );
   } else if (["POST", "DELETE", "PATCH"].includes(event.request.method)) {
     event.respondWith(
-      fetch(event.request.clone()).catch(() => {
-        return event.request
-          .clone()
-          .text()
-          .then((body) => {
-            return enqueueRequest(event.request, body).then(() => {
-              return new Response(null, { status: 202, statusText: "Queued" });
+      axios(event.request.clone())
+        .then((response) => response)
+        .catch(() => {
+          return event.request
+            .clone()
+            .text()
+            .then((body) => {
+              return enqueueRequest(event.request, body).then(() => {
+                return new Response(null, {
+                  status: 202,
+                  statusText: "Queued",
+                });
+              });
             });
-          });
-      })
+        })
     );
   }
 });
@@ -119,12 +127,13 @@ async function replayQueuedRequests() {
     const fetchOptions = {
       method: queuedRequest.method,
       headers: headers,
-      body: queuedRequest.body, // Use the stored JSON string body
+      data: queuedRequest.body, // Use the stored JSON string body
+      url: queuedRequest.url,
     };
 
     try {
-      const networkResponse = await fetch(queuedRequest.url, fetchOptions);
-      if (networkResponse.ok) {
+      const networkResponse = await axios(fetchOptions);
+      if (networkResponse.status >= 200 && networkResponse.status < 300) {
         await cache.delete(request);
       }
     } catch (error) {
