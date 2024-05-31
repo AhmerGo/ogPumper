@@ -4,7 +4,6 @@ import { useTheme } from "./ThemeContext";
 import { useSpring, animated } from "react-spring";
 import { useUser } from "./UserContext";
 import Modal from "react-modal";
-import axios from "axios";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -275,20 +274,19 @@ function FieldTicketEntry() {
         images: imageFiles,
       };
 
-      try {
-        const response = await axios.post(`${baseUrl}/api/tickets.php`, payload, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-    
-        if (response.status === 202) {
-          // Handle the queued request case
-          console.log("Request has been queued.");
-          navigate("/home");
-        } else {
-          navigate("/home");
-        }    
+      const response = await fetch(`${baseUrl}/api/tickets.php`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        navigate("/home");
+      } else {
+        console.error("Error submitting ticket:", response.statusText);
+      }
     } catch (error) {
       console.error("Error submitting ticket:", error);
     } finally {
