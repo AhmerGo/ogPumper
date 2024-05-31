@@ -97,6 +97,8 @@ async function enqueueRequest(request, body) {
     new Request(id, { method: "GET" }),
     new Response(JSON.stringify(queuedRequest))
   );
+  // Register sync for the queued request
+  self.registration.sync.register("replay-queued-requests");
 }
 
 self.addEventListener("sync", (event) => {
@@ -132,7 +134,3 @@ async function replayQueuedRequests() {
     await new Promise((resolve) => setTimeout(resolve, 100)); // Delay before next request
   }
 }
-
-self.addEventListener("online", () => {
-  self.registration.sync.register("replay-queued-requests");
-});
