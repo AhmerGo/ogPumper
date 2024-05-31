@@ -199,12 +199,16 @@ const ViewFieldTicket = () => {
   useEffect(() => {
     if (location.state) {
       initializeTicketState(location.state.ticket);
-      fetchTicketImages(location.state.ticket.ImageDirectory);
+      location.state.ticket.imageDirectory.length() > 1
+        ? fetchTicketImages(location.state.ticket.ImageDirectory)
+        : console.log("No images");
     } else {
       const cachedTicket = JSON.parse(localStorage.getItem("currentTicket"));
       if (cachedTicket) {
         initializeTicketState(cachedTicket);
-        fetchTicketImages(cachedTicket.ImageDirectory);
+        cachedTicket.imageDirectory.length() > 1
+          ? fetchTicketImages(cachedTicket.ImageDirectory)
+          : console.log("No images");
       }
     }
   }, [location.state]);
