@@ -164,9 +164,16 @@ const ControlUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const baseUrl = subdomain
-          ? `https://${subdomain}.ogpumper.net`
-          : "https://ogfieldticket.com";
+        const hostname = window.location.hostname;
+        const parts = hostname.split(".");
+        let baseUrl;
+
+        if (parts.length > 2) {
+          const subdomainPart = parts.shift();
+          baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        } else {
+          baseUrl = "https://ogfieldticket.com";
+        }
         const response = await axios.get(`${baseUrl}/api/userdetails.php`);
         const filteredUsers = response.data.users.filter(
           (user) => user.Role === "P" || user.Role === "O" || user.Role === "A"
@@ -185,9 +192,16 @@ const ControlUsers = () => {
 
   const handleSave = async (updatedUserData) => {
     try {
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+      }
       const response = await axios.patch(
         `${baseUrl}/api/userdetails.php?id=${updatedUserData.UserID}`,
         updatedUserData
