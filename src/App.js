@@ -67,7 +67,7 @@ function App() {
             }
           />
           <Route
-            path="/admin"
+            path="/admin-panel"
             element={
               <Layout>
                 <Admin />

@@ -353,7 +353,7 @@ function Layout({ children }) {
         </Logo>
         <NavItems>
           {userRole !== "P" && (
-            <AdminButton theme={theme} onClick={() => navigate("/admin")}>
+            <AdminButton theme={theme} onClick={() => navigate("/admin-panel")}>
               <span className="material-symbols-outlined">
                 admin_panel_settings
               </span>

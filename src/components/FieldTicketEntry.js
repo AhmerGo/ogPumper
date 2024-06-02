@@ -235,43 +235,83 @@ function FieldTicketEntry() {
         WellID: ticketData.well || null,
         Comments: ticketData.note || "",
         JobDescription: ticketData.ticketType,
-        JoTbypeID: ticketData.JobTypeID,
+        JobTypeID: ticketData.JobTypeID,
         Items: updatedOfflineItems,
         Note: ticketData.note || "",
         UserID: ticketData.userID,
         Ticket: formFields.ticketNumber,
       };
 
-      // Save ticket to local storage
-      const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
-      storedTickets.push(normalizedTicket);
-      localStorage.setItem("tickets", JSON.stringify(storedTickets));
+      // Save ticket to local storage in one operation
+      const storeTicket = (ticket) => {
+        const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
+        storedTickets.push(ticket);
+        localStorage.setItem("tickets", JSON.stringify(storedTickets));
+      };
 
-      const imagePromises = uploadedImages.map((image, index) => {
-        return fetch(image)
-          .then((response) => response.blob())
-          .then((blob) => {
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                resolve({
-                  name: `uploads/ticket_${formFields.ticketNumber}/image_${index}.jpg`,
-                  data: reader.result.split(",")[1], // Remove the Base64 prefix
-                  type: blob.type,
-                });
-              };
-              reader.readAsDataURL(blob);
-            });
-          });
-      });
+      storeTicket(normalizedTicket);
 
-      const imageFiles = await Promise.all(imagePromises);
+      const chunkSize = 1024 * 1024; // 1MB
 
-      await Promise.all(imagePromises);
+      const uploadChunk = async (
+        image,
+        ticketNumber,
+        imageIndex,
+        chunk,
+        chunkIndex,
+        totalChunks
+      ) => {
+        const formData = new FormData();
+        formData.append("ticketNumber", ticketNumber);
+        formData.append("imageIndex", imageIndex);
+        formData.append("chunkIndex", chunkIndex);
+        formData.append("totalChunks", totalChunks);
+        formData.append("chunk", chunk);
+
+        const response = await fetch(
+          `${baseUrl}/api/tickets.php?upload_chunk=true`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        return response.json();
+      };
+
+      const uploadImageInChunks = async (image, ticketNumber, imageIndex) => {
+        const response = await fetch(image);
+        const blob = await response.blob();
+        const totalChunks = Math.ceil(blob.size / chunkSize);
+
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+          const start = chunkIndex * chunkSize;
+          const end = Math.min(start + chunkSize, blob.size);
+          const chunk = blob.slice(start, end);
+
+          await uploadChunk(
+            image,
+            ticketNumber,
+            imageIndex,
+            chunk,
+            chunkIndex,
+            totalChunks
+          );
+        }
+      };
+
+      const ticketNumber = formFields.ticketNumber;
+      const imageUploadPromises = uploadedImages.map((image, index) =>
+        uploadImageInChunks(image, ticketNumber, index)
+      );
+
+      await Promise.all(imageUploadPromises);
 
       const payload = {
         ticketData,
-        images: imageFiles,
+        images: uploadedImages.map((image, index) => ({
+          name: `uploads/ticket_${formFields.ticketNumber}/image_${index}.jpg`,
+        })),
       };
 
       const response = await fetch(`${baseUrl}/api/tickets.php`, {
