@@ -93,9 +93,7 @@ const AdminButton = styled.button`
   }
 
   @media (max-width: 768px) {
-    padding: 6px 12px;
-    font-size: 12px;
-    border-radius: 6px;
+    display: none;
   }
 
   svg {

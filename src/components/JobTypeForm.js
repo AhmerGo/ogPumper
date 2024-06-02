@@ -8,7 +8,7 @@ import {
   faPlus,
   faPencilAlt,
   faTrashAlt,
-  faSave,
+  faCheck,
   faTimes,
   faTasks,
   faStickyNote,
@@ -160,9 +160,12 @@ const JobListPage = () => {
         baseUrl = "https://ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
-      const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `${baseUrl}/api/jobs.php?itemID=${itemId.JobItemID}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (response.ok) {
         fetchTicketTypes();
       } else {
@@ -656,6 +659,39 @@ const ItemsAnimation = ({
       ...(item.ItemQuantity !== null && { ItemQuantity: item.ItemQuantity }),
     });
   };
+  const handleRemoveItem = async (itemID) => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+      } else {
+        baseUrl = "https://ogfieldticket.com";
+      }
+
+      const response = await fetch(`${baseUrl}/api/jobitem.php`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ item_id: itemID }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setAvailableItems(
+          availableItems.filter((item) => item.ItemID !== itemID)
+        );
+      } else {
+        console.error("Failed to remove item");
+      }
+    } catch (error) {
+      console.error("An error occurred while removing the item.");
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -809,22 +845,42 @@ const ItemsAnimation = ({
   const handleInputChange = (event) => {
     const { name, value, type, checked } = event.target;
     setNewItem((prevItem) => {
-      if (name === "use_quantity") {
+      if (name === "item_id" && value !== "new") {
+        const item = availableItems.find((item) => item.ItemID === value);
         return {
           ...prevItem,
-          [name]: checked ? "N" : "Y",
-          item_quantity: checked ? 1 : null,
+          item_id: item.ItemID,
+          uom: item.UOM,
+          item_description: item.ItemDescription,
+          item_quantity: 1,
+          item_cost: item.UseCost === "Y" ? 0.0 : null,
+          use_quantity: item.UseQuantity,
+          use_cost: item.UseCost,
         };
-      } else if (name === "use_cost") {
+      } else if (name === "item_id" && value === "new") {
         return {
           ...prevItem,
-          [name]: checked ? "Y" : "N",
-          item_cost: checked ? prevItem.item_cost : 0.0,
+          item_id: "",
+          uom: "",
+          item_description: "",
+          item_quantity: null,
+          item_cost: null,
+          use_quantity: "Y",
+          use_cost: "Y",
+        };
+      } else if (name === "new_item_id") {
+        return {
+          ...prevItem,
+          item_id: value,
         };
       } else {
         return {
           ...prevItem,
-          [name]: value,
+          [name]: type === "checkbox" ? checked : value,
+          ...(name === "use_quantity" && { item_quantity: checked ? 1 : null }),
+          ...(name === "use_cost" && {
+            item_cost: checked ? prevItem.item_cost : 0.0,
+          }),
         };
       }
     });
@@ -902,7 +958,7 @@ const ItemsAnimation = ({
               )}
               <div className="flex justify-end space-x-2">
                 <FontAwesomeIcon
-                  icon={faSave}
+                  icon={faCheck}
                   onClick={() => finalizeEdit(items, setTicketTypes)}
                   className={`cursor-pointer ${
                     theme === "dark" ? "text-white" : "text-gray-800"
@@ -921,6 +977,9 @@ const ItemsAnimation = ({
             <>
               <h3 className="font-semibold text-lg mb-1">
                 {item.ItemDescription}
+                <span className="text-sm text-gray-500 ml-2">
+                  {item.UOM && item.UOM.length > 1 && `(${item.UOM})`}
+                </span>
               </h3>
               {item.ItemQuantity === null ? (
                 <p className="text-sm mb-1">Cost: ${item.ItemCost}</p>
@@ -994,70 +1053,48 @@ const ItemsAnimation = ({
           </button>
           <h2 className="text-3xl font-bold mb-8">Add Item</h2>
           <form>
-            {/* Item ID Field */}
             <div className="mb-8">
               <label htmlFor="item_id" className="block mb-2 font-semibold">
                 Item ID:
               </label>
-              <select
-                id="item_id"
-                name="item_id"
-                value={selectedItem}
-                onChange={(e) => {
-                  const selectedItemId = e.target.value;
-                  if (selectedItemId === "new") {
-                    setSelectedItem("new");
-                    setNewItem({
-                      item_id: "",
-                      uom: "",
-                      item_description: "",
-                      item_quantity: 1,
-                      item_cost: 0.0,
-                      use_quantity: "Y",
-                      use_cost: "N",
-                    });
-                  } else {
-                    const item = availableItems.find(
-                      (item) => item.ItemID === selectedItemId
-                    );
+              <div className="relative">
+                <select
+                  id="item_id"
+                  name="item_id"
+                  value={selectedItem}
+                  onChange={(e) => {
+                    const selectedItemId = e.target.value;
                     setSelectedItem(selectedItemId);
-                    setNewItem({
-                      item_id: item.ItemID,
-                      uom: item.UOM,
-                      item_description: item.ItemDescription,
-                      item_quantity: 1,
-                      item_cost: item.UseCost === "Y" ? 0.0 : null,
-                      use_quantity: "Y",
-                      use_cost: item.UseCost,
-                    });
-                  }
-                }}
-                className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
-                  theme === "dark"
-                    ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
-                    : "bg-gray-100 border-gray-300 focus:ring-blue-500"
-                }`}
-              >
-                <option value="new">Add New Item</option>
-                {availableItems.map((item) => (
-                  <option key={item.ItemID} value={item.ItemID}>
-                    {item.ItemID}
-                  </option>
-                ))}
-              </select>
+                    handleInputChange(e);
+                  }}
+                  className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
+                    theme === "dark"
+                      ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
+                      : "bg-gray-100 border-gray-300 focus:ring-blue-500"
+                  }`}
+                >
+                  <option value="new">Add New Item</option>
+                  {availableItems.map((item) => (
+                    <option key={item.ItemID} value={item.ItemID}>
+                      {item.ItemID}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+
             {selectedItem === "new" && (
               <div className="mb-8">
                 <label
-                  htmlFor="custom_item_id"
+                  htmlFor="new_item_id"
                   className="block mb-2 font-semibold"
                 >
-                  Custom Item ID:
+                  New Item ID:
                 </label>
                 <input
                   type="text"
-                  id="custom_item_id"
-                  name="item_id"
+                  id="new_item_id"
+                  name="new_item_id"
                   value={newItem.item_id}
                   onChange={handleInputChange}
                   className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
@@ -1068,7 +1105,7 @@ const ItemsAnimation = ({
                 />
               </div>
             )}
-            {/* UOM Field */}
+
             <div className="mb-8">
               <label htmlFor="uom" className="block mb-2 font-semibold">
                 UOM:
@@ -1079,6 +1116,7 @@ const ItemsAnimation = ({
                 name="uom"
                 value={newItem.uom}
                 onChange={handleInputChange}
+                readOnly={selectedItem !== "new"}
                 className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
                   theme === "dark"
                     ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
@@ -1086,7 +1124,7 @@ const ItemsAnimation = ({
                 }`}
               />
             </div>
-            {/* Item Description Field */}
+
             <div className="mb-8">
               <label
                 htmlFor="item_description"
@@ -1100,6 +1138,7 @@ const ItemsAnimation = ({
                 value={newItem.item_description}
                 onChange={handleInputChange}
                 rows="3"
+                readOnly={selectedItem !== "new"}
                 className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
                   theme === "dark"
                     ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
@@ -1107,6 +1146,7 @@ const ItemsAnimation = ({
                 }`}
               ></textarea>
             </div>
+
             <div className="mb-8">
               <fieldset>
                 <legend className="block mb-2 font-semibold">
@@ -1120,6 +1160,7 @@ const ItemsAnimation = ({
                         name="use_quantity"
                         checked={newItem.use_quantity === "N"}
                         onChange={handleInputChange}
+                        readOnly={selectedItem !== "new"}
                         className="form-checkbox"
                       />
                       <span className="ml-2">Quantity</span>
@@ -1132,6 +1173,7 @@ const ItemsAnimation = ({
                         name="use_cost"
                         checked={newItem.use_cost === "Y"}
                         onChange={handleInputChange}
+                        readOnly={selectedItem !== "new"}
                         className="form-checkbox"
                       />
                       <span className="ml-2">Cost</span>
@@ -1140,7 +1182,7 @@ const ItemsAnimation = ({
                 </div>
               </fieldset>
             </div>
-            {/* Quantity Field */}
+
             {newItem.use_quantity === "N" && (
               <div className="mb-8">
                 <label
@@ -1163,7 +1205,7 @@ const ItemsAnimation = ({
                 />
               </div>
             )}
-            {/* Cost Field */}
+
             {newItem.use_cost === "Y" && (
               <div className="mb-8">
                 <label htmlFor="item_cost" className="block mb-2 font-semibold">
@@ -1193,7 +1235,7 @@ const ItemsAnimation = ({
                 </div>
               </div>
             )}
-            {/* Form Submission Buttons */}
+
             <div className="flex justify-end space-x-4">
               <button
                 type="button"

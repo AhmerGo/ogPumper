@@ -88,6 +88,7 @@ function HomePage() {
     setShowUnbilled((prevState) => {
       const newState = !prevState;
       localStorage.setItem("showUnbilled", JSON.stringify(newState));
+      setCurrentPage(1); // Reset to first page
       return newState;
     });
   }, []);
@@ -105,7 +106,6 @@ function HomePage() {
         baseUrl = "https://ogfieldticket.com";
       }
 
-      const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
       let fetchedTickets = [];
       let nextTicketID = null;
 
@@ -113,7 +113,6 @@ function HomePage() {
         const response = await fetch(`${baseUrl}/api/tickets.php`);
         const data = await response.json();
 
-        // Extract the next ticket ID and tickets
         const tickets = data.filter((ticket) => {
           if (ticket.isNextTicketID) {
             nextTicketID = ticket.Ticket;
@@ -122,19 +121,7 @@ function HomePage() {
           return true;
         });
 
-        // Merge stored tickets with fetched tickets, avoiding duplicates
-        const mergedTickets = [...tickets, ...storedTickets].reduce(
-          (acc, ticket) => {
-            if (!acc.find((t) => t.Ticket === ticket.Ticket)) {
-              acc.push(ticket);
-            }
-            return acc;
-          },
-          []
-        );
-
-        // Sort merged tickets by Ticket number first, then by TicketDate
-        mergedTickets.sort((a, b) => {
+        tickets.sort((a, b) => {
           const ticketNumberComparison = b.Ticket - a.Ticket;
           if (ticketNumberComparison !== 0) {
             return ticketNumberComparison;
@@ -142,16 +129,14 @@ function HomePage() {
           return new Date(b.TicketDate) - new Date(a.TicketDate);
         });
 
-        // Keep only the 50 most recent tickets
-        const recentTickets = mergedTickets.slice(0, 30);
+        const recentTickets = tickets.slice(0, 30);
 
-        // Store merged tickets in local storage
         localStorage.setItem("tickets", JSON.stringify(recentTickets));
         fetchedTickets = recentTickets;
       } else {
+        const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
         fetchedTickets = storedTickets;
 
-        // Calculate the highest ticket number from stored tickets
         const highestTicket = (
           fetchedTickets.reduce((max, ticket) => {
             return Number(ticket.Ticket) > max ? Number(ticket.Ticket) : max;
@@ -161,7 +146,6 @@ function HomePage() {
         nextTicketID = highestTicket;
       }
 
-      // Filter tickets based on role, billing status, and user ID
       let filteredTickets = fetchedTickets.filter((ticket) => {
         const isUnbilled = ticket.Billed !== "Y";
         const isCurrentUser = ticket.UserID === userID;
@@ -177,7 +161,6 @@ function HomePage() {
         return matchesUserRole && matchesBillingStatus;
       });
 
-      // Apply search query
       if (searchQuery) {
         const lowercaseQuery = searchQuery.toLowerCase();
         filteredTickets = filteredTickets.filter((ticket) =>
@@ -187,7 +170,6 @@ function HomePage() {
         );
       }
 
-      // Sort tickets by Ticket number first, then by TicketDate
       filteredTickets.sort((a, b) => {
         const ticketNumberComparison = b.Ticket - a.Ticket;
         if (ticketNumberComparison !== 0) {
@@ -197,7 +179,6 @@ function HomePage() {
       });
 
       setHighestTicketNumber(nextTicketID.toString());
-
       setTickets(filteredTickets);
       setLoading(false);
     } catch (error) {
