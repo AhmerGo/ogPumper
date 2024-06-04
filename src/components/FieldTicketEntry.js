@@ -4,7 +4,6 @@ import { useTheme } from "./ThemeContext";
 import { useSpring, animated } from "react-spring";
 import { useUser } from "./UserContext";
 import Modal from "react-modal";
-
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faSearchPlus,
@@ -24,6 +23,7 @@ function FieldTicketEntry() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const fileInputRef = useRef(null);
   const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 
@@ -58,6 +58,18 @@ function FieldTicketEntry() {
     window.scrollTo(0, 0);
   }, []);
 
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      setIsOnline(navigator.onLine);
+    };
+    window.addEventListener("online", updateOnlineStatus);
+    window.addEventListener("offline", updateOnlineStatus);
+    return () => {
+      window.removeEventListener("online", updateOnlineStatus);
+      window.removeEventListener("offline", updateOnlineStatus);
+    };
+  }, []);
+
   const handleImageChange = (event) => {
     const files = Array.from(event.target.files);
     const imageUrls = files.map((file) => URL.createObjectURL(file));
@@ -76,7 +88,7 @@ function FieldTicketEntry() {
           const subdomainPart = parts.shift();
           baseUrl = `https://${subdomainPart}.ogpumper.net`;
         } else {
-          baseUrl = "https://ogfieldticket.com";
+          baseUrl = "https://test.ogfieldticket.com";
         }
         const response = await fetch(`${baseUrl}/api/jobs.php`);
         const data = await response.json();
@@ -129,7 +141,6 @@ function FieldTicketEntry() {
     if (validFiles.length > 0) {
       handleImageUpload({ target: { files: validFiles } });
     } else {
-      // Clear the file input if no valid files
       fileInputRef.current.value = "";
     }
   };
@@ -137,7 +148,7 @@ function FieldTicketEntry() {
   const handleDeleteImage = (index) => {
     setUploadedImages(uploadedImages.filter((_, i) => i !== index));
     if (fileInputRef.current) {
-      fileInputRef.current.value = ""; // Clear the file input field
+      fileInputRef.current.value = "";
     }
   };
 
@@ -151,6 +162,7 @@ function FieldTicketEntry() {
       fileInputRef.current.click();
     }
   };
+
   const handleImageUpload = (e) => {
     const files = e.target.files;
     const newImages = [];
@@ -201,7 +213,7 @@ function FieldTicketEntry() {
 
       const baseUrl = subdomain
         ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+        : "https://test.ogfieldticket.com";
 
       const ticketData = {
         ...formFields,
@@ -242,7 +254,6 @@ function FieldTicketEntry() {
         Ticket: formFields.ticketNumber,
       };
 
-      // Save ticket to local storage in one operation
       const storeTicket = (ticket) => {
         const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
         storedTickets.push(ticket);
@@ -668,166 +679,187 @@ function FieldTicketEntry() {
                   rows={4}
                 ></textarea>
               </div>
-              <div className="flex flex-col items-center justify-center w-full px-4">
-                <label
-                  className={`block font-medium text-lg mb-4 text-center ${
-                    theme === "dark" ? "text-gray-300" : "text-black"
-                  }`}
-                >
-                  Upload Images:
-                </label>
-                <div className="mb-4 w-full max-w-5xl">
-                  <div className="flex items-center justify-center w-full relative">
-                    {uploadedImages.length > 0 &&
-                      uploadedImages.map((image, index) => {
-                        let zIndex;
-                        if (index === uploadedImages.length - 1) {
-                          zIndex = 2; // Most recent image
-                        } else if (index === uploadedImages.length - 2) {
-                          zIndex = 1; // Second most recent image
-                        } else {
-                          zIndex = 0; // All other images
-                        }
+              {isOnline && (
+                <div className="flex flex-col items-center justify-center w-full px-4">
+                  <label
+                    className={`block font-medium text-lg mb-4 text-center ${
+                      theme === "dark" ? "text-gray-300" : "text-black"
+                    }`}
+                  >
+                    Upload Images:
+                  </label>
+                  <div className="mb-4 w-full max-w-5xl">
+                    <div className="flex items-center justify-center w-full relative">
+                      {uploadedImages.length > 0 &&
+                        uploadedImages.map((image, index) => {
+                          let zIndex;
+                          if (index === uploadedImages.length - 1) {
+                            zIndex = 2; // Most recent image
+                          } else if (index === uploadedImages.length - 2) {
+                            zIndex = 1; // Second most recent image
+                          } else {
+                            zIndex = 0; // All other images
+                          }
 
-                        return (
-                          <div
-                            key={index}
-                            className={`relative w-48 h-64 transform transition-transform duration-300 hover:scale-105 ${
-                              index === 0 ? "-ml-2" : "-ml-10"
-                            } mt-4`}
-                            style={{
-                              zIndex,
-                            }}
-                          >
-                            <img
-                              src={image}
-                              alt={`uploaded ${index}`}
-                              className="w-full h-full object-cover rounded-lg shadow-md cursor-pointer"
-                              onClick={() => openModal(image)}
-                            />
-                            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center space-x-4 opacity-100 sm:opacity-0 sm:hover:opacity-100 transition-opacity duration-300">
+                          return (
+                            <div
+                              key={index}
+                              className={`relative w-48 h-64 transform transition-transform duration-300 hover:scale-105 ${
+                                index === 0 ? "-ml-2" : "-ml-10"
+                              } mt-4`}
+                              style={{
+                                zIndex,
+                              }}
+                            >
+                              <img
+                                src={image}
+                                alt={`uploaded ${index}`}
+                                className="w-full h-full object-cover rounded-lg shadow-md cursor-pointer"
+                                onClick={() => openModal(image)}
+                              />
+                              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center space-x-4 opacity-100 sm:opacity-0 sm:hover:opacity-100 transition-opacity duration-300">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openModal(image);
+                                  }}
+                                  className="text-white hover:text-gray-300 focus:outline-none"
+                                >
+                                  <FontAwesomeIcon
+                                    icon={faSearchPlus}
+                                    size="lg"
+                                  />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteImage(index);
+                                  }}
+                                  className="text-white hover:text-gray-300 focus:outline-none"
+                                >
+                                  <FontAwesomeIcon
+                                    icon={faTrashAlt}
+                                    size="lg"
+                                  />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      <div
+                        className={`relative w-48 h-64 p-6 rounded-lg border-2 cursor-pointer transition-colors duration-500 z-10 ${
+                          theme === "dark"
+                            ? "bg-gray-800 border-gray-700 hover:bg-gray-700 text-white"
+                            : "bg-white border-gray-300 hover:bg-gray-100 text-black"
+                        } ${
+                          uploadedImages.length > 0 ? "-ml-10 mt-4" : "mt-4"
+                        }`}
+                      >
+                        <div className="flex items-center justify-center h-full">
+                          {uploadedImages.length === 0 ? (
+                            <>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openModal(image);
-                                }}
-                                className="text-white hover:text-gray-300 focus:outline-none"
+                                className="focus:outline-none"
+                                onClick={() =>
+                                  isOnline && triggerFileInput(true)
+                                }
+                                disabled={!isOnline}
                               >
-                                <FontAwesomeIcon
-                                  icon={faSearchPlus}
-                                  size="lg"
-                                />
+                                <FontAwesomeIcon icon={faCamera} size="3x" />
                               </button>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteImage(index);
-                                }}
-                                className="text-white hover:text-gray-300 focus:outline-none"
+                                className="focus:outline-none ml-4"
+                                onClick={() =>
+                                  isOnline && triggerFileInput(false)
+                                }
+                                disabled={!isOnline}
                               >
-                                <FontAwesomeIcon icon={faTrashAlt} size="lg" />
+                                <FontAwesomeIcon
+                                  icon={faFolderOpen}
+                                  size="3x"
+                                />
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              className="focus:outline-none"
+                              onClick={() =>
+                                isOnline && triggerFileInput(false)
+                              }
+                              disabled={!isOnline}
+                            >
+                              <FontAwesomeIcon icon={faPlusCircle} size="3x" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={(e) => {
+                          console.log("Files selected: ", e.target.files);
+                          handleImageChange(e);
+                        }}
+                        ref={fileInputRef}
+                        className="hidden"
+                        disabled={!isOnline}
+                      />
+                    </div>
+
+                    {/* Image Modal */}
+                    <Modal
+                      isOpen={isModalOpen}
+                      onRequestClose={closeModal}
+                      contentLabel="Image Zoom Modal"
+                      className="flex items-center justify-center h-full"
+                      overlayClassName={`fixed inset-0 z-40 ${
+                        theme === "dark"
+                          ? "bg-black bg-opacity-80"
+                          : "bg-black bg-opacity-50"
+                      }`}
+                    >
+                      <div
+                        className={` p-4 rounded-lg shadow-lg max-w-xl mx-auto z-50 relative ${
+                          theme === "dark" ? "bg-gray-800" : "bg-white"
+                        }`}
+                      >
+                        {selectedImage && (
+                          <div className="relative">
+                            <img
+                              src={selectedImage}
+                              alt="Selected"
+                              className="w-full h-auto max-h-screen object-cover"
+                            />
+                            <div className="absolute top-0 right-0 p-2">
+                              <button
+                                onClick={closeModal}
+                                className="text-gray-800 hover:text-gray-600 focus:outline-none"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="grey"
+                                  className="w-6 h-6"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
                               </button>
                             </div>
                           </div>
-                        );
-                      })}
-                    <div
-                      className={`relative w-48 h-64 p-6 rounded-lg border-2 cursor-pointer transition-colors duration-500 z-10 ${
-                        theme === "dark"
-                          ? "bg-gray-800 border-gray-700 hover:bg-gray-700 text-white"
-                          : "bg-white border-gray-300 hover:bg-gray-100 text-black"
-                      } ${uploadedImages.length > 0 ? "-ml-10 mt-4" : "mt-4"}`}
-                    >
-                      <div className="flex items-center justify-center h-full">
-                        {uploadedImages.length === 0 ? (
-                          <>
-                            <button
-                              className="focus:outline-none"
-                              onClick={() => triggerFileInput(true)}
-                            >
-                              <FontAwesomeIcon icon={faCamera} size="3x" />
-                            </button>
-                            <button
-                              className="focus:outline-none ml-4"
-                              onClick={() => triggerFileInput(false)}
-                            >
-                              <FontAwesomeIcon icon={faFolderOpen} size="3x" />
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            className="focus:outline-none"
-                            onClick={() => triggerFileInput(false)}
-                          >
-                            <FontAwesomeIcon icon={faPlusCircle} size="3x" />
-                          </button>
                         )}
                       </div>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(e) => {
-                        console.log("Files selected: ", e.target.files);
-                        handleImageChange(e);
-                      }}
-                      ref={fileInputRef}
-                      className="hidden"
-                    />
+                    </Modal>
                   </div>
-
-                  {/* Image Modal */}
-                  <Modal
-                    isOpen={isModalOpen}
-                    onRequestClose={closeModal}
-                    contentLabel="Image Zoom Modal"
-                    className="flex items-center justify-center h-full"
-                    overlayClassName={`fixed inset-0 z-40 ${
-                      theme === "dark"
-                        ? "bg-black bg-opacity-80"
-                        : "bg-black bg-opacity-50"
-                    }`}
-                  >
-                    <div
-                      className={` p-4 rounded-lg shadow-lg max-w-xl mx-auto z-50 relative ${
-                        theme === "dark" ? "bg-gray-800" : "bg-white"
-                      }`}
-                    >
-                      {selectedImage && (
-                        <div className="relative">
-                          <img
-                            src={selectedImage}
-                            alt="Selected"
-                            className="w-full h-auto max-h-screen object-cover"
-                          />
-                          <div className="absolute top-0 right-0 p-2">
-                            <button
-                              onClick={closeModal}
-                              className="text-gray-800 hover:text-gray-600 focus:outline-none"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="grey"
-                                className="w-6 h-6"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Modal>
                 </div>
-              </div>
+              )}
+
               <div className="text-center">
                 <button
                   onClick={handleFinalSubmit}
