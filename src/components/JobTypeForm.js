@@ -264,11 +264,6 @@ const JobListPage = () => {
 
   const handleKeyPress = async (event) => {
     if (event.key === "Enter") {
-      const jobDescription = event.target.value;
-      const noteDefault = showNoteBox ? note : "";
-      console.log(jobDescription);
-      console.log(noteDefault);
-
       try {
         const hostname = window.location.hostname;
         const parts = hostname.split(".");
@@ -288,19 +283,12 @@ const JobListPage = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ jobDescription, noteDefault }),
+          body: JSON.stringify({ jobDescription, note }),
         });
 
         if (response.ok) {
-          event.target.value = "";
-          if (showNoteBox) {
-            const noteElement = event.target.nextSibling;
-            if (noteElement) {
-              noteElement.value = "";
-            } else {
-              console.error("Note element not found");
-            }
-          }
+          setJobDescription("");
+          setNote("");
           fetchTicketTypes();
         } else {
           console.error("Error adding new job:", response.statusText);
@@ -313,7 +301,6 @@ const JobListPage = () => {
       setShowNoteBox(false);
     }
   };
-
   const handleEditJobNote = (jobId, currentNote) => {
     setEditingJobNote({ jobId, note: currentNote });
   };

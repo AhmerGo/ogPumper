@@ -1,5 +1,9 @@
-const CACHE_NAME = "my-app-cache-v1";
-const QUEUE_NAME = "request-queue";
+importScripts("/idb.js");
+
+const CACHE_NAME = "my-app-cache-v1.0.1"; // Updated cache name with version
+const DB_NAME = "request-queue";
+const STORE_NAME = "requests";
+
 const urlsToCache = [
   "/",
   "/index.html",
@@ -16,11 +20,9 @@ const urlsToCache = [
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
   );
-  self.skipWaiting(); // Ensures the service worker activates immediately
+  self.skipWaiting(); // Force the SW to take control immediately
 });
 
 self.addEventListener("fetch", (event) => {
@@ -33,12 +35,7 @@ self.addEventListener("fetch", (event) => {
         } else {
           try {
             const networkResponse = await fetch(event.request);
-            if (
-              networkResponse &&
-              networkResponse.status === 200 &&
-              (networkResponse.type === "basic" ||
-                networkResponse.type === "cors")
-            ) {
+            if (networkResponse && networkResponse.status === 200) {
               const responseToCache = networkResponse.clone();
               const cache = await caches.open(CACHE_NAME);
               cache.put(event.request, responseToCache);
@@ -57,11 +54,10 @@ self.addEventListener("fetch", (event) => {
         return event.request
           .clone()
           .text()
-          .then((body) => {
-            return enqueueRequest(event.request, body).then(() => {
-              return new Response(null, { status: 202, statusText: "Queued" });
-            });
-          });
+          .then((body) => enqueueRequest(event.request, body))
+          .then(
+            () => new Response(null, { status: 202, statusText: "Accepted" })
+          );
       })
     );
   }
@@ -70,20 +66,31 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("activate", (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
+    caches.keys().then((cacheNames) =>
+      Promise.all(
         cacheNames.map((cacheName) => {
           if (!cacheWhitelist.includes(cacheName)) {
             return caches.delete(cacheName);
           }
         })
-      );
-    })
+      )
+    )
   );
-  self.clients.claim(); // Ensures the service worker takes control immediately
+  self.clients.claim();
 });
 
 async function enqueueRequest(request, body) {
+  const db = await idb.openDB(DB_NAME, 1, {
+    upgrade(db) {
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, {
+          keyPath: "id",
+          autoIncrement: true,
+        });
+      }
+    },
+  });
+
   const queuedRequest = {
     url: request.url,
     method: request.method,
@@ -91,14 +98,15 @@ async function enqueueRequest(request, body) {
     body: body,
   };
 
-  const cache = await caches.open(QUEUE_NAME);
-  const id = new Date().toISOString();
-  await cache.put(
-    new Request(id, { method: "GET" }),
-    new Response(JSON.stringify(queuedRequest))
-  );
-  // Register sync for the queued request
-  self.registration.sync.register("replay-queued-requests");
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  await tx.objectStore(STORE_NAME).add(queuedRequest);
+  await tx.done;
+
+  if ("sync" in self.registration) {
+    self.registration.sync.register("replay-queued-requests");
+  } else {
+    setTimeout(replayQueuedRequests, 5000); // Delay to avoid immediate reprocessing
+  }
 }
 
 self.addEventListener("sync", (event) => {
@@ -108,29 +116,34 @@ self.addEventListener("sync", (event) => {
 });
 
 async function replayQueuedRequests() {
-  const cache = await caches.open(QUEUE_NAME);
-  const requests = await cache.keys();
-  for (const request of requests) {
-    const response = await cache.match(request);
-    const queuedRequest = await response.json();
+  const db = await idb.openDB(DB_NAME, 1);
+  const tx = db.transaction(STORE_NAME, "readonly");
+  const store = tx.objectStore(STORE_NAME);
+  const requests = await store.getAll();
+
+  for (const queuedRequest of requests) {
     const headers = new Headers(queuedRequest.headers);
-    headers.set("Content-Type", "application/json"); // Set the Content-Type header
+    if (queuedRequest.body) {
+      headers.set("Content-Type", "application/json");
+    }
 
     const fetchOptions = {
       method: queuedRequest.method,
       headers: headers,
-      body: queuedRequest.body, // Use the stored JSON string body
+      body: queuedRequest.body,
     };
 
     try {
       const networkResponse = await fetch(queuedRequest.url, fetchOptions);
       if (networkResponse.ok) {
-        await cache.delete(request);
+        const txDelete = db.transaction(STORE_NAME, "readwrite");
+        await txDelete.objectStore(STORE_NAME).delete(queuedRequest.id);
+        await txDelete.done;
       }
     } catch (error) {
       console.error("Replay queued request failed", error);
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 100)); // Delay before next request
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
