@@ -1,6 +1,6 @@
 importScripts("/idb.js");
 
-const CACHE_NAME = "my-app-cache-v1.0.1"; // Updated cache name with version
+const CACHE_NAME = "my-app-cache-v1.0.2"; // Updated cache name with version
 const DB_NAME = "request-queue";
 const STORE_NAME = "requests";
 
@@ -50,14 +50,10 @@ self.addEventListener("fetch", (event) => {
     );
   } else if (["POST", "DELETE", "PATCH"].includes(event.request.method)) {
     event.respondWith(
-      fetch(event.request.clone()).catch(() => {
-        return event.request
-          .clone()
-          .text()
-          .then((body) => enqueueRequest(event.request, body))
-          .then(
-            () => new Response(null, { status: 202, statusText: "Accepted" })
-          );
+      fetch(event.request.clone()).catch(async () => {
+        const body = await event.request.clone().text();
+        await enqueueRequest(event.request, body);
+        return new Response(null, { status: 202, statusText: "Accepted" });
       })
     );
   }
