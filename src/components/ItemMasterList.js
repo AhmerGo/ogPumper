@@ -8,6 +8,7 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import "tailwindcss/tailwind.css";
 
 Modal.setAppElement("#root");
 
@@ -150,15 +151,12 @@ const MasterList = () => {
       use_quantity: params.data.UseQuantity,
       use_cost: params.data.UseCost,
     };
-    const hostname = window.location.hostname;
-    const parts = hostname.split(".");
-    const baseUrl =
-      parts.length > 2
-        ? `https://${parts.shift()}.ogpumper.net`
-        : "https://test.ogfieldticket.com";
 
     try {
-      await axios.patch(`${baseUrl}/api/jobitem.php`, updatedData);
+      await axios.patch(
+        "https://test.ogfieldticket.com/api/jobitem.php",
+        updatedData
+      );
       fetchData();
     } catch (error) {
       console.error("Error updating item", error);
@@ -174,11 +172,9 @@ const MasterList = () => {
             : "from-white to-gray-100 text-black"
         } shadow-xl rounded-lg overflow-hidden ${tableClass}`}
       >
-        <div
-          className={`p-5 text-center bg-gray-50 dark:bg-gray-700 dark:text-white ag-theme-alpine ${tableClass}`}
-        >
+        <div className="p-5 text-center bg-gray-50 dark:bg-gray-700 dark:text-white">
           <h2 className="text-4xl font-bold">Master List</h2>
-        </div>{" "}
+        </div>
         <div
           className={`ag-theme-alpine min-w-full ${tableClass}`}
           style={{ height: 800 }}
@@ -193,7 +189,14 @@ const MasterList = () => {
               sortable: true,
               filter: true,
               editable: true,
+              floatingFilter: true,
+              resizable: true,
             }}
+            pagination={true}
+            paginationPageSize={15}
+            enableRangeSelection={true}
+            suppressRowClickSelection={true}
+            onGridReady={(params) => params.api.sizeColumnsToFit()}
             onCellValueChanged={onCellValueChanged}
           />
         </div>
@@ -290,7 +293,7 @@ const MasterList = () => {
                   className="ml-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
                 >
                   <FontAwesomeIcon icon={faTimes} className="mr-2" />
-                  Cancel{" "}
+                  Cancel
                 </button>
               </div>
             </form>
