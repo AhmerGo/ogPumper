@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import styled, { css, createGlobalStyle } from "styled-components";
-import { useTheme } from "./ThemeContext"; // Adjust the import path as needed
+import { useTheme } from "./ThemeContext";
 import { useUser } from "./UserContext";
 import OutsideClickHandler from "react-outside-click-handler";
 import logo from "../assets/100.png";
@@ -12,10 +12,7 @@ import HomeIcon from "@mui/icons-material/Home";
 const GlobalStyle = createGlobalStyle`
   body {
     font-family: 'Inter', sans-serif;
-    color: ${({ theme }) =>
-      theme === "dark"
-        ? "#E0E0E0"
-        : "#333"}; // Improve text visibility in dark mode
+    color: ${({ theme }) => (theme === "dark" ? "#E0E0E0" : "#333")};
   }
 `;
 
@@ -52,9 +49,7 @@ const DetailsButton = styled.button`
   border: none;
   border-radius: 50px;
   background-color: ${({ theme }) =>
-    theme === "dark"
-      ? "#4E9F3D"
-      : "#76C893"}; // A green shade that adapts to the theme
+    theme === "dark" ? "#4E9F3D" : "#76C893"};
   color: white;
   font-size: 16px;
   font-weight: bold;
@@ -63,7 +58,7 @@ const DetailsButton = styled.button`
 
   &:hover {
     background-color: ${({ theme }) =>
-      theme === "dark" ? "#3d7a2e" : "#5da671"}; // Darken on hover
+      theme === "dark" ? "#3d7a2e" : "#5da671"};
     transform: translateY(-2px);
   }
 `;
@@ -113,16 +108,13 @@ const Logo = styled.div`
 
   svg,
   .fa-icon {
-    font-size: 30px; /* Adjust the font size to reduce the icon size */
-    fill: currentColor; // Adjusts based on theme
+    font-size: 30px;
+    fill: currentColor;
   }
 
   .fa-icon {
-    color: ${({ theme }) =>
-      theme === "dark"
-        ? "#FFFFFF"
-        : "#333"}; // Adjusts color based on the theme
-    margin-right: 0.5rem; // Space between icon and text
+    color: ${({ theme }) => (theme === "dark" ? "#FFFFFF" : "#333")};
+    margin-right: 0.5rem;
   }
 
   span {
@@ -134,7 +126,7 @@ const Logo = styled.div`
   }
 
   &:hover {
-    transform: translateY(-2px); // Subtle hover effect
+    transform: translateY(-2px);
   }
 `;
 
@@ -176,7 +168,7 @@ const NavItem = styled(animated.div)`
 
   .material-symbols-outlined {
     font-size: 24px;
-    color: inherit; /* Ensures icon color matches the theme */
+    color: inherit;
   }
 `;
 
@@ -240,21 +232,15 @@ const UserAvatar = styled.div`
 const UserName = styled.div`
   font-family: "Inter", sans-serif;
   font-size: 24px;
-  font-weight: 700; // Use a bolder weight for more emphasis
+  font-weight: 700;
   margin-bottom: 10px;
-  color: ${({ theme }) =>
-    theme === "dark"
-      ? "#FFFFFF"
-      : "#22222"}; // Ensure high contrast in both themes
+  color: ${({ theme }) => (theme === "dark" ? "#FFFFFF" : "#22222")};
 `;
 
 const UserRole = styled.div`
   font-family: "Inter", sans-serif;
   font-size: 16px;
-  color: ${({ theme }) =>
-    theme === "dark"
-      ? "#AAAAAA"
-      : "55555"}; // Adjust for better visibility in dark mode
+  color: ${({ theme }) => (theme === "dark" ? "#AAAAAA" : "55555")};
   margin-bottom: 20px;
 `;
 
@@ -288,53 +274,54 @@ const CloseIcon = styled.div`
 `;
 
 function Layout({ children }) {
-  let navigate = useNavigate();
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { userRole, userID, setUser } = useUser();
   const [spinning, setSpinning] = useState(false);
   const [profileCardVisible, setProfileCardVisible] = useState(false);
 
-  // Profile card animation
   const profileCardAnimation = useSpring({
     opacity: profileCardVisible ? 1 : 0,
     transform: profileCardVisible ? "translateY(0)" : "translateY(-20px)",
     config: { mass: 1, tension: 210, friction: 20 },
   });
 
-  const handleSignOut = () => {
+  const handleSignOut = useCallback(() => {
     localStorage.removeItem("userRole");
     localStorage.removeItem("userID");
     setUser("", "");
     navigate("/");
-  };
+  }, [navigate, setUser]);
 
-  const handleThemeToggle = () => {
+  const handleThemeToggle = useCallback(() => {
     setSpinning(true);
     setTimeout(() => {
       setSpinning(false);
       toggleTheme();
     }, 1000);
-  };
+  }, [toggleTheme]);
 
-  const capitalizeFirstLetter = (string) => {
+  const capitalizeFirstLetter = useCallback((string) => {
     if (string && typeof string === "string") {
       return string.charAt(0).toUpperCase() + string.slice(1);
     }
     return "";
-  };
+  }, []);
 
   const navBarAnimation = useSpring({
     from: { opacity: 0 },
     to: { opacity: 1 },
   });
 
-  const handleDetailsClick = () => {
+  const handleDetailsClick = useCallback(() => {
     navigate("/profile-details");
     setProfileCardVisible(false);
-  };
+  }, [navigate]);
 
-  // Toggle profile card visibility
-  const toggleProfileCard = () => setProfileCardVisible(!profileCardVisible);
+  const toggleProfileCard = useCallback(
+    () => setProfileCardVisible(!profileCardVisible),
+    [profileCardVisible]
+  );
 
   return (
     <div
@@ -357,14 +344,7 @@ function Layout({ children }) {
               </span>
             </AdminButton>
           )}
-
-          <NavItem
-            onClick={(e) => {
-              e.stopPropagation();
-              setProfileCardVisible(!profileCardVisible);
-            }}
-            theme={theme}
-          >
+          <NavItem onClick={toggleProfileCard} theme={theme}>
             <span className="material-symbols-outlined">account_circle</span>
           </NavItem>
           <ThemeToggleButton onClick={handleThemeToggle} spinning={spinning}>

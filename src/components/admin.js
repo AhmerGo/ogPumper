@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSpring, animated } from "react-spring";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -6,19 +6,23 @@ import {
   faFileContract,
   faBriefcase,
   faTachometerAlt,
+  faList,
+  faChartLine,
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-modal";
-import axios from "axios";
 import { useTheme } from "./ThemeContext";
 import JobListPage from "./JobTypeForm";
 import Leases from "./Leases";
-import ControlUsers from "./ControlUsers"; // Make sure this imports UsersPage component correctly
+import ControlUsers from "./ControlUsers";
+import MasterList from "./ItemMasterList"; // Import the MasterList component
+import Charts from "./Charts"; // Import the Charts component
 
 Modal.setAppElement("#root");
 
 const Admin = () => {
   const { theme } = useTheme();
   const [activePanel, setActivePanel] = useState("jobs");
+  const [activeSubPanel, setActiveSubPanel] = useState("jobList");
 
   const panelAnimation = useSpring({
     to: { opacity: 1 },
@@ -33,9 +37,16 @@ const Admin = () => {
   const activePanelClass =
     theme === "dark" ? "bg-gray-700 text-white" : "bg-gray-200 text-black";
 
-  const handleChangePanel = (panel) => {
+  const handleChangePanel = (panel, subPanel = "") => {
     setActivePanel(panel);
+    setActiveSubPanel(subPanel);
   };
+
+  useEffect(() => {
+    // Ensure the initial render sets the correct panels
+    setActivePanel("jobs");
+    setActiveSubPanel("jobList");
+  }, []);
 
   return (
     <div
@@ -53,31 +64,103 @@ const Admin = () => {
             </h1>
           </div>
           <ul className="space-y-2">
-            {["jobs", "leases", "users"].map((item, index) => (
-              <li
-                key={index}
-                className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
-                  activePanel === item ? activePanelClass : ""
-                }`}
-                onClick={() => handleChangePanel(item)}
-              >
-                <FontAwesomeIcon
-                  icon={
-                    item === "jobs"
-                      ? faBriefcase
-                      : item === "leases"
-                      ? faFileContract
-                      : item === "users"
-                      ? faUsers
-                      : faTachometerAlt // Assuming this is for 'dashboard' if included.
-                  }
-                  className="text-xl"
-                />
-                <span className="text-lg font-medium">
-                  {item.charAt(0).toUpperCase() + item.slice(1)}
-                </span>
-              </li>
-            ))}
+            <li
+              className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
+                activePanel === "jobs" ? activePanelClass : ""
+              }`}
+              onClick={() => handleChangePanel("jobs", "jobList")}
+            >
+              <FontAwesomeIcon icon={faBriefcase} className="text-xl" />
+              <span className="text-lg font-medium">Jobs</span>
+            </li>
+            {activePanel === "jobs" && (
+              <ul className="pl-8 space-y-2">
+                <li
+                  className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
+                    activeSubPanel === "jobList" ? activePanelClass : ""
+                  }`}
+                  onClick={() => handleChangePanel("jobs", "jobList")}
+                >
+                  <FontAwesomeIcon icon={faList} className="text-lg" />
+                  <span className="text-md">Job List</span>
+                </li>
+                <li
+                  className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
+                    activeSubPanel === "masterList" ? activePanelClass : ""
+                  }`}
+                  onClick={() => handleChangePanel("jobs", "masterList")}
+                >
+                  <FontAwesomeIcon icon={faList} className="text-lg" />
+                  <span className="text-md">Master List</span>
+                </li>
+              </ul>
+            )}
+            <li
+              className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
+                activePanel === "leases" ? activePanelClass : ""
+              }`}
+              onClick={() => handleChangePanel("leases", "leaseList")}
+            >
+              <FontAwesomeIcon icon={faFileContract} className="text-xl" />
+              <span className="text-lg font-medium">Leases</span>
+            </li>
+            {activePanel === "leases" && (
+              <ul className="pl-8 space-y-2">
+                <li
+                  className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
+                    activeSubPanel === "leaseList" ? activePanelClass : ""
+                  }`}
+                  onClick={() => handleChangePanel("leases", "leaseList")}
+                >
+                  <FontAwesomeIcon icon={faList} className="text-lg" />
+                  <span className="text-md">Lease List</span>
+                </li>
+              </ul>
+            )}
+            <li
+              className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
+                activePanel === "users" ? activePanelClass : ""
+              }`}
+              onClick={() => handleChangePanel("users", "userList")}
+            >
+              <FontAwesomeIcon icon={faUsers} className="text-xl" />
+              <span className="text-lg font-medium">Users</span>
+            </li>
+            {activePanel === "users" && (
+              <ul className="pl-8 space-y-2">
+                <li
+                  className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
+                    activeSubPanel === "userList" ? activePanelClass : ""
+                  }`}
+                  onClick={() => handleChangePanel("users", "userList")}
+                >
+                  <FontAwesomeIcon icon={faList} className="text-lg" />
+                  <span className="text-md">User List</span>
+                </li>
+              </ul>
+            )}
+            <li
+              className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
+                activePanel === "charts" ? activePanelClass : ""
+              }`}
+              onClick={() => handleChangePanel("charts", "chartsView")}
+            >
+              <FontAwesomeIcon icon={faChartLine} className="text-xl" />
+              <span className="text-lg font-medium">Charts</span>
+            </li>
+            {activePanel === "charts" && (
+              <ul className="pl-8 space-y-2">
+                <li
+                  className={`px-6 py-4 rounded-lg flex items-center gap-3 cursor-pointer transition-colors duration-200 ${sidePanelHoverClass} ${
+                    activeSubPanel === "chartsView" ? activePanelClass : ""
+                  }`}
+                  onClick={() => handleChangePanel("charts", "chartsView")}
+                >
+                  <FontAwesomeIcon icon={faList} className="text-lg" />
+                  <span className="text-md">Charts View</span>
+                </li>
+              </ul>
+            )}
           </ul>
         </animated.div>
       </div>
@@ -85,13 +168,17 @@ const Admin = () => {
       {/* Main Content Area */}
       <div className="flex-grow pl-72 p-10 overflow-y-auto">
         <animated.div style={{ ...panelAnimation }}>
-          {activePanel === "jobs" ? (
+          {activePanel === "jobs" && activeSubPanel === "jobList" ? (
             <JobListPage />
-          ) : activePanel === "leases" ? (
+          ) : activePanel === "jobs" && activeSubPanel === "masterList" ? (
+            <MasterList />
+          ) : activePanel === "leases" && activeSubPanel === "leaseList" ? (
             <Leases />
-          ) : (
+          ) : activePanel === "users" && activeSubPanel === "userList" ? (
             <ControlUsers />
-          )}
+          ) : activePanel === "charts" && activeSubPanel === "chartsView" ? (
+            <Charts />
+          ) : null}
         </animated.div>
       </div>
     </div>

@@ -172,7 +172,7 @@ const ControlUsers = () => {
           const subdomainPart = parts.shift();
           baseUrl = `https://${subdomainPart}.ogpumper.net`;
         } else {
-          baseUrl = "https://ogfieldticket.com";
+          baseUrl = "https://test.ogfieldticket.com";
         }
         const response = await axios.get(`${baseUrl}/api/userdetails.php`);
         const filteredUsers = response.data.users.filter(
@@ -200,7 +200,7 @@ const ControlUsers = () => {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
       const response = await axios.patch(
         `${baseUrl}/api/userdetails.php?id=${updatedUserData.UserID}`,

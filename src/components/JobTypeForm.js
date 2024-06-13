@@ -61,7 +61,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -157,13 +157,14 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
         `${baseUrl}/api/jobs.php?itemID=${itemId.JobItemID}`,
         {
           method: "DELETE",
+          body: { itemId },
         }
       );
       if (response.ok) {
@@ -187,7 +188,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
@@ -219,7 +220,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -248,7 +249,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -274,7 +275,7 @@ const JobListPage = () => {
           baseUrl = `https://${subdomainPart}.ogpumper.net`;
           console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
-          baseUrl = "https://ogfieldticket.com";
+          baseUrl = "https://test.ogfieldticket.com";
           console.log(`Using default URL: ${baseUrl}`);
         }
 
@@ -317,7 +318,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -594,6 +595,15 @@ const ItemsAnimation = ({
   const [selection, setSelection] = useState("quantity");
   const [availableItems, setAvailableItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("new");
+  const [newItem, setNewItem] = useState({
+    item_id: "",
+    uom: "",
+    item_description: "",
+    item_quantity: null,
+    item_cost: null,
+    use_quantity: "N",
+    use_cost: "Y",
+  });
 
   const fetchAvailableItems = async () => {
     try {
@@ -606,7 +616,7 @@ const ItemsAnimation = ({
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -656,7 +666,7 @@ const ItemsAnimation = ({
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -689,7 +699,7 @@ const ItemsAnimation = ({
     console.log(itemId);
     const baseUrl = subdomain
       ? `https://${subdomain}.ogpumper.net`
-      : "https://ogfieldticket.com";
+      : "https://test.ogfieldticket.com";
 
     const data = {
       JobItemID: itemId.JobItemID,
@@ -726,7 +736,7 @@ const ItemsAnimation = ({
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(
@@ -791,28 +801,10 @@ const ItemsAnimation = ({
     : "text-gray-800";
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
-  const [newItem, setNewItem] = useState({
-    item_id: "",
-    uom: "",
-    item_description: "",
-    item_quantity: 1,
-    item_cost: 0.0,
-    use_quantity: "N",
-    use_cost: "N",
-  });
 
   const openModal = () => {
     setModalIsOpen(true);
     fetchAvailableItems();
-    setNewItem({
-      item_id: "",
-      uom: "",
-      item_description: "",
-      item_quantity: 1,
-      item_cost: 0.0,
-      use_quantity: "Y",
-      use_cost: "N",
-    });
   };
 
   const closeModal = () => {
@@ -822,19 +814,22 @@ const ItemsAnimation = ({
       item_id: "",
       uom: "",
       item_description: "",
-      item_quantity: 1,
-      item_cost: 0.0,
-      use_quantity: "Y",
-      use_cost: "N",
+      item_quantity: "",
+      item_cost: "",
+      use_quantity: "N",
+      use_cost: "Y",
     });
   };
 
   const handleInputChange = (event) => {
     const { name, value, type, checked } = event.target;
+
     setNewItem((prevItem) => {
+      let updatedItem = { ...prevItem };
+
       if (name === "item_id" && value !== "new") {
         const item = availableItems.find((item) => item.ItemID === value);
-        return {
+        updatedItem = {
           ...prevItem,
           item_id: item.ItemID,
           uom: item.UOM,
@@ -845,7 +840,7 @@ const ItemsAnimation = ({
           use_cost: item.UseCost,
         };
       } else if (name === "item_id" && value === "new") {
-        return {
+        updatedItem = {
           ...prevItem,
           item_id: "",
           uom: "",
@@ -856,23 +851,22 @@ const ItemsAnimation = ({
           use_cost: "Y",
         };
       } else if (name === "new_item_id") {
-        return {
-          ...prevItem,
-          item_id: value,
-        };
+        updatedItem.item_id = value;
       } else {
-        return {
-          ...prevItem,
-          [name]: type === "checkbox" ? checked : value,
-          ...(name === "use_quantity" && { item_quantity: checked ? 1 : null }),
-          ...(name === "use_cost" && {
-            item_cost: checked ? prevItem.item_cost : 0.0,
-          }),
-        };
+        updatedItem[name] = type === "checkbox" ? (checked ? "Y" : "N") : value;
+
+        if (name === "use_quantity") {
+          updatedItem.item_quantity = checked ? 1 : null;
+        }
+
+        if (name === "use_cost") {
+          updatedItem.item_cost = checked ? prevItem.item_cost : 0.0;
+        }
       }
+
+      return updatedItem;
     });
   };
-
   const handleAddItem = () => {
     let itemId;
     if (selectedItem === "new") {
@@ -880,14 +874,17 @@ const ItemsAnimation = ({
     } else {
       itemId = `${selectedItem}_${activeJobId}`;
     }
+    console.log(newItem);
 
     const updatedNewItem = {
       ...newItem,
       item_id: itemId,
       use_quantity: newItem.use_quantity,
       use_cost: newItem.use_cost,
-      item_quantity: newItem.use_quantity === "N" ? 1 : null,
+      item_quantity:
+        newItem.use_quantity === "Y" ? newItem.item_quantity : null,
     };
+    console.log(updatedNewItem);
 
     onAddItem(updatedNewItem);
 
@@ -1069,7 +1066,6 @@ const ItemsAnimation = ({
                 </select>
               </div>
             </div>
-
             {selectedItem === "new" && (
               <div className="mb-8">
                 <label
@@ -1092,7 +1088,6 @@ const ItemsAnimation = ({
                 />
               </div>
             )}
-
             <div className="mb-8">
               <label htmlFor="uom" className="block mb-2 font-semibold">
                 UOM:
@@ -1111,7 +1106,6 @@ const ItemsAnimation = ({
                 }`}
               />
             </div>
-
             <div className="mb-8">
               <label
                 htmlFor="item_description"
@@ -1133,7 +1127,6 @@ const ItemsAnimation = ({
                 }`}
               ></textarea>
             </div>
-
             <div className="mb-8">
               <fieldset>
                 <legend className="block mb-2 font-semibold">
@@ -1145,9 +1138,9 @@ const ItemsAnimation = ({
                       <input
                         type="checkbox"
                         name="use_quantity"
-                        checked={newItem.use_quantity === "N"}
+                        checked={newItem.use_quantity === "Y"}
                         onChange={handleInputChange}
-                        readOnly={selectedItem !== "new"}
+                        disabled={selectedItem !== "new"}
                         className="form-checkbox"
                       />
                       <span className="ml-2">Quantity</span>
@@ -1160,7 +1153,7 @@ const ItemsAnimation = ({
                         name="use_cost"
                         checked={newItem.use_cost === "Y"}
                         onChange={handleInputChange}
-                        readOnly={selectedItem !== "new"}
+                        disabled={selectedItem !== "new"}
                         className="form-checkbox"
                       />
                       <span className="ml-2">Cost</span>
@@ -1169,8 +1162,7 @@ const ItemsAnimation = ({
                 </div>
               </fieldset>
             </div>
-
-            {newItem.use_quantity === "N" && (
+            {newItem.use_quantity === "Y" && (
               <div className="mb-8">
                 <label
                   htmlFor="item_quantity"
@@ -1182,8 +1174,9 @@ const ItemsAnimation = ({
                   type="number"
                   id="item_quantity"
                   name="item_quantity"
-                  value={newItem.item_quantity}
+                  value={newItem.item_quantity || ""}
                   onChange={handleInputChange}
+                  readOnly={selectedItem !== "new"}
                   className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
                     theme === "dark"
                       ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
@@ -1213,6 +1206,9 @@ const ItemsAnimation = ({
                     step="0.01"
                     value={newItem.item_cost}
                     onChange={handleInputChange}
+                    readOnly={
+                      selectedItem !== "new" && newItem.use_cost !== "Y"
+                    }
                     className={`w-full pl-8 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
                       theme === "dark"
                         ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
@@ -1222,7 +1218,6 @@ const ItemsAnimation = ({
                 </div>
               </div>
             )}
-
             <div className="flex justify-end space-x-4">
               <button
                 type="button"

@@ -54,7 +54,7 @@ function UserProfile() {
           baseUrl = `https://${subdomainPart}.ogpumper.net`;
           console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
-          baseUrl = "https://ogfieldticket.com";
+          baseUrl = "https://test.ogfieldticket.com";
           console.log(`Using default URL: ${baseUrl}`);
         }
 
@@ -94,7 +94,7 @@ function UserProfile() {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(`${baseUrl}/api/userdetails.php`, {
@@ -141,7 +141,7 @@ function UserProfile() {
       };
       const baseUrl = subdomain
         ? `https://${subdomain}.ogpumper.net`
-        : "https://ogfieldticket.com";
+        : "https://test.ogfieldticket.com";
 
       const response = await axios.patch(
         `${baseUrl}/api/userdetails.php`,

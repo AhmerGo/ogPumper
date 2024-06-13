@@ -12,6 +12,7 @@ import {
   faFolderOpen,
   faPlusCircle,
 } from "@fortawesome/free-solid-svg-icons";
+import { parseISO, format } from "date-fns";
 
 function FieldTicketEntry() {
   const { state } = useLocation();
@@ -56,6 +57,7 @@ function FieldTicketEntry() {
 
     extractSubdomain();
     window.scrollTo(0, 0);
+    console.log(formattedDate);
   }, []);
 
   useEffect(() => {
@@ -209,7 +211,11 @@ function FieldTicketEntry() {
         quantity: item.quantity || item.ItemQuantity || 0,
       }));
 
-      const formattedDate = new Date().toISOString().split("T")[0];
+      const formattedDate = (() => {
+        const date = new Date(formFields.ticketDate);
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        return date.toISOString().split("T")[0];
+      })();
 
       const baseUrl = subdomain
         ? `https://${subdomain}.ogpumper.net`
@@ -222,6 +228,7 @@ function FieldTicketEntry() {
         userID: userID,
         items: updatedItems,
         note: formFields.note,
+        ticketDate: formattedDate, // Ensure the date is correctly formatted here
       };
 
       const updatedOfflineItems = updatedItems.map((item, index) => ({
@@ -242,7 +249,7 @@ function FieldTicketEntry() {
       const normalizedTicket = {
         Billed: "N",
         LeaseID: ticketData.lease,
-        TicketDate: formattedDate,
+        TicketDate: formattedDate, // Ensure the date is correctly formatted here
         LeaseName: formFields.lease,
         WellID: ticketData.well || null,
         Comments: ticketData.note || "",
@@ -344,10 +351,14 @@ function FieldTicketEntry() {
       setLoading(false);
     }
   };
-
-  const formattedDate = formFields.ticketDate
-    ? new Date(formFields.ticketDate).toLocaleDateString()
-    : "N/A";
+  const formattedDate = (() => {
+    const date = new Date(formFields.ticketDate);
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  })();
 
   return (
     <animated.main

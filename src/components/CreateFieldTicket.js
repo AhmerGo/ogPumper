@@ -20,6 +20,9 @@ function CreateFieldTicket() {
   const [wells, setWells] = useState([]);
   const [ticketTypes, setTicketTypes] = useState([]);
   const [subdomain, setSubdomain] = useState("");
+  const handleDateChange = (date) => {
+    setTicketDate(date);
+  };
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -27,10 +30,8 @@ function CreateFieldTicket() {
       const parts = hostname.split(".");
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        console.log(`sub domain ${subdomainPart}`);
         setSubdomain(subdomainPart);
       } else {
-        console.log(`sub domain ${parts}`);
         setSubdomain("");
       }
     };
@@ -58,10 +59,8 @@ function CreateFieldTicket() {
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
+        baseUrl = "https://test.ogfieldticket.com";
       }
       const response = await fetch(`${baseUrl}/api/leases.php`);
       let data = await response.json();
@@ -101,10 +100,8 @@ function CreateFieldTicket() {
           if (parts.length > 2) {
             const subdomainPart = parts.shift();
             baseUrl = `https://${subdomainPart}.ogpumper.net`;
-            console.log(`Using subdomain URL: ${baseUrl}`);
           } else {
-            baseUrl = "https://ogfieldticket.com";
-            console.log(`Using default URL: ${baseUrl}`);
+            baseUrl = "https://test.ogfieldticket.com";
           }
 
           const response = await fetch(
@@ -135,10 +132,8 @@ function CreateFieldTicket() {
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await fetch(`${baseUrl}/api/jobs.php`);
@@ -259,8 +254,8 @@ function CreateFieldTicket() {
               </label>
               <DatePicker
                 selected={ticketDate}
-                onChange={(date) => setTicketDate(date)}
-                maxDate={today}
+                onChange={handleDateChange}
+                maxDate={new Date()}
                 className={`form-input w-full px-4 py-2 rounded-md focus:outline-none focus:ring-2 transition-colors duration-500 ${
                   theme === "dark"
                     ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"

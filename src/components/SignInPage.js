@@ -63,7 +63,7 @@ function SignInPage() {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await fetch(`${baseUrl}/api/passwordreset.php`, {
@@ -96,7 +96,7 @@ function SignInPage() {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await fetch(`${baseUrl}/api/google_login.php`, {
@@ -148,7 +148,7 @@ function SignInPage() {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
       if (!navigator.onLine) {
         handleOfflineSignIn(e);
@@ -224,7 +224,7 @@ function SignInPage() {
       const subdomainPart = parts.shift();
       baseUrl = `https://${subdomainPart}.ogpumper.net`;
     } else {
-      baseUrl = "https://ogfieldticket.com";
+      baseUrl = "https://test.ogfieldticket.com";
     }
 
     fetch(`${baseUrl}/api/google_login.php`, {
@@ -263,7 +263,7 @@ function SignInPage() {
       const subdomainPart = parts.shift();
       baseUrl = `https://${subdomainPart}.ogpumper.net`;
     } else {
-      baseUrl = "https://ogfieldticket.com";
+      baseUrl = "https://test.ogfieldticket.com";
     }
 
     fetch(`${baseUrl}/api/google_login.php`, {
@@ -311,7 +311,7 @@ function SignInPage() {
           />
           {subdomain && (
             <p className="text-xl font-semibold text-gray-800 text-center mb-6">
-              {subdomain.charAt(0).toUpperCase() + subdomain.slice(1)}
+              {subdomain.charAt(0).toUpperCase() + subdomain.slice(1)} 2
             </p>
           )}
           <form className="space-y-6 sm:space-y-8" onSubmit={handleSignIn}>

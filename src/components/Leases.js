@@ -58,7 +58,7 @@ const Leases = () => {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -83,7 +83,7 @@ const Leases = () => {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -172,7 +172,7 @@ const Leases = () => {
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -451,7 +451,7 @@ const EditLeaseModal = ({
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -486,7 +486,7 @@ const EditLeaseModal = ({
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -539,7 +539,7 @@ const EditLeaseModal = ({
         baseUrl = `https://${subdomainPart}.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
