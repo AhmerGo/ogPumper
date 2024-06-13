@@ -311,7 +311,7 @@ function SignInPage() {
           />
           {subdomain && (
             <p className="text-xl font-semibold text-gray-800 text-center mb-6">
-              {subdomain.charAt(0).toUpperCase() + subdomain.slice(1)} 2
+              {subdomain.charAt(0).toUpperCase() + subdomain.slice(1)}
             </p>
           )}
           <form className="space-y-6 sm:space-y-8" onSubmit={handleSignIn}>
