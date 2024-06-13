@@ -173,8 +173,7 @@ const ViewFieldTicket = () => {
         item.JobItemID,
         {
           ItemCost: parseFloat(item.ItemCost),
-          UseQuantity:
-            item.UseQuantity === "Y" && item.Quantity !== 0 ? false : true,
+          UseQuantity: item.UseQuantity,
         },
       ])
     );
@@ -1077,7 +1076,8 @@ const ViewFieldTicket = () => {
                           >
                             Qty:
                           </label>
-                          {item.UseQuantity ? (
+                          {item.UseQuantity === "Y" &&
+                          item.ItemQuantity !== 0 ? (
                             <input
                               type="number"
                               name="Quantity"
