@@ -33,194 +33,206 @@ const PrintSection = ({
     const printWindow = window.open("", "", "height=600,width=800");
 
     printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print</title>
-          <style>
-            body, html {
-              margin: 0; padding: 0; width: 100%; height: 100%;
-              font-family: 'Arial', sans-serif; color: #333;
-              display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-              background-color: #f3f4f6;
-            }
-            .header {
-              width: 100%; padding: 15px; text-align: center;
-              background-color: #4a90e2; color: #fff; font-size: 20px;
-              border-bottom: 2px solid #ddd;
-            }
-            .content {
-              width: 100%; max-width: 800px; margin: 20px auto; padding: 20px;
-              background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border-radius: 10px;
-              flex: 1;
-            }
-            .section {
-              margin-bottom: 20px;
-            }
-            .section h2 {
-              font-size: 18px; margin-bottom: 10px; color: #4a90e2; border-bottom: 1px solid #ddd; padding-bottom: 10px;
-            }
-            .section div {
-              font-size: 14px; margin: 10px 0;
-            }
-            .net-cost {
-              text-align: center; font-size: 16px; font-weight: bold; margin-top: 20px;
-            }
-            .items {
+        <html>
+          <head>
+            <title>Print</title>
+            <style>
+              body, html {
+                margin: 0; padding: 0; width: 100%; height: 100%;
+                font-family: 'Arial', sans-serif; color: #333;
+                display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+                background-color: #f3f4f6;
+              }
+              .header {
+                width: 100%; padding: 15px; text-align: center;
+                background-color: #4a90e2; color: #fff; font-size: 20px;
+                border-bottom: 2px solid #ddd;
+              }
+              .content {
+                width: 100%; max-width: 800px; margin: 20px auto; padding: 20px;
+                background: #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border-radius: 10px;
+                flex: 1;
+              }
+              .section {
+                margin-bottom: 20px;
+              }
+              .section h2 {
+                font-size: 18px; margin-bottom: 10px; color: #4a90e2; border-bottom: 1px solid #ddd; padding-bottom: 10px;
+              }
+              .section div {
+                font-size: 14px; margin: 10px 0;
+              }
+              .net-cost {
+                text-align: center; font-size: 16px; font-weight: bold; margin-top: 20px;
+              }
+              .items {
                 display: grid;
                 grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
                 gap: ${isSinglePageLayout ? "10px" : "15px"};
                 margin-bottom: 20px;
-            }
-            .item {
+              }
+              .item {
                 background-color: #fafafa;
                 padding: ${isSinglePageLayout ? "10px" : "15px"};
                 border-radius: 10px;
                 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
                 transition: transform 0.3s ease;
-            }
-            .item:hover {
-              transform: scale(1.05);
-            }
-            .item h4 {
-              margin-bottom: 10px; font-size: 14px; font-weight: bold; color: #333;
-            }
-            .item p {
-              margin: 0; font-size: 12px; color: #555;
-            }
-            img {
-              max-width: 100%; max-height: 300px; margin: 20px auto; display: block; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-              page-break-inside: avoid;
-            }
-            .footer {
-              width: 100%; padding: 10px; text-align: center;
-              font-size: 12px; color: #555; border-top: 1px solid #ddd;
-            }
-            .image-header {
-              width: 100%; padding: 10px; text-align: center; font-size: 16px; color: #333;
-              background-color: #eef2f7; border-bottom: 1px solid #ddd; margin-top: 20px;
-            }
-            @page {
-              size: A4;
-              margin: 10mm;
-            }
-            @media print {
-              body {
-                margin: 0;
-                padding: 0;
-                -webkit-print-color-adjust: exact;
-                background-color: #fff;
               }
-              .header {
-                background-color: #4a90e2;
-                color: #fff;
+              .item:hover {
+                transform: scale(1.05);
               }
-              .content {
-                box-shadow: none;
-                border-radius: 0;
+              .item h4 {  
+                margin-bottom: 10px; font-size: 14px; font-weight: bold; color: #333;
+              }
+              .item p {
+                margin: 0; font-size: 12px; color: #555;
+              }
+              img {
+                max-width: 100%; max-height: 300px; margin: 20px auto; display: block; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                page-break-inside: avoid;
               }
               .footer {
-                position: fixed;
-                bottom: 0;
-                width: 100%;
-                text-align: center;
+                width: 100%; padding: 10px; text-align: center;
+                font-size: 12px; color: #555; border-top: 1px solid #ddd;
+              }
+              .image-header {
+                width: 100%; padding: 10px; text-align: center; font-size: 16px; color: #333;
+                background-color: #eef2f7; border-bottom: 1px solid #ddd; margin-top: 20px;
               }
               .page-break {
                 page-break-before: always;
               }
               @page {
-                margin: 0;
+                size: A4;
+                margin: 10mm;
               }
-              body::after {
-                content: '';
-                display: block;
-                page-break-after: always;
-                visibility: hidden;
+              @media print {
+                body {
+                  margin: 0;
+                  padding: 0;
+                  -webkit-print-color-adjust: exact;
+                  background-color: #fff;
+                }
+                .header {
+                  background-color: #4a90e2;
+                  color: #fff;
+                }
+                .content {
+                  box-shadow: none;
+                  border-radius: 0;
+                }
+                .footer {
+                  position: fixed;
+                  bottom: 0;
+                  width: 100%;
+                  text-align: center;
+                }
+                .page-break {
+                  page-break-before: always;
+                }
+                @page {
+                  margin: 0;
+                }
+                body::after {
+                  content: '';
+                  display: block;
+                  page-break-after: always;
+                  visibility: hidden;
+                }
               }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            OgFieldTicket
-          </div>
-          <div class="content">
-            ${
-              printSelections.head
-                ? `
-              <div class="section">
-                <h2>Ticket Information</h2>
-                <div><strong>Date:</strong> ${new Date(
-                  ticket.TicketDate
-                ).toLocaleDateString()}</div>
-                <div><strong>Lease/User:</strong> ${
-                  ticket.LeaseName || "N/A"
-                } / ${ticket.UserID || "N/A"}</div>
-                <div><strong>Well:</strong> ${ticket.WellID || "N/A"}</div>
-                <div><strong>Ticket Type:</strong> ${
-                  ticket.JobDescription || "N/A"
-                }</div>
-                <div><strong>Ticket Number:</strong> ${
-                  ticket.Ticket || "N/A"
-                }</div>
-                <div><strong>Billed:</strong> ${ticket.Billed || "N/A"}</div>
-              </div>
-            `
-                : ""
-            }
-            ${
-              printSelections.items
-                ? `
-              <div class="section net-cost">
-                Net Cost: $${ticket.Items?.reduce(
-                  (sum, item) => sum + (Number(item.totalCost) || 0),
-                  0
-                ).toFixed(2)}
-              </div>
-              <div class="items">
-                ${ticket?.Items?.map(
-                  (item) => `
-                  <div class="item">
-                    <h4>${item.ItemDescription}</h4>
-                    <p>Qty: ${item.Quantity}</p>
-                    <p>Total Cost: $${item.totalCost}</p>
-                  </div>
-                `
-                ).join("")}
-              </div>
-            `
-                : ""
-            }
-            ${
-              printSelections.image && uploadedImages.length > 1
-                ? `
-              <div class="page-break"></div>
-              <div class="image-header">
-                Uploaded Images
-              </div>
-              ${uploadedImages
-                ?.map(
-                  (image, index) =>
-                    `<img src="${image}" alt="Uploaded Image ${index + 1}" />`
-                )
-                .join("")}
-            `
-                : printSelections.image && uploadedImages.length === 1
-                ? `
-              <div class="image-header">
-                Uploaded Image
-              </div>
-              <img src="${uploadedImages[0]}" alt="Uploaded Image" />
-            `
-                : ""
-            }
-          </div>
-          <div class="footer">
-            OgEndeavors, LLC, PO Box 7091, Abilene, TX 79608
-          </div>
-        </body>
-      </html>
-    `);
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              OgFieldTicket
+            </div>
+            <div class="content">
+              ${
+                printSelections.head
+                  ? `
+                <div class="section">
+                  <h2>Ticket Information</h2>
+                  <div><strong>Date:</strong> ${new Date(
+                    ticket.TicketDate
+                  ).toLocaleDateString()}</div>
+                  <div><strong>Lease/User:</strong> ${
+                    ticket.LeaseName || "N/A"
+                  } / ${ticket.UserID || "N/A"}</div>
+                  <div><strong>Well:</strong> ${ticket.WellID || "N/A"}</div>
+                  <div><strong>Ticket Type:</strong> ${
+                    ticket.JobDescription || "N/A"
+                  }</div>
+                  <div><strong>Ticket Number:</strong> ${
+                    ticket.Ticket || "N/A"
+                  }</div>
+                  <div><strong>Billed:</strong> ${ticket.Billed || "N/A"}</div>
+                </div>
+              `
+                  : ""
+              }
+              ${
+                printSelections.items
+                  ? `
+                <div class="section net-cost">
+                  Net Cost: $${ticket.Items?.reduce(
+                    (sum, item) => sum + (Number(item.totalCost) || 0),
+                    0
+                  ).toFixed(2)}
+                </div>
+                <div class="items">
+                  ${ticket?.Items?.map(
+                    (item) => `
+                    <div class="item">
+                      <h4>${item.ItemDescription}</h4>
+                      <p>Qty: ${item.Quantity}</p>
+                      <p>Total Cost: $${item.totalCost}</p>
+                    </div>
+                  `
+                  ).join("")}
+                </div>
+              `
+                  : ""
+              }
+              ${
+                !isSinglePageLayout &&
+                printSelections.image &&
+                uploadedImages.length > 0
+                  ? `
+                <div class="page-break"></div>
+              `
+                  : ""
+              }
+              ${
+                printSelections.image && uploadedImages.length > 1
+                  ? `
+                <div class="image-header">
+                  Uploaded Images
+                </div>
+                ${uploadedImages
+                  ?.map(
+                    (image, index) =>
+                      `<img src="${image}" alt="Uploaded Image ${index + 1}" />`
+                  )
+                  .join("")}
+              `
+                  : printSelections.image && uploadedImages.length === 1
+                  ? `
+                <div class="image-header">
+                  Uploaded Image
+                </div>
+                <img src="${uploadedImages[0]}" alt="Uploaded Image" />
+              `
+                  : ""
+              }
+            </div>
+            <div class="footer">
+              OgEndeavors, LLC, PO Box 7091, Abilene, TX 79608
+            </div>
+          </body>
+        </html>
+      `);
     printWindow.document.close();
+
     printWindow.onload = () => printWindow.print();
   };
 
