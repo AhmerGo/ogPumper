@@ -345,7 +345,12 @@ const ViewFieldTicket = () => {
     try {
       const updatedTicket = { ...ticket, Note: fieldNote };
       const hostname = window.location.hostname;
-      let baseUrl = "https://test.ogfieldticket.com";
+      const parts = hostname.split(".");
+
+      const baseUrl =
+        parts.length > 2
+          ? `https://${parts.shift()}.ogpumper.net`
+          : "https://test.ogfieldticket.com";
 
       localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
       const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
