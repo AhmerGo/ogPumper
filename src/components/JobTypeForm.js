@@ -605,6 +605,12 @@ const ItemsAnimation = ({
     use_cost: "Y",
   });
 
+  const [stateItems, setStateItems] = useState(items);
+
+  useEffect(() => {
+    setStateItems(items);
+  }, [items]);
+
   const fetchAvailableItems = async () => {
     try {
       const hostname = window.location.hostname;
@@ -656,6 +662,7 @@ const ItemsAnimation = ({
       ...(item.ItemQuantity !== null && { ItemQuantity: item.ItemQuantity }),
     });
   };
+
   const handleRemoveItem = async (itemID) => {
     try {
       const hostname = window.location.hostname;
@@ -679,9 +686,7 @@ const ItemsAnimation = ({
 
       const data = await response.json();
       if (data.success) {
-        setAvailableItems(
-          availableItems.filter((item) => item.ItemID !== itemID)
-        );
+        setStateItems(stateItems.filter((item) => item.ItemID !== itemID));
       } else {
         console.error("Failed to remove item");
       }
@@ -715,6 +720,9 @@ const ItemsAnimation = ({
     })
       .then((response) => {
         if (response.ok) {
+          setStateItems(
+            stateItems.filter((item) => item.JobItemID !== itemId.JobItemID)
+          );
           onDeleteItem(itemId);
         } else {
           throw new Error("Error deleting item");
@@ -725,7 +733,7 @@ const ItemsAnimation = ({
       });
   };
 
-  const finalizeEdit = async (items, setTicketTypes) => {
+  const finalizeEdit = async () => {
     try {
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
@@ -744,13 +752,14 @@ const ItemsAnimation = ({
         itemEdits
       );
 
-      const updatedItems = items.map((item) => {
+      const updatedItems = stateItems.map((item) => {
         if (item.ItemID === editingItemId) {
           return { ...item, ...itemEdits };
         }
         return item;
       });
 
+      setStateItems(updatedItems);
       setTicketTypes((prevTicketTypes) =>
         prevTicketTypes.map((job) => {
           if (job.JobTypeID === activeJobId) {
@@ -776,14 +785,17 @@ const ItemsAnimation = ({
     setSelection(event.target.value);
   };
 
-  const transitions = useTransition(items, {
-    keys: (item) => item.ItemID,
-    from: { opacity: 0, transform: "translate3d(0,-40px,0)" },
-    enter: { opacity: 1, transform: "translate3d(0,0px,0)" },
-    leave: { opacity: 0, transform: "translate3d(0,-40px,0)" },
-  });
+  const handleDragStart = (index) => (event) => {
+    event.dataTransfer.setData("draggedIndex", index);
+  };
 
-  const [isHovered, setIsHovered] = useState(false);
+  const handleDrop = (index) => (event) => {
+    const draggedIndex = event.dataTransfer.getData("draggedIndex");
+    const updatedItems = Array.from(stateItems);
+    const [movedItem] = updatedItems.splice(draggedIndex, 1);
+    updatedItems.splice(index, 0, movedItem);
+    setStateItems(updatedItems);
+  };
 
   const addButtonStyle = {
     from: { transform: "scale(1)" },
@@ -792,13 +804,7 @@ const ItemsAnimation = ({
   };
   const [addButtonProps, set, stop] = useSpring(() => addButtonStyle.from);
 
-  const iconColor = isHovered
-    ? theme === "dark"
-      ? "text-yellow-300"
-      : "text-blue-500"
-    : theme === "dark"
-    ? "text-white"
-    : "text-gray-800";
+  const iconColor = theme === "dark" ? "text-white" : "text-gray-800";
 
   const [modalIsOpen, setModalIsOpen] = useState(false);
 
@@ -867,6 +873,7 @@ const ItemsAnimation = ({
       return updatedItem;
     });
   };
+
   const handleAddItem = () => {
     let itemId;
     if (selectedItem === "new") {
@@ -887,16 +894,20 @@ const ItemsAnimation = ({
     console.log(updatedNewItem);
 
     onAddItem(updatedNewItem);
+    setStateItems([...stateItems, updatedNewItem]);
 
     closeModal();
   };
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {transitions((style, item) => (
-        <animated.div
-          key={item.key}
-          style={style}
+      {stateItems.map((item, index) => (
+        <div
+          key={item.ItemID}
+          draggable
+          onDragStart={handleDragStart(index)}
+          onDrop={handleDrop(index)}
+          onDragOver={(e) => e.preventDefault()}
           className={`border rounded-lg shadow-sm p-4 relative ${
             theme === "dark"
               ? "bg-gray-800 text-white border-gray-700"
@@ -943,7 +954,7 @@ const ItemsAnimation = ({
               <div className="flex justify-end space-x-2">
                 <FontAwesomeIcon
                   icon={faCheck}
-                  onClick={() => finalizeEdit(items, setTicketTypes)}
+                  onClick={finalizeEdit}
                   className={`cursor-pointer ${
                     theme === "dark" ? "text-white" : "text-gray-800"
                   }`}
@@ -991,17 +1002,15 @@ const ItemsAnimation = ({
               </div>
             </>
           )}
-        </animated.div>
+        </div>
       ))}
       <animated.div
         style={addButtonProps}
         onMouseEnter={() => {
           set({ ...addButtonStyle.enter });
-          setIsHovered(true);
         }}
         onMouseLeave={() => {
           set({ ...addButtonStyle.leave });
-          setIsHovered(false);
         }}
         onClick={openModal}
         className={`border rounded-lg shadow-sm p-4 flex justify-center items-center cursor-pointer ${

@@ -153,10 +153,14 @@ const MasterList = () => {
     };
 
     try {
-      await axios.patch(
-        "https://test.ogfieldticket.com/api/jobitem.php",
-        updatedData
-      );
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      const baseUrl =
+        parts.length > 2
+          ? `https://${parts.shift()}.ogpumper.net`
+          : "https://test.ogfieldticket.com";
+
+      await axios.patch(`${baseUrl}/api/jobitem.php`, updatedData);
       fetchData();
     } catch (error) {
       console.error("Error updating item", error);
