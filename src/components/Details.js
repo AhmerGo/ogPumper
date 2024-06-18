@@ -51,7 +51,7 @@ function UserProfile() {
 
         if (parts.length > 2) {
           const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogpumper.net`;
+          baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
           console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
           baseUrl = "https://test.ogfieldticket.com";
@@ -91,7 +91,7 @@ function UserProfile() {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -140,7 +140,7 @@ function UserProfile() {
         Sec: password, // Assuming 'Sec' is your backend field for password
       };
       const baseUrl = subdomain
-        ? `https://${subdomain}.ogpumper.net`
+        ? `https://${subdomain}.ogfieldticket.com`
         : "https://test.ogfieldticket.com";
 
       const response = await axios.patch(

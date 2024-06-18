@@ -55,7 +55,7 @@ const Leases = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -80,7 +80,7 @@ const Leases = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -169,7 +169,7 @@ const Leases = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -448,7 +448,7 @@ const EditLeaseModal = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -483,7 +483,7 @@ const EditLeaseModal = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -536,7 +536,7 @@ const EditLeaseModal = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";

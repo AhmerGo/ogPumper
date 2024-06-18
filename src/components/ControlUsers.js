@@ -170,7 +170,7 @@ const ControlUsers = () => {
 
         if (parts.length > 2) {
           const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogpumper.net`;
+          baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         } else {
           baseUrl = "https://test.ogfieldticket.com";
         }
@@ -198,7 +198,7 @@ const ControlUsers = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
       } else {
         baseUrl = "https://test.ogfieldticket.com";
       }

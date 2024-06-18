@@ -58,7 +58,7 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -154,7 +154,7 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -185,7 +185,7 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -217,7 +217,7 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -246,7 +246,7 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -272,7 +272,7 @@ const JobListPage = () => {
 
         if (parts.length > 2) {
           const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogpumper.net`;
+          baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
           console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
           baseUrl = "https://test.ogfieldticket.com";
@@ -315,7 +315,7 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -619,7 +619,7 @@ const ItemsAnimation = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -671,7 +671,7 @@ const ItemsAnimation = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
       } else {
         baseUrl = "https://test.ogfieldticket.com";
       }
@@ -703,7 +703,7 @@ const ItemsAnimation = ({
   const handleDeleteItem = (itemId) => {
     console.log(itemId);
     const baseUrl = subdomain
-      ? `https://${subdomain}.ogpumper.net`
+      ? `https://${subdomain}.ogfieldticket.com`
       : "https://test.ogfieldticket.com";
 
     const data = {
@@ -741,7 +741,7 @@ const ItemsAnimation = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogpumper.net`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
         baseUrl = "https://test.ogfieldticket.com";
@@ -1236,7 +1236,7 @@ const ItemsAnimation = ({
                     ? "bg-gray-700 hover:bg-gray-600 focus:ring-2 focus:ring-gray-400"
                     : "bg-gray-200 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400"
                 }`}
-              >
+              > 
                 Cancel
               </button>
               <button

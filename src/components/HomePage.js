@@ -72,7 +72,7 @@ const HomePage = React.memo(() => {
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
+          ? `https://${parts.shift()}.ogfieldticket.com`
           : "https://test.ogfieldticket.com";
       let fetchedTickets = [];
       let nextTicketID = null;

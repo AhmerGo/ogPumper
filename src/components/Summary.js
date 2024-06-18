@@ -247,7 +247,7 @@ const ViewFieldTicket = () => {
 
           const baseUrl =
             parts.length > 2
-              ? `https://${parts.shift()}.ogpumper.net`
+              ? `https://${parts.shift()}.ogfieldticket.com`
               : "https://test.ogfieldticket.com";
 
           const response = await fetch(
@@ -349,7 +349,7 @@ const ViewFieldTicket = () => {
 
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
+          ? `https://${parts.shift()}.ogfieldticket.com`
           : "https://test.ogfieldticket.com";
 
       localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
@@ -445,7 +445,7 @@ const ViewFieldTicket = () => {
 
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
+          ? `https://${parts.shift()}.ogfieldticket.com`
           : "https://test.ogfieldticket.com";
 
       if (navigator.onLine) {
@@ -514,7 +514,7 @@ const ViewFieldTicket = () => {
 
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
+          ? `https://${parts.shift()}.ogfieldticket.com`
           : "https://test.ogfieldticket.com";
 
       const encodedImageDirectory = encodeURIComponent(
@@ -606,7 +606,7 @@ const ViewFieldTicket = () => {
 
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
+          ? `https://${parts.shift()}.ogfieldticket.com`
           : "https://test.ogfieldticket.com";
 
       const updatedTicket = { ...ticket, Billed: "N" };
@@ -640,7 +640,7 @@ const ViewFieldTicket = () => {
 
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
+          ? `https://${parts.shift()}.ogfieldticket.com`
           : "https://test.ogfieldticket.com";
 
       const response = await fetch(
