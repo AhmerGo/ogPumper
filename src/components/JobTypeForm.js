@@ -789,12 +789,39 @@ const ItemsAnimation = ({
     event.dataTransfer.setData("draggedIndex", index);
   };
 
-  const handleDrop = (index) => (event) => {
+  const handleDrop = (index) => async (event) => {
+    event.preventDefault();
     const draggedIndex = event.dataTransfer.getData("draggedIndex");
     const updatedItems = Array.from(stateItems);
     const [movedItem] = updatedItems.splice(draggedIndex, 1);
     updatedItems.splice(index, 0, movedItem);
+
+    // Update the state
     setStateItems(updatedItems);
+
+    // Update the backend
+    try {
+      const itemID = movedItem.ItemID;
+      const newPosition = index;
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogfieldticket.com`
+        : "https://test.ogfieldticket.com";
+
+      const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemID}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ItemOrder: newPosition }),
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        console.error("Failed to update item position:", data.message);
+      }
+    } catch (error) {
+      console.error("Error updating item position:", error);
+    }
   };
 
   const addButtonStyle = {
@@ -1236,7 +1263,7 @@ const ItemsAnimation = ({
                     ? "bg-gray-700 hover:bg-gray-600 focus:ring-2 focus:ring-gray-400"
                     : "bg-gray-200 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400"
                 }`}
-              > 
+              >
                 Cancel
               </button>
               <button

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSpring, animated } from "react-spring";
 import Modal from "react-modal";
 import axios from "axios";
@@ -7,8 +7,17 @@ import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+  faEdit,
+  faSave,
+  faTimes,
+  faFileExport,
+  faPrint,
+} from "@fortawesome/free-solid-svg-icons";
 import "tailwindcss/tailwind.css";
+
+// Import ag-grid-enterprise package
+import "ag-grid-enterprise";
 
 Modal.setAppElement("#root");
 
@@ -23,6 +32,8 @@ const MasterList = () => {
     use_quantity: "N",
     use_cost: "N",
   });
+
+  const gridApiRef = useRef(null);
 
   useEffect(() => {
     fetchData();
@@ -167,6 +178,87 @@ const MasterList = () => {
     }
   };
 
+  const onExportClick = () => {
+    const params = {
+      fileName: "master-list.csv",
+    };
+    gridApiRef.current.exportDataAsCsv(params);
+  };
+
+  const onPrintClick = async () => {
+    try {
+      const allRowData = [];
+      gridApiRef.current.forEachNode((node) => allRowData.push(node.data));
+
+      const printWindow = window.open("", "", "width=800,height=600");
+
+      const gridHtml = `
+        <table style="border-collapse: collapse; width: 100%;">
+          <thead>
+            <tr>
+              ${columnDefs
+                .map(
+                  (col) =>
+                    `<th style="border: 1px solid black; padding: 8px;">${col.headerName}</th>`
+                )
+                .join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${allRowData
+              .map(
+                (row) => `
+              <tr>
+                ${columnDefs
+                  .map(
+                    (col) =>
+                      `<td style="border: 1px solid black; padding: 8px;">${
+                        row[col.field]
+                      }</td>`
+                  )
+                  .join("")}
+              </tr>
+            `
+              )
+              .join("")}
+          </tbody>
+        </table>
+      `;
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 10px;
+              }
+            </style>
+          </head>
+          <body>
+            ${gridHtml}
+            <script>
+              window.onload = function() {
+                window.print();
+                window.onafterprint = window.close;
+              };
+            </script>
+          </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+    } catch (error) {
+      console.error("Error preparing data for print", error);
+    }
+  };
+
+  const onGridReady = (params) => {
+    gridApiRef.current = params.api;
+    params.api.sizeColumnsToFit();
+  };
+
   return (
     <animated.div style={tableAnimation} className="mt-8">
       <div
@@ -178,6 +270,22 @@ const MasterList = () => {
       >
         <div className="p-5 text-center bg-gray-50 dark:bg-gray-700 dark:text-white">
           <h2 className="text-4xl font-bold">Master List</h2>
+        </div>
+        <div className="flex justify-end p-4">
+          <button
+            onClick={onExportClick}
+            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2"
+          >
+            <FontAwesomeIcon icon={faFileExport} className="mr-2" />
+            Export
+          </button>
+          <button
+            onClick={onPrintClick}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            <FontAwesomeIcon icon={faPrint} className="mr-2" />
+            Print
+          </button>
         </div>
         <div
           className={`ag-theme-alpine min-w-full ${tableClass}`}
@@ -200,7 +308,7 @@ const MasterList = () => {
             paginationPageSize={15}
             enableRangeSelection={true}
             suppressRowClickSelection={true}
-            onGridReady={(params) => params.api.sizeColumnsToFit()}
+            onGridReady={onGridReady}
             onCellValueChanged={onCellValueChanged}
           />
         </div>
