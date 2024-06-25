@@ -747,30 +747,41 @@ const ItemsAnimation = ({
         baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
-      await axios.patch(
+
+      // Include newOrder as null in the payload
+      const payload = {
+        ...itemEdits,
+        newOrder: null,
+      };
+
+      const response = await axios.patch(
         `${baseUrl}/api/jobs.php?itemID=${editingItemId}`,
-        itemEdits
+        payload
       );
 
-      const updatedItems = stateItems.map((item) => {
-        if (item.ItemID === editingItemId) {
-          return { ...item, ...itemEdits };
-        }
-        return item;
-      });
-
-      setStateItems(updatedItems);
-      setTicketTypes((prevTicketTypes) =>
-        prevTicketTypes.map((job) => {
-          if (job.JobTypeID === activeJobId) {
-            return { ...job, Items: updatedItems };
+      if (response.data.success) {
+        const updatedItems = stateItems.map((item) => {
+          if (item.ItemID === editingItemId) {
+            return { ...item, ...itemEdits };
           }
-          return job;
-        })
-      );
+          return item;
+        });
 
-      setEditingItemId(null);
-      setItemEdits({});
+        setStateItems(updatedItems);
+        setTicketTypes((prevTicketTypes) =>
+          prevTicketTypes.map((job) => {
+            if (job.JobTypeID === activeJobId) {
+              return { ...job, Items: updatedItems };
+            }
+            return job;
+          })
+        );
+
+        setEditingItemId(null);
+        setItemEdits({});
+      } else {
+        console.error("Error updating item:", response.data.message);
+      }
     } catch (error) {
       console.error("Error updating item:", error);
     }
@@ -789,8 +800,16 @@ const ItemsAnimation = ({
     event.dataTransfer.setData("draggedIndex", index);
   };
 
+  let requestInProgress = false;
+
   const handleDrop = (index) => async (event) => {
     event.preventDefault();
+
+    if (requestInProgress) {
+      console.log("Request already in progress, please wait...");
+      return;
+    }
+
     const draggedIndex = event.dataTransfer.getData("draggedIndex");
     const updatedItems = Array.from(stateItems);
     const [movedItem] = updatedItems.splice(draggedIndex, 1);
@@ -800,9 +819,12 @@ const ItemsAnimation = ({
     setStateItems(updatedItems);
 
     // Update the backend
+    requestInProgress = true;
     try {
+      console.log(movedItem);
       const itemID = movedItem.ItemID;
       const newPosition = index;
+      const jobTypeID = movedItem.JobTypeID;
       const baseUrl = subdomain
         ? `https://${subdomain}.ogfieldticket.com`
         : "https://test.ogfieldticket.com";
@@ -812,18 +834,33 @@ const ItemsAnimation = ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ ItemOrder: newPosition }),
+        body: JSON.stringify({
+          ItemOrder: newPosition,
+          JobTypeID: jobTypeID,
+          oldOrder: movedItem.ItemOrder,
+        }),
       });
 
       const data = await response.json();
-      if (!data.success) {
+      if (data.success) {
+        // After successful request, update only the changed item positions
+        const updatedStateItems = updatedItems.map((item, idx) => {
+          if (item.ItemOrder !== idx) {
+            return { ...item, ItemOrder: idx };
+          }
+          return item;
+        });
+
+        setStateItems(updatedStateItems);
+      } else {
         console.error("Failed to update item position:", data.message);
       }
     } catch (error) {
       console.error("Error updating item position:", error);
+    } finally {
+      requestInProgress = false;
     }
   };
-
   const addButtonStyle = {
     from: { transform: "scale(1)" },
     enter: { transform: "scale(1.05)" },
@@ -1314,5 +1351,4 @@ const ItemsAnimation = ({
     </div>
   );
 };
-
 export default JobListPage;
