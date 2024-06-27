@@ -7,7 +7,6 @@ import React, {
   useMemo,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSpring, animated, config } from "react-spring";
 import { useTheme } from "./ThemeContext";
 import { useUser } from "./UserContext";
 import debounce from "lodash.debounce";

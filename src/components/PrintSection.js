@@ -13,9 +13,8 @@ const PrintSection = ({
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [printSelections, setPrintSelections] = useState({
-    headItems: true,
+    ticketAndNote: true,
     image: true,
-    note: false,
   });
 
   const openPrintModal = () => setModalIsOpen(true);
@@ -30,9 +29,7 @@ const PrintSection = ({
 
   const handlePrint = () => {
     const isSinglePageLayout =
-      !printSelections.note &&
-      ticket.Items.length <= 9 &&
-      uploadedImages.length <= 1;
+      ticket.Items.length <= 9 && uploadedImages.length <= 1;
 
     const printWindow = window.open("", "", "height=600,width=800");
 
@@ -152,7 +149,7 @@ const PrintSection = ({
             </div>
             <div class="content">
               ${
-                printSelections.headItems
+                printSelections.ticketAndNote
                   ? `
                 <div class="section">
                   <h2>Ticket Information & Items</h2>
@@ -188,16 +185,16 @@ const PrintSection = ({
                     ).join("")}
                   </div>
                 </div>
-              `
-                  : ""
-              }
-              ${
-                printSelections.note && ticket.Note
-                  ? `
-                <div class="section">
-                  <h2>Note</h2>
-                  <div>${ticket.Note}</div>
-                </div>
+                ${
+                  ticket.Note
+                    ? `
+                  <div class="section">
+                    <h2>Note</h2>
+                    <div>${ticket.Note}</div>
+                  </div>
+                `
+                    : ""
+                }
               `
                   : ""
               }
@@ -281,8 +278,8 @@ const PrintSection = ({
           <label className="flex items-center space-x-4">
             <input
               type="checkbox"
-              name="headItems"
-              checked={printSelections.headItems}
+              name="ticketAndNote"
+              checked={printSelections.ticketAndNote}
               onChange={handleCheckboxChange}
               className={`form-checkbox h-5 w-5 rounded ${
                 theme === "dark" ? "text-blue-400" : "text-blue-600"
@@ -301,18 +298,6 @@ const PrintSection = ({
               }`}
             />
             <span className="text-lg">Image</span>
-          </label>
-          <label className="flex items-center space-x-4">
-            <input
-              type="checkbox"
-              name="note"
-              checked={printSelections.note}
-              onChange={handleCheckboxChange}
-              className={`form-checkbox h-5 w-5 rounded ${
-                theme === "dark" ? "text-blue-400" : "text-blue-600"
-              }`}
-            />
-            <span className="text-lg">Note</span>
           </label>
         </form>
         <div className="mt-8 flex justify-end space-x-4">
