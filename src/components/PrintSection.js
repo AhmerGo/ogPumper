@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { animated } from "react-spring";
 import Modal from "react-modal";
-import { useTheme } from "./ThemeContext";
 
 const PrintSection = ({
   userRole,

@@ -6,7 +6,6 @@ import { useTheme } from "./ThemeContext";
 import { useUser } from "./UserContext";
 import OutsideClickHandler from "react-outside-click-handler";
 import logo from "../assets/100.png";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import HomeIcon from "@mui/icons-material/Home";
 
 const GlobalStyle = createGlobalStyle`

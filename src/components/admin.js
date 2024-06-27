@@ -5,7 +5,6 @@ import {
   faUsers,
   faFileContract,
   faBriefcase,
-  faTachometerAlt,
   faList,
   faChartLine,
 } from "@fortawesome/free-solid-svg-icons";
