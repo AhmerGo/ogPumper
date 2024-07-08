@@ -391,14 +391,14 @@ const ChartComponent = () => {
         >
           <FontAwesomeIcon icon={faPrint} className="mr-2" /> Print
         </button>
+        <button
+          className="px-4 py-2 bg-blue-500 text-white rounded ml-4"
+          onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
+        >
+          <FontAwesomeIcon icon={faCog} className="mr-2" />
+          {isSidePanelOpen ? "Close Settings" : "Settings"}
+        </button>
       </div>
-
-      <button
-        className="px-4 py-2 mb-4 bg-blue-500 text-white rounded flex items-center"
-        onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
-      >
-        <FontAwesomeIcon icon={faCog} className="mr-2" /> Settings
-      </button>
 
       <div
         className={`fixed right-0 top-0 h-full shadow-lg transition-transform transform ${
