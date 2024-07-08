@@ -66,8 +66,15 @@ const ChartComponent = () => {
 
   const fetchPreferences = useCallback(async () => {
     try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      const baseUrl =
+        parts.length > 2
+          ? `https://${parts.shift()}.ogfieldticket.com`
+          : "https://test.ogfieldticket.com";
+
       const response = await fetch(
-        `https://test.ogfieldticket.com/api/userdetails.php?id=${userID}&chartsPref=true`
+        `${baseUrl}/api/userdetails.php?id=${userID}&chartsPref=true`
       );
       const data = await response.json();
 
@@ -86,9 +93,14 @@ const ChartComponent = () => {
 
   const fetchLeases = useCallback(async () => {
     try {
-      const response = await fetch(
-        "https://stasney.ogfieldticket.com/api/leases.php"
-      );
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      const baseUrl =
+        parts.length > 2
+          ? `https://${parts.shift()}.ogfieldticket.com`
+          : "https://test.ogfieldticket.com";
+
+      const response = await fetch(`${baseUrl}/api/leases.php`);
       if (!response.ok) throw new Error("Network response was not ok");
       const leaseData = await response.json();
       setLeases(leaseData);
@@ -108,9 +120,16 @@ const ChartComponent = () => {
   const fetchChartData = useCallback(async () => {
     setIsLoading(true);
     try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      const baseUrl =
+        parts.length > 2
+          ? `https://${parts.shift()}.ogpumper.com`
+          : "https://test.ogpumper.com";
+
       const rpt = selectedLeaseID === "~ALL~" ? "C" : "P";
       const response = await fetch(
-        `https://stasney.ogpumper.com/service_testprod.php?Rpt=${rpt}D&QD=30&LeaseID=${encodeURIComponent(
+        `${baseUrl}/service_testprod.php?Rpt=${rpt}D&QD=30&LeaseID=${encodeURIComponent(
           selectedLeaseID
         )}&From=${fromDate}&Thru=${thruDate}&Tag=${selectedTag}`
       );
@@ -145,17 +164,21 @@ const ChartComponent = () => {
   const debouncedSavePreferences = useCallback(
     debounce(async () => {
       try {
-        const response = await fetch(
-          "https://test.ogfieldticket.com/api/userdetails.php",
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              UserID: userID,
-              ChartsPref: { chartTypes, colors, logarithmic, disabledSeries },
-            }),
-          }
-        );
+        const hostname = window.location.hostname;
+        const parts = hostname.split(".");
+        const baseUrl =
+          parts.length > 2
+            ? `https://${parts.shift()}.ogfieldticket.com`
+            : "https://test.ogfieldticket.com";
+
+        const response = await fetch(`${baseUrl}/api/userdetails.php`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            UserID: userID,
+            ChartsPref: { chartTypes, colors, logarithmic, disabledSeries },
+          }),
+        });
 
         const data = await response.json();
         if (!data.success)
