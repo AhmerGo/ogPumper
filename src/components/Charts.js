@@ -12,6 +12,8 @@ import {
 } from "recharts";
 import { SketchPicker } from "react-color";
 import "tailwindcss/tailwind.css";
+import { useUser } from "./UserContext";
+import { useTheme } from "./ThemeContext";
 import debounce from "lodash/debounce";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -25,8 +27,8 @@ import {
 import moment from "moment";
 
 const ChartComponent = () => {
-  const userID = "admin";
-  const theme = "light"; // Default theme
+  const { userID } = useUser();
+  const { theme } = useTheme();
   const chartRef = useRef(null);
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -310,6 +312,7 @@ const ChartComponent = () => {
     document.body.innerHTML = originalContents;
     window.location.reload();
   };
+
   return (
     <div
       className={`min-h-screen p-8 flex flex-col items-center ${

@@ -732,7 +732,7 @@ const ViewFieldTicket = () => {
                           name="TicketDate"
                           value={ticket.TicketDate}
                           onChange={handleChange}
-                          className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
+                          className={`form-input w-40 px-4 py-2 rounded-md border text-base ${
                             theme === "dark"
                               ? "border-gray-600 bg-gray-800 text-gray-300"
                               : "border-gray-400 bg-white text-gray-700"
@@ -743,11 +743,9 @@ const ViewFieldTicket = () => {
                         />
                       ) : (
                         <span
-                          className={
-                            theme === "dark"
-                              ? "font-semibold text-gray-300"
-                              : "font-semibold text-gray-700"
-                          }
+                          className={`block text-center ${
+                            theme === "dark" ? "text-gray-300" : "text-gray-700"
+                          }`}
                         >
                           {formattedDate}
                         </span>
@@ -918,7 +916,7 @@ const ViewFieldTicket = () => {
                         name="TicketDate"
                         value={ticket.TicketDate}
                         onChange={handleChange}
-                        className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
+                        className={`form-input w-36 px-4 py-2 rounded-md border text-base ${
                           theme === "dark"
                             ? "border-gray-600 bg-gray-800 text-gray-300"
                             : "border-gray-400 bg-white text-gray-700"
