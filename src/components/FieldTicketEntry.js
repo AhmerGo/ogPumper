@@ -655,6 +655,14 @@ function FieldTicketEntry() {
                       >
                         {item.ItemQuantity}
                       </span>
+                    ) : item.UseQuantity === "N" ? (
+                      <span
+                        className={`inline-block w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
+                          theme === "dark" ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        0
+                      </span>
                     ) : (
                       <input
                         type="number"

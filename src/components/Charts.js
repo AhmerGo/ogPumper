@@ -12,8 +12,6 @@ import {
 } from "recharts";
 import { SketchPicker } from "react-color";
 import "tailwindcss/tailwind.css";
-import { useUser } from "./UserContext";
-import { useTheme } from "./ThemeContext";
 import debounce from "lodash/debounce";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -22,12 +20,13 @@ import {
   faPrint,
   faChartBar,
   faChartLine,
+  faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import moment from "moment";
 
 const ChartComponent = () => {
-  const { userID } = useUser();
-  const { theme } = useTheme();
+  const userID = "admin";
+  const theme = "light"; // Default theme
   const chartRef = useRef(null);
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -291,7 +290,6 @@ const ChartComponent = () => {
     `;
     const headerInfo = `
       <div id="headerInfo">
-        <h1>Production Data Dashboard</h1>
         <p><strong>Date Range:</strong> ${fromDate} to ${thruDate}</p>
         <p><strong>Lease:</strong> ${leaseName}</p>
         <p><strong>Tag:</strong> ${selectedTag}</p>
@@ -312,98 +310,113 @@ const ChartComponent = () => {
     document.body.innerHTML = originalContents;
     window.location.reload();
   };
-
   return (
     <div
       className={`min-h-screen p-8 flex flex-col items-center ${
         theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
       } relative transition-colors duration-500`}
     >
-      <h1 className={`text-4xl font-bold mb-8`}>Production Data Dashboard</h1>
-
+      {" "}
       <div className="w-full max-w-7xl mb-8 flex flex-wrap justify-between items-center">
-        <div className="flex items-center mb-4 md:mb-0">
-          <label className="mr-2">From:</label>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            className={`mr-4 p-2 border rounded ${
-              theme === "dark"
-                ? "bg-gray-700 text-white border-gray-600"
-                : "bg-white text-black border-gray-300"
-            }`}
-          />
-          <label className="mr-2">To:</label>
-          <input
-            type="date"
-            value={thruDate}
-            onChange={(e) => setThruDate(e.target.value)}
-            className={`mr-4 p-2 border rounded ${
-              theme === "dark"
-                ? "bg-gray-700 text-white border-gray-600"
-                : "bg-white text-black border-gray-300"
-            }`}
-          />
+        <div className="flex items-center mb-4 md:mb-0 flex-wrap mr-4">
+          <div className="flex items-center mr-4">
+            <label className="mr-2 whitespace-nowrap">From:</label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className={`p-2 border rounded ${
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+              } w-32`}
+            />
+          </div>
+          <div className="flex items-center">
+            <label className="mr-2 whitespace-nowrap">To:</label>
+            <input
+              type="date"
+              value={thruDate}
+              onChange={(e) => setThruDate(e.target.value)}
+              className={`p-2 border rounded ${
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+              } w-32`}
+            />
+          </div>
         </div>
-        <div className="flex items-center mb-4 md:mb-0">
-          <select
-            value={selectedTag}
-            onChange={(e) => setSelectedTag(e.target.value)}
-            className={`mr-4 p-2 border rounded ${
-              theme === "dark"
-                ? "bg-gray-700 text-white border-gray-600"
-                : "bg-white text-black border-gray-300"
-            }`}
-          >
-            {tags.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
-          <select
-            value={selectedLeaseID}
-            onChange={(e) => setSelectedLeaseID(e.target.value)}
-            className={`mr-4 p-2 border rounded ${
-              theme === "dark"
-                ? "bg-gray-700 text-white border-gray-600"
-                : "bg-white text-black border-gray-300"
-            }`}
-          >
-            <option value="~ALL~">All Leases</option>
-            {leases.map((lease) => (
-              <option key={lease.LeaseID} value={lease.LeaseID}>
-                {lease.LeaseName}
-              </option>
-            ))}
-          </select>
+        <div
+          className={`flex-1 flex flex-wrap justify-end items-center transition-all duration-300 ${
+            isSidePanelOpen ? "transform -translate-x-64" : ""
+          }`}
+        >
+          <div className="flex items-center mb-4 md:mb-0 flex-wrap mr-4">
+            <select
+              value={selectedTag}
+              onChange={(e) => setSelectedTag(e.target.value)}
+              className={`p-2 border rounded ${
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+              } mr-2 w-32`}
+            >
+              {tags.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+            </select>
+            <select
+              value={selectedLeaseID}
+              onChange={(e) => setSelectedLeaseID(e.target.value)}
+              className={`p-2 border rounded ${
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+              } w-40`}
+            >
+              <option value="~ALL~">All Leases</option>
+              {leases.map((lease) => (
+                <option key={lease.LeaseID} value={lease.LeaseID}>
+                  {lease.LeaseName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center flex-wrap">
+            <button
+              className="px-4 py-2 bg-blue-500 text-white rounded mr-2"
+              onClick={fetchChartData}
+            >
+              Update Chart
+            </button>
+            <button
+              className="px-4 py-2 bg-green-500 text-white rounded mr-2"
+              onClick={handlePrint}
+            >
+              <FontAwesomeIcon icon={faPrint} className="mr-2" /> Print
+            </button>
+            <button
+              className={`px-4 py-2 bg-blue-500 text-white rounded relative ${
+                isSidePanelOpen ? "z-50" : ""
+              }`}
+              onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
+            >
+              <FontAwesomeIcon
+                icon={isSidePanelOpen ? faTimes : faCog}
+                className="mr-2"
+              />
+              {isSidePanelOpen ? "Close" : "Settings"}
+            </button>
+          </div>
         </div>
-        <button
-          className="px-4 py-2 bg-blue-500 text-white rounded"
-          onClick={fetchChartData}
-        >
-          Update Chart
-        </button>
-        <button
-          className="px-4 py-2 bg-green-500 text-white rounded ml-4"
-          onClick={handlePrint}
-        >
-          <FontAwesomeIcon icon={faPrint} className="mr-2" /> Print
-        </button>
-        <button
-          className="px-4 py-2 bg-blue-500 text-white rounded ml-4"
-          onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
-        >
-          <FontAwesomeIcon icon={faCog} className="mr-2" />
-          {isSidePanelOpen ? "Close Settings" : "Settings"}
-        </button>
       </div>
-
+      {/* Rest of the component remains unchanged */}
       <div
         className={`fixed right-0 top-0 h-full shadow-lg transition-transform transform ${
           isSidePanelOpen ? "translate-x-0" : "translate-x-full"
-        } w-80 p-6 z-50 overflow-y-auto ${
+        } w-64 p-6 z-40 overflow-y-auto ${
           theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"
         }`}
       >
@@ -472,7 +485,6 @@ const ChartComponent = () => {
           </label>
         </div>
       </div>
-
       {colorPicker.visible && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-4 rounded-lg">
@@ -489,7 +501,6 @@ const ChartComponent = () => {
           </div>
         </div>
       )}
-
       <div
         ref={chartRef}
         className={`w-full max-w-full shadow-2xl rounded-lg p-8 mb-8 ${
@@ -504,7 +515,7 @@ const ChartComponent = () => {
           <ResponsiveContainer width="100%" height={700}>
             <ComposedChart
               data={data}
-              className={`${theme === "dark" ? "text-white" : "text-black"}`}
+              className={theme === "dark" ? "text-white" : "text-black"}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
