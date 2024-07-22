@@ -61,7 +61,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://stasney.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -157,7 +157,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://stasney.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
@@ -188,7 +188,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://stasney.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
@@ -220,7 +220,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://stasney.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -249,7 +249,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://stasney.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -275,7 +275,7 @@ const JobListPage = () => {
           baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
           console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
-          baseUrl = "https://test.ogfieldticket.com";
+          baseUrl = "https://stasney.ogfieldticket.com";
           console.log(`Using default URL: ${baseUrl}`);
         }
 
@@ -318,7 +318,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://stasney.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -601,10 +601,9 @@ const ItemsAnimation = ({
     item_description: "",
     item_quantity: null,
     item_cost: null,
-    use_quantity: "N",
+    use_quantity: "Y",
     use_cost: "Y",
   });
-
   const [stateItems, setStateItems] = useState(items);
 
   useEffect(() => {
@@ -622,7 +621,7 @@ const ItemsAnimation = ({
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://stasney.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -673,7 +672,7 @@ const ItemsAnimation = ({
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://stasney.ogfieldticket.com";
       }
 
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -704,7 +703,7 @@ const ItemsAnimation = ({
     console.log(itemId);
     const baseUrl = subdomain
       ? `https://${subdomain}.ogfieldticket.com`
-      : "https://test.ogfieldticket.com";
+      : "https://stasney.ogfieldticket.com";
 
     const data = {
       JobItemID: itemId.JobItemID,
@@ -744,7 +743,7 @@ const ItemsAnimation = ({
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://stasney.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -827,7 +826,7 @@ const ItemsAnimation = ({
       const jobTypeID = movedItem.JobTypeID;
       const baseUrl = subdomain
         ? `https://${subdomain}.ogfieldticket.com`
-        : "https://test.ogfieldticket.com";
+        : "https://stasney.ogfieldticket.com";
 
       const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemID}`, {
         method: "PATCH",
@@ -904,7 +903,7 @@ const ItemsAnimation = ({
           item_id: item.ItemID,
           uom: item.UOM,
           item_description: item.ItemDescription,
-          item_quantity: 1,
+          item_quantity: item.UseQuantity === "Y" ? 1 : null,
           item_cost: item.UseCost === "Y" ? 0.0 : null,
           use_quantity: item.UseQuantity,
           use_cost: item.UseCost,
@@ -917,33 +916,29 @@ const ItemsAnimation = ({
           item_description: "",
           item_quantity: null,
           item_cost: null,
-          use_quantity: "Y",
+          use_quantity: "N",
           use_cost: "Y",
         };
       } else if (name === "new_item_id") {
         updatedItem.item_id = value;
+      } else if (type === "checkbox") {
+        updatedItem[name] = checked ? "Y" : "N";
+        if (name === "use_quantity" && !checked) {
+          updatedItem.item_quantity = null;
+        }
       } else {
-        updatedItem[name] = type === "checkbox" ? (checked ? "Y" : "N") : value;
-
-        if (name === "use_quantity") {
-          updatedItem.item_quantity = checked ? 1 : null;
-        }
-
-        if (name === "use_cost") {
-          updatedItem.item_cost = checked ? prevItem.item_cost : 0.0;
-        }
+        updatedItem[name] = value;
       }
 
       return updatedItem;
     });
   };
-
   const handleAddItem = () => {
     let itemId;
     if (selectedItem === "new") {
       itemId = newItem.item_id;
     } else {
-      itemId = `${selectedItem}_${activeJobId}`;
+      itemId = `${selectedItem}`;
     }
     console.log(newItem);
 
@@ -1040,6 +1035,7 @@ const ItemsAnimation = ({
                   {item.UOM && item.UOM.length > 1 && `(${item.UOM})`}
                 </span>
               </h3>
+              <p className="text-xs text-gray-500 mb-2">ID: {item.ItemID}</p>
               {item.ItemQuantity === null ? (
                 <p className="text-sm mb-1">Cost: ${item.ItemCost}</p>
               ) : (
@@ -1139,6 +1135,7 @@ const ItemsAnimation = ({
                 </select>
               </div>
             </div>
+
             {selectedItem === "new" && (
               <div className="mb-8">
                 <label
@@ -1161,6 +1158,7 @@ const ItemsAnimation = ({
                 />
               </div>
             )}
+
             <div className="mb-8">
               <label htmlFor="uom" className="block mb-2 font-semibold">
                 UOM:
@@ -1179,6 +1177,7 @@ const ItemsAnimation = ({
                 }`}
               />
             </div>
+
             <div className="mb-8">
               <label
                 htmlFor="item_description"
@@ -1200,6 +1199,7 @@ const ItemsAnimation = ({
                 }`}
               ></textarea>
             </div>
+
             <div className="mb-8">
               <fieldset>
                 <legend className="block mb-2 font-semibold">
@@ -1235,6 +1235,7 @@ const ItemsAnimation = ({
                 </div>
               </fieldset>
             </div>
+
             {newItem.use_quantity === "Y" && (
               <div className="mb-8">
                 <label
@@ -1249,7 +1250,6 @@ const ItemsAnimation = ({
                   name="item_quantity"
                   value={newItem.item_quantity || ""}
                   onChange={handleInputChange}
-                  readOnly={selectedItem !== "new"}
                   className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
                     theme === "dark"
                       ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
@@ -1279,9 +1279,6 @@ const ItemsAnimation = ({
                     step="0.01"
                     value={newItem.item_cost}
                     onChange={handleInputChange}
-                    readOnly={
-                      selectedItem !== "new" && newItem.use_cost !== "Y"
-                    }
                     className={`w-full pl-8 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
                       theme === "dark"
                         ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
@@ -1291,6 +1288,7 @@ const ItemsAnimation = ({
                 </div>
               </div>
             )}
+
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
@@ -1315,7 +1313,7 @@ const ItemsAnimation = ({
                 Add Item
               </button>
             </div>
-          </form>
+          </form>{" "}
         </div>
       </Modal>
       <style jsx>{`

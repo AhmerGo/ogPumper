@@ -89,7 +89,7 @@ function FieldTicketEntry() {
           const subdomainPart = parts.shift();
           baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         } else {
-          baseUrl = "https://test.ogfieldticket.com";
+          baseUrl = "https://stasney.ogfieldticket.com";
         }
         const response = await fetch(`${baseUrl}/api/jobs.php`);
         const data = await response.json();
@@ -647,21 +647,13 @@ function FieldTicketEntry() {
                     <label className="block font-medium transition-colors duration-500 mr-4">
                       Qty:
                     </label>
-                    {item.ItemQuantity !== null ? (
+                    {item.UseQuantity === "Y" && item.ItemQuantity !== null ? (
                       <span
                         className={`inline-block w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
                           theme === "dark" ? "text-gray-300" : "text-gray-700"
                         }`}
                       >
                         {item.ItemQuantity}
-                      </span>
-                    ) : item.UseQuantity === "N" ? (
-                      <span
-                        className={`inline-block w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
-                          theme === "dark" ? "text-gray-300" : "text-gray-700"
-                        }`}
-                      >
-                        0
                       </span>
                     ) : (
                       <input

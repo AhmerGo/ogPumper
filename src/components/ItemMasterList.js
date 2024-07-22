@@ -45,7 +45,7 @@ const MasterList = () => {
       const baseUrl =
         parts.length > 2
           ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          : "https://stasney.ogfieldticket.com";
 
       const response = await axios.get(
         `${baseUrl}/api/jobitem.php?item_types=true`
