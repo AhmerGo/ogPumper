@@ -647,7 +647,7 @@ function FieldTicketEntry() {
                     <label className="block font-medium transition-colors duration-500 mr-4">
                       Qty:
                     </label>
-                    {item.UseQuantity === "Y" && item.ItemQuantity !== null ? (
+                    {item.UseQuantity === "N" && item.ItemQuantity !== null ? (
                       <span
                         className={`inline-block w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
                           theme === "dark" ? "text-gray-300" : "text-gray-700"

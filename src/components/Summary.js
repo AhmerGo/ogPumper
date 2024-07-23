@@ -1079,8 +1079,7 @@ const ViewFieldTicket = () => {
                           >
                             Qty:
                           </label>
-                          {item.UseQuantity === "Y" &&
-                          item.ItemQuantity !== 0 ? (
+                          {item.UseQuantity === "Y" && item.Quantity !== 0 ? (
                             <input
                               type="number"
                               name="Quantity"

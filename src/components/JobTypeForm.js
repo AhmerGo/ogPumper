@@ -601,9 +601,10 @@ const ItemsAnimation = ({
     item_description: "",
     item_quantity: null,
     item_cost: null,
-    use_quantity: "Y",
+    use_quantity: "N",
     use_cost: "Y",
   });
+
   const [stateItems, setStateItems] = useState(items);
 
   useEffect(() => {
@@ -747,7 +748,6 @@ const ItemsAnimation = ({
         console.log(`Using default URL: ${baseUrl}`);
       }
 
-      // Include newOrder as null in the payload
       const payload = {
         ...itemEdits,
         newOrder: null,
@@ -814,10 +814,8 @@ const ItemsAnimation = ({
     const [movedItem] = updatedItems.splice(draggedIndex, 1);
     updatedItems.splice(index, 0, movedItem);
 
-    // Update the state
     setStateItems(updatedItems);
 
-    // Update the backend
     requestInProgress = true;
     try {
       console.log(movedItem);
@@ -842,7 +840,6 @@ const ItemsAnimation = ({
 
       const data = await response.json();
       if (data.success) {
-        // After successful request, update only the changed item positions
         const updatedStateItems = updatedItems.map((item, idx) => {
           if (item.ItemOrder !== idx) {
             return { ...item, ItemOrder: idx };
@@ -860,6 +857,7 @@ const ItemsAnimation = ({
       requestInProgress = false;
     }
   };
+
   const addButtonStyle = {
     from: { transform: "scale(1)" },
     enter: { transform: "scale(1.05)" },
@@ -883,8 +881,8 @@ const ItemsAnimation = ({
       item_id: "",
       uom: "",
       item_description: "",
-      item_quantity: "",
-      item_cost: "",
+      item_quantity: null,
+      item_cost: null,
       use_quantity: "N",
       use_cost: "Y",
     });
@@ -896,36 +894,38 @@ const ItemsAnimation = ({
     setNewItem((prevItem) => {
       let updatedItem = { ...prevItem };
 
-      if (name === "item_id" && value !== "new") {
-        const item = availableItems.find((item) => item.ItemID === value);
-        updatedItem = {
-          ...prevItem,
-          item_id: item.ItemID,
-          uom: item.UOM,
-          item_description: item.ItemDescription,
-          item_quantity: item.UseQuantity === "Y" ? 1 : null,
-          item_cost: item.UseCost === "Y" ? 0.0 : null,
-          use_quantity: item.UseQuantity,
-          use_cost: item.UseCost,
-        };
-      } else if (name === "item_id" && value === "new") {
-        updatedItem = {
-          ...prevItem,
-          item_id: "",
-          uom: "",
-          item_description: "",
-          item_quantity: null,
-          item_cost: null,
-          use_quantity: "N",
-          use_cost: "Y",
-        };
+      if (name === "item_id") {
+        if (value !== "new") {
+          const item = availableItems.find((item) => item.ItemID === value);
+          updatedItem = {
+            ...prevItem,
+            item_id: item.ItemID,
+            uom: item.UOM,
+            item_description: item.ItemDescription,
+            item_quantity: item.UseQuantity === "N" ? 1 : null,
+            item_cost: item.UseCost === "Y" ? 0.0 : null,
+            use_quantity: item.UseQuantity,
+            use_cost: item.UseCost,
+          };
+        } else {
+          updatedItem = {
+            ...prevItem,
+            item_id: "",
+            uom: "",
+            item_description: "",
+            item_quantity: null,
+            item_cost: null,
+            use_quantity: "Y",
+            use_cost: "Y",
+          };
+        }
       } else if (name === "new_item_id") {
         updatedItem.item_id = value;
+      } else if (name === "use_quantity") {
+        updatedItem.use_quantity = checked ? "N" : "Y";
+        updatedItem.item_quantity = checked ? 1 : null;
       } else if (type === "checkbox") {
         updatedItem[name] = checked ? "Y" : "N";
-        if (name === "use_quantity" && !checked) {
-          updatedItem.item_quantity = null;
-        }
       } else {
         updatedItem[name] = value;
       }
@@ -940,7 +940,6 @@ const ItemsAnimation = ({
     } else {
       itemId = `${selectedItem}`;
     }
-    console.log(newItem);
 
     const updatedNewItem = {
       ...newItem,
@@ -948,9 +947,8 @@ const ItemsAnimation = ({
       use_quantity: newItem.use_quantity,
       use_cost: newItem.use_cost,
       item_quantity:
-        newItem.use_quantity === "Y" ? newItem.item_quantity : null,
+        newItem.use_quantity === "N" ? newItem.item_quantity || 1 : null,
     };
-    console.log(updatedNewItem);
 
     onAddItem(updatedNewItem);
     setStateItems([...stateItems, updatedNewItem]);
@@ -975,10 +973,21 @@ const ItemsAnimation = ({
         >
           {editingItemId === item.ItemID ? (
             <>
-              <input
-                type="text"
+              <textarea
                 name="ItemDescription"
                 value={itemEdits.ItemDescription || ""}
+                onChange={handleChange}
+                rows="2"
+                className={`w-full mb-2 p-2 rounded ${
+                  theme === "dark"
+                    ? "bg-gray-700 text-white border-gray-600"
+                    : "bg-gray-100 text-gray-800 border-gray-300"
+                }`}
+              />
+              <input
+                type="text"
+                name="ItemID"
+                value={itemEdits.ItemID || item.ItemID}
                 onChange={handleChange}
                 className={`w-full mb-2 p-2 rounded ${
                   theme === "dark"
@@ -1035,7 +1044,7 @@ const ItemsAnimation = ({
                   {item.UOM && item.UOM.length > 1 && `(${item.UOM})`}
                 </span>
               </h3>
-              <p className="text-xs text-gray-500 mb-2">ID: {item.ItemID}</p>
+              <p className="text-sm mb-1">Item ID: {item.ItemID}</p>
               {item.ItemQuantity === null ? (
                 <p className="text-sm mb-1">Cost: ${item.ItemCost}</p>
               ) : (
@@ -1063,7 +1072,7 @@ const ItemsAnimation = ({
             </>
           )}
         </div>
-      ))}
+      ))}{" "}
       <animated.div
         style={addButtonProps}
         onMouseEnter={() => {
@@ -1135,7 +1144,6 @@ const ItemsAnimation = ({
                 </select>
               </div>
             </div>
-
             {selectedItem === "new" && (
               <div className="mb-8">
                 <label
@@ -1158,7 +1166,6 @@ const ItemsAnimation = ({
                 />
               </div>
             )}
-
             <div className="mb-8">
               <label htmlFor="uom" className="block mb-2 font-semibold">
                 UOM:
@@ -1177,7 +1184,6 @@ const ItemsAnimation = ({
                 }`}
               />
             </div>
-
             <div className="mb-8">
               <label
                 htmlFor="item_description"
@@ -1199,11 +1205,10 @@ const ItemsAnimation = ({
                 }`}
               ></textarea>
             </div>
-
             <div className="mb-8">
               <fieldset>
                 <legend className="block mb-2 font-semibold">
-                  Lock Quantity and/or set Cost:
+                  Item Properties:
                 </legend>
                 <div className="flex gap-4">
                   <div>
@@ -1211,12 +1216,11 @@ const ItemsAnimation = ({
                       <input
                         type="checkbox"
                         name="use_quantity"
-                        checked={newItem.use_quantity === "Y"}
+                        checked={newItem.use_quantity === "N"}
                         onChange={handleInputChange}
-                        disabled={selectedItem !== "new"}
                         className="form-checkbox"
                       />
-                      <span className="ml-2">Quantity</span>
+                      <span className="ml-2">Lock Quantity</span>
                     </label>
                   </div>
                   <div>
@@ -1226,17 +1230,15 @@ const ItemsAnimation = ({
                         name="use_cost"
                         checked={newItem.use_cost === "Y"}
                         onChange={handleInputChange}
-                        disabled={selectedItem !== "new"}
                         className="form-checkbox"
                       />
-                      <span className="ml-2">Cost</span>
+                      <span className="ml-2">Use Cost</span>
                     </label>
                   </div>
                 </div>
               </fieldset>
             </div>
-
-            {newItem.use_quantity === "Y" && (
+            {newItem.use_quantity === "N" && (
               <div className="mb-8">
                 <label
                   htmlFor="item_quantity"
@@ -1258,7 +1260,6 @@ const ItemsAnimation = ({
                 />
               </div>
             )}
-
             {newItem.use_cost === "Y" && (
               <div className="mb-8">
                 <label htmlFor="item_cost" className="block mb-2 font-semibold">
@@ -1277,7 +1278,7 @@ const ItemsAnimation = ({
                     id="item_cost"
                     name="item_cost"
                     step="0.01"
-                    value={newItem.item_cost}
+                    value={newItem.item_cost || ""}
                     onChange={handleInputChange}
                     className={`w-full pl-8 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
                       theme === "dark"
@@ -1288,7 +1289,6 @@ const ItemsAnimation = ({
                 </div>
               </div>
             )}
-
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
@@ -1313,8 +1313,8 @@ const ItemsAnimation = ({
                 Add Item
               </button>
             </div>
-          </form>{" "}
-        </div>
+          </form>
+        </div>{" "}
       </Modal>
       <style jsx>{`
         .modal-overlay {
@@ -1349,4 +1349,5 @@ const ItemsAnimation = ({
     </div>
   );
 };
+
 export default JobListPage;
