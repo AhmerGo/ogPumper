@@ -30,6 +30,7 @@ const MasterList = () => {
     uom: "",
     use_quantity: "N",
     use_cost: "N",
+    active: "Y",
   });
 
   const gridApiRef = useRef(null);
@@ -45,7 +46,7 @@ const MasterList = () => {
       const baseUrl =
         parts.length > 2
           ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://stasney.ogfieldticket.com";
+          : "https://test.ogfieldticket.com";
 
       const response = await axios.get(
         `${baseUrl}/api/jobitem.php?item_types=true`
@@ -71,6 +72,7 @@ const MasterList = () => {
       uom: item.UOM,
       use_quantity: item.UseQuantity,
       use_cost: item.UseCost,
+      active: item.Active,
     });
     setModalIsOpen(true);
   };
@@ -151,6 +153,13 @@ const MasterList = () => {
       cellEditor: "agSelectCellEditor",
       cellEditorParams: { values: ["Y", "N"] },
     },
+    {
+      headerName: "Active",
+      field: "Active",
+      editable: true,
+      cellEditor: "agSelectCellEditor",
+      cellEditorParams: { values: ["Y", "N"] },
+    },
   ];
 
   const onCellValueChanged = async (params) => {
@@ -160,6 +169,7 @@ const MasterList = () => {
       uom: params.data.UOM,
       use_quantity: params.data.UseQuantity,
       use_cost: params.data.UseCost,
+      active: params.data.Active,
     };
 
     try {
@@ -304,7 +314,7 @@ const MasterList = () => {
               resizable: true,
             }}
             pagination={true}
-            paginationPageSize={15}
+            paginationPageSize={100}
             enableRangeSelection={true}
             suppressRowClickSelection={true}
             onGridReady={onGridReady}
@@ -383,6 +393,24 @@ const MasterList = () => {
                   id="use_cost"
                   name="use_cost"
                   value={formData.use_cost}
+                  onChange={handleChange}
+                  className={inputClass}
+                >
+                  <option value="Y">Yes</option>
+                  <option value="N">No</option>
+                </select>
+              </div>
+              <div className="mb-4">
+                <label
+                  className="block text-sm font-bold mb-2"
+                  htmlFor="active"
+                >
+                  Active
+                </label>
+                <select
+                  id="active"
+                  name="active"
+                  value={formData.active}
                   onChange={handleChange}
                   className={inputClass}
                 >

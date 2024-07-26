@@ -16,6 +16,8 @@ import {
 import { useTheme } from "./ThemeContext";
 import Modal from "react-modal";
 import axios from "axios";
+import { Tooltip } from "react-tooltip";
+import "react-tooltip/dist/react-tooltip.css";
 
 Modal.setAppElement("#root");
 
@@ -61,7 +63,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://stasney.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -157,7 +159,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://stasney.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
@@ -188,7 +190,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://stasney.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
@@ -220,7 +222,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://stasney.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -249,7 +251,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://stasney.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -275,7 +277,7 @@ const JobListPage = () => {
           baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
           console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
-          baseUrl = "https://stasney.ogfieldticket.com";
+          baseUrl = "https://test.ogfieldticket.com";
           console.log(`Using default URL: ${baseUrl}`);
         }
 
@@ -318,7 +320,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://stasney.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -622,7 +624,7 @@ const ItemsAnimation = ({
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://stasney.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -673,7 +675,7 @@ const ItemsAnimation = ({
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
       } else {
-        baseUrl = "https://stasney.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -704,7 +706,7 @@ const ItemsAnimation = ({
     console.log(itemId);
     const baseUrl = subdomain
       ? `https://${subdomain}.ogfieldticket.com`
-      : "https://stasney.ogfieldticket.com";
+      : "https://test.ogfieldticket.com";
 
     const data = {
       JobItemID: itemId.JobItemID,
@@ -744,7 +746,7 @@ const ItemsAnimation = ({
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://stasney.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -824,7 +826,7 @@ const ItemsAnimation = ({
       const jobTypeID = movedItem.JobTypeID;
       const baseUrl = subdomain
         ? `https://${subdomain}.ogfieldticket.com`
-        : "https://stasney.ogfieldticket.com";
+        : "https://test.ogfieldticket.com";
 
       const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemID}`, {
         method: "PATCH",
@@ -1136,11 +1138,13 @@ const ItemsAnimation = ({
                   }`}
                 >
                   <option value="new">Add New Item</option>
-                  {availableItems.map((item) => (
-                    <option key={item.ItemID} value={item.ItemID}>
-                      {item.ItemID}
-                    </option>
-                  ))}
+                  {availableItems
+                    .filter((item) => item.Active !== "N")
+                    .map((item) => (
+                      <option key={item.ItemID} value={item.ItemID}>
+                        {item.ItemID}
+                      </option>
+                    ))}
                 </select>
               </div>
             </div>
@@ -1212,7 +1216,10 @@ const ItemsAnimation = ({
                 </legend>
                 <div className="flex gap-4">
                   <div>
-                    <label className="inline-flex items-center">
+                    <label
+                      className="inline-flex items-center"
+                      data-tooltip-id="lock-quantity-tooltip"
+                    >
                       <input
                         type="checkbox"
                         name="use_quantity"
@@ -1222,9 +1229,20 @@ const ItemsAnimation = ({
                       />
                       <span className="ml-2">Lock Quantity</span>
                     </label>
+                    <Tooltip
+                      id="lock-quantity-tooltip"
+                      place="top"
+                      effect="solid"
+                    >
+                      When Lock Quantity is set, the user cannot edit the
+                      quantity.
+                    </Tooltip>
                   </div>
                   <div>
-                    <label className="inline-flex items-center">
+                    <label
+                      className="inline-flex items-center"
+                      data-tooltip-id="use-cost-tooltip"
+                    >
                       <input
                         type="checkbox"
                         name="use_cost"
@@ -1234,6 +1252,10 @@ const ItemsAnimation = ({
                       />
                       <span className="ml-2">Use Cost</span>
                     </label>
+                    <Tooltip id="use-cost-tooltip" place="top" effect="solid">
+                      If Use Cost is set, the item has a cost associated with
+                      it.
+                    </Tooltip>
                   </div>
                 </div>
               </fieldset>
@@ -1314,7 +1336,7 @@ const ItemsAnimation = ({
               </button>
             </div>
           </form>
-        </div>{" "}
+        </div>
       </Modal>
       <style jsx>{`
         .modal-overlay {
@@ -1344,6 +1366,33 @@ const ItemsAnimation = ({
         .modal.dark {
           background-color: #1a202c;
           color: white;
+        }
+        .tooltip {
+          position: relative;
+          display: inline-block;
+          cursor: pointer;
+        }
+
+        .tooltip .tooltiptext {
+          visibility: hidden;
+          width: 220px;
+          background-color: black;
+          color: #fff;
+          text-align: center;
+          border-radius: 5px;
+          padding: 5px;
+          position: absolute;
+          z-index: 1;
+          bottom: 125%; /* Position above the element */
+          left: 50%;
+          margin-left: -110px; /* Center the tooltip */
+          opacity: 0;
+          transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltiptext {
+          visibility: visible;
+          opacity: 1;
         }
       `}</style>
     </div>

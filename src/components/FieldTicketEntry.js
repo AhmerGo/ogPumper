@@ -89,7 +89,7 @@ function FieldTicketEntry() {
           const subdomainPart = parts.shift();
           baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
         } else {
-          baseUrl = "https://stasney.ogfieldticket.com";
+          baseUrl = "https://test.ogfieldticket.com";
         }
         const response = await fetch(`${baseUrl}/api/jobs.php`);
         const data = await response.json();

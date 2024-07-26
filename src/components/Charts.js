@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { SketchPicker } from "react-color";
-import "tailwindcss/tailwind.css";
 import { useUser } from "./UserContext";
 import { useTheme } from "./ThemeContext";
 import debounce from "lodash/debounce";
@@ -27,10 +26,13 @@ import {
 import moment from "moment";
 
 const ChartComponent = () => {
+  const [reportType, setReportType] = useState("CD");
+
   const { userID } = useUser();
   const { theme } = useTheme();
   const chartRef = useRef(null);
   const [data, setData] = useState([]);
+  const [quickLink, setQuickLink] = useState("30");
   const [isLoading, setIsLoading] = useState(true);
   const [chartTypes, setChartTypes] = useState({
     Oil: "bar",
@@ -65,6 +67,20 @@ const ChartComponent = () => {
   const [leases, setLeases] = useState([]);
   const [tags, setTags] = useState(["All"]);
 
+  const formatXAxis = (tickItem) => {
+    let date;
+    if (reportType === "CM") {
+      // For monthly reports, parse as MM-YYYY
+      date = moment(tickItem, "MM-YYYY");
+      // Return full month name and year
+      return date.format("MMMM YYYY");
+    } else {
+      // For daily reports, parse as YYYY-MM-DD
+      date = moment(tickItem, "YYYY-MM-DD");
+      // Return month abbreviation and day
+      return date.format("MMM DD");
+    }
+  };
   const fetchPreferences = useCallback(async () => {
     try {
       const hostname = window.location.hostname;
@@ -126,18 +142,21 @@ const ChartComponent = () => {
       const baseUrl =
         parts.length > 2
           ? `https://${parts.shift()}.ogpumper.com`
-          : "https://test.ogpumper.com";
+          : "https://stasney.ogpumper.com";
 
       const rpt = selectedLeaseID === "~ALL~" ? "C" : "P";
       const response = await fetch(
-        `${baseUrl}/service_testprod.php?Rpt=${rpt}D&QD=30&LeaseID=${encodeURIComponent(
+        `${baseUrl}/service_testprod.php?Rpt=${reportType}&QD=${quickLink}&LeaseID=${encodeURIComponent(
           selectedLeaseID
         )}&From=${fromDate}&Thru=${thruDate}&Tag=${selectedTag}`
       );
       if (!response.ok) throw new Error("Network response was not ok");
       const result = await response.json();
       const formattedData = result.map((item) => ({
-        GaugeDate: item.GaugeDate,
+        GaugeDate:
+          reportType === "CM"
+            ? item.MonthYear
+            : moment(item.GaugeDate).format("YYYY-MM-DD"),
         Oil: parseFloat(item.Produced) || 0,
         ProducedWater: parseFloat(item.ProducedWaterTotal) || 0,
         InjectedWater: parseFloat(item.InjectedWaterTotal) || 0,
@@ -151,7 +170,7 @@ const ChartComponent = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [fromDate, thruDate, selectedLeaseID, selectedTag]);
+  }, [fromDate, thruDate, selectedLeaseID, selectedTag, quickLink, reportType]);
 
   useEffect(() => {
     fetchPreferences();
@@ -200,6 +219,80 @@ const ChartComponent = () => {
     disabledSeries,
     debouncedSavePreferences,
   ]);
+
+  const handleQuickLinkChange = (qd) => {
+    setQuickLink(qd);
+    let newFromDate, newThruDate;
+    const today = moment();
+
+    switch (qd) {
+      case "CM":
+        newFromDate = today.clone().startOf("month").format("YYYY-MM-DD");
+        newThruDate = today.clone().endOf("month").format("YYYY-MM-DD");
+        break;
+      case "3D":
+        newFromDate = today.clone().subtract(2, "days").format("YYYY-MM-DD");
+        newThruDate = today.clone().format("YYYY-MM-DD");
+        break;
+      case "7D":
+        newFromDate = today.clone().subtract(6, "days").format("YYYY-MM-DD");
+        newThruDate = today.clone().format("YYYY-MM-DD");
+        break;
+      case "30":
+        newFromDate = today.clone().subtract(29, "days").format("YYYY-MM-DD");
+        newThruDate = today.clone().format("YYYY-MM-DD");
+        break;
+      case "LM":
+        newFromDate = today
+          .clone()
+          .subtract(1, "month")
+          .startOf("month")
+          .format("YYYY-MM-DD");
+        newThruDate = today
+          .clone()
+          .subtract(1, "month")
+          .endOf("month")
+          .format("YYYY-MM-DD");
+        break;
+      case "3M":
+        newFromDate = today
+          .clone()
+          .subtract(3, "months")
+          .add(1, "day")
+          .format("YYYY-MM-DD");
+        newThruDate = today.clone().format("YYYY-MM-DD");
+        break;
+      case "6M":
+        newFromDate = today
+          .clone()
+          .subtract(6, "months")
+          .add(1, "day")
+          .format("YYYY-MM-DD");
+        newThruDate = today.clone().format("YYYY-MM-DD");
+        break;
+      case "CY":
+        newFromDate = today.clone().startOf("year").format("YYYY-MM-DD");
+        newThruDate = today.clone().format("YYYY-MM-DD");
+        break;
+      case "LY":
+        newFromDate = today
+          .clone()
+          .subtract(1, "year")
+          .startOf("year")
+          .format("YYYY-MM-DD");
+        newThruDate = today
+          .clone()
+          .subtract(1, "year")
+          .endOf("year")
+          .format("YYYY-MM-DD");
+        break;
+      default:
+        return;
+    }
+
+    setFromDate(newFromDate);
+    setThruDate(newThruDate);
+  };
 
   const handleToggle = (field) => {
     setChartTypes((prev) => ({
@@ -315,38 +408,57 @@ const ChartComponent = () => {
 
   return (
     <div
-      className={`min-h-screen p-8 flex flex-col items-center ${
+      className={`min-h-screen p-8 flex flex-col items-center mt-16 ${
         theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
       } relative transition-colors duration-500`}
     >
-      {" "}
       <div className="w-full max-w-7xl mb-8 flex flex-wrap justify-between items-center">
         <div className="flex items-center mb-4 md:mb-0 flex-wrap mr-4">
+          <select
+            value={quickLink}
+            onChange={(e) => handleQuickLinkChange(e.target.value)}
+            className={`p-2 border rounded bg-white text-black border-gray-300 mr-2 w-40`}
+          >
+            <option value="30">Last 30 days</option>
+            <option value="CM">Current Month</option>
+            <option value="3D">Last 3 Days</option>
+            <option value="7D">Last 7 Days</option>
+            <option value="30">Last 30 Days</option>
+            <option value="LM">Last Month</option>
+            <option value="3M">Last 3 months</option>
+            <option value="6M">Last 6 months</option>
+            <option value="CY">Current Year</option>
+            <option value="LY">Last Year</option>
+          </select>
+
           <div className="flex items-center mr-4">
             <label className="mr-2 whitespace-nowrap">From:</label>
             <input
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
-              className={`p-2 border rounded ${
-                theme === "dark"
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
-              } w-32`}
+              className={`p-2 border rounded bg-white text-black border-gray-300 w-32`}
             />
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center mr-4">
             <label className="mr-2 whitespace-nowrap">To:</label>
             <input
               type="date"
               value={thruDate}
               onChange={(e) => setThruDate(e.target.value)}
-              className={`p-2 border rounded ${
-                theme === "dark"
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
-              } w-32`}
+              className={`p-2 border rounded bg-white text-black border-gray-300 w-32`}
             />
+          </div>
+          <div className="flex items-center mr-4">
+            <label className="mr-2 whitespace-nowrap">Report Type:</label>
+            <select
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value)}
+              className={`p-2 border rounded bg-white text-black border-gray-300 w-32`}
+            >
+              <option value="CD">Daily</option>
+              <option value="CM">Monthly</option>
+            </select>
           </div>
         </div>
         <div
@@ -354,15 +466,15 @@ const ChartComponent = () => {
             isSidePanelOpen ? "transform -translate-x-64" : ""
           }`}
         >
-          <div className="flex items-center mb-4 md:mb-0 flex-wrap mr-4">
+          <div
+            className={`flex items-center mb-4 md:mb-0 flex-wrap mr-4 ${
+              isSidePanelOpen ? "hidden" : ""
+            }`}
+          >
             <select
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
-              className={`p-2 border rounded ${
-                theme === "dark"
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
-              } mr-2 w-32`}
+              className={`p-2 border rounded bg-white text-black border-gray-300 mr-2 w-32`}
             >
               {tags.map((tag) => (
                 <option key={tag} value={tag}>
@@ -373,11 +485,7 @@ const ChartComponent = () => {
             <select
               value={selectedLeaseID}
               onChange={(e) => setSelectedLeaseID(e.target.value)}
-              className={`p-2 border rounded ${
-                theme === "dark"
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
-              } w-40`}
+              className={`p-2 border rounded bg-white text-black border-gray-300 w-40`}
             >
               <option value="~ALL~">All Leases</option>
               {leases.map((lease) => (
@@ -387,19 +495,19 @@ const ChartComponent = () => {
               ))}
             </select>
           </div>
-          <div className="flex items-center flex-wrap">
-            <button
-              className="px-4 py-2 bg-blue-500 text-white rounded mr-2"
-              onClick={fetchChartData}
-            >
-              Update Chart
-            </button>
+          <div
+            className={`flex items-center flex-wrap ${
+              isSidePanelOpen ? "hidden" : ""
+            }`}
+          >
             <button
               className="px-4 py-2 bg-green-500 text-white rounded mr-2"
               onClick={handlePrint}
             >
               <FontAwesomeIcon icon={faPrint} className="mr-2" /> Print
             </button>
+          </div>
+          <div className="flex items-center flex-wrap">
             <button
               className={`px-4 py-2 bg-blue-500 text-white rounded relative ${
                 isSidePanelOpen ? "z-50" : ""
@@ -414,96 +522,7 @@ const ChartComponent = () => {
             </button>
           </div>
         </div>
-      </div>
-      {/* Rest of the component remains unchanged */}
-      <div
-        className={`fixed right-0 top-0 h-full shadow-lg transition-transform transform ${
-          isSidePanelOpen ? "translate-x-0" : "translate-x-full"
-        } w-64 p-6 z-40 overflow-y-auto ${
-          theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"
-        }`}
-      >
-        <h2 className="text-2xl font-bold mb-4">Settings</h2>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Chart Type</h3>
-          {Object.entries(chartTypes).map(([field, type]) => (
-            <div key={field} className="flex items-center mb-2">
-              <span className="mr-2">{field}</span>
-              <button
-                className="px-2 py-1 bg-blue-500 text-white rounded"
-                onClick={() => handleToggle(field)}
-              >
-                {type === "line" ? (
-                  <FontAwesomeIcon icon={faChartBar} />
-                ) : (
-                  <FontAwesomeIcon icon={faChartLine} />
-                )}
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Colors</h3>
-          {Object.entries(colors).map(([field, color]) => (
-            <div key={field} className="flex items-center mb-2">
-              <span className="mr-2">{field}</span>
-              <div
-                className="w-8 h-8 mr-2 cursor-pointer"
-                style={{ backgroundColor: color }}
-                onClick={() => setColorPicker({ visible: true, field })}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Y-Axis Scale</h3>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              className={`mr-2 ${
-                theme === "dark"
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
-              }`}
-              checked={logarithmic}
-              onChange={() => setLogarithmic(!logarithmic)}
-            />
-            Logarithmic
-          </label>
-        </div>
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold mb-2">Stacked Options</h3>
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              className={`mr-2 ${
-                theme === "dark"
-                  ? "bg-gray-700 text-white border-gray-600"
-                  : "bg-white text-black border-gray-300"
-              }`}
-              checked={stacked}
-              onChange={() => setStacked(!stacked)}
-            />
-            Stacked Gas and Tbg
-          </label>
-        </div>
-      </div>
-      {colorPicker.visible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded-lg">
-            <SketchPicker
-              color={colors[colorPicker.field]}
-              onChangeComplete={handleColorChange}
-            />
-            <button
-              className="mt-4 px-4 py-2 bg-red-500 text-white rounded"
-              onClick={() => setColorPicker({ visible: false, field: null })}
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      </div>{" "}
       <div
         ref={chartRef}
         className={`w-full max-w-full shadow-2xl rounded-lg p-8 mb-8 ${
@@ -527,6 +546,17 @@ const ChartComponent = () => {
               <XAxis
                 dataKey="GaugeDate"
                 stroke={theme === "dark" ? "#fff" : "#000"}
+                tickFormatter={formatXAxis}
+                interval={
+                  reportType === "CD"
+                    ? 0
+                    : reportType === "CM"
+                    ? 0
+                    : "preserveStartEnd"
+                }
+                tick={{ fontSize: 12, angle: -45, textAnchor: "end" }}
+                height={60}
+                padding={{ left: 20, right: 20 }}
               />
               <YAxis
                 yAxisId="left"
@@ -673,6 +703,94 @@ const ChartComponent = () => {
           <FontAwesomeIcon icon={faRedo} className="mr-2" /> Reset Legend
         </button>
       </div>
+      <div
+        className={`fixed right-0 top-16 h-auto shadow-lg transition-transform transform ${
+          isSidePanelOpen ? "translate-x-0" : "translate-x-full"
+        } w-64 p-6 z-40 overflow-y-auto ${
+          theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"
+        }`}
+      >
+        <h2 className="text-2xl font-bold mb-4">Settings</h2>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Chart Type</h3>
+          {Object.entries(chartTypes).map(([field, type]) => (
+            <div key={field} className="flex items-center mb-2">
+              <span className="mr-2">{field}</span>
+              <button
+                className="px-2 py-1 bg-blue-500 text-white rounded"
+                onClick={() => handleToggle(field)}
+              >
+                {type === "line" ? (
+                  <FontAwesomeIcon icon={faChartBar} />
+                ) : (
+                  <FontAwesomeIcon icon={faChartLine} />
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Colors</h3>
+          {Object.entries(colors).map(([field, color]) => (
+            <div key={field} className="flex items-center mb-2">
+              <span className="mr-2">{field}</span>
+              <div
+                className="w-8 h-8 mr-2 cursor-pointer"
+                style={{ backgroundColor: color }}
+                onClick={() => setColorPicker({ visible: true, field })}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Y-Axis Scale</h3>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              className={`mr-2 ${
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+              }`}
+              checked={logarithmic}
+              onChange={() => setLogarithmic(!logarithmic)}
+            />
+            Logarithmic
+          </label>
+        </div>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold mb-2">Stacked Options</h3>
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              className={`mr-2 ${
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-black border-gray-300"
+              }`}
+              checked={stacked}
+              onChange={() => setStacked(!stacked)}
+            />
+            Stacked Gas and Tbg
+          </label>
+        </div>
+      </div>
+      {colorPicker.visible && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg">
+            <SketchPicker
+              color={colors[colorPicker.field]}
+              onChangeComplete={handleColorChange}
+            />
+            <button
+              className="mt-4 px-4 py-2 bg-red-500 text-white rounded"
+              onClick={() => setColorPicker({ visible: false, field: null })}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
