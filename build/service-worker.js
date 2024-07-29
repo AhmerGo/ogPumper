@@ -1,6 +1,6 @@
 importScripts("/idb.js");
 
-const CACHE_NAME = "my-app-cache-v1.1.0"; // Updated cache name with version
+const CACHE_NAME = "my-app-cache-v1.1.1"; // Updated cache name with version
 const DB_NAME = "request-queue";
 const STORE_NAME = "requests";
 
@@ -76,7 +76,7 @@ self.addEventListener("activate", (event) => {
 });
 
 async function enqueueRequest(request, body) {
-  const db = await idb.openDB(DB_NAME, 1, {
+  const db = await idb.openDB(DB_NAME, 2, {
     upgrade(db) {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, {

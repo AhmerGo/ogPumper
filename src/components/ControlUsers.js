@@ -1,162 +1,37 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useSpring, animated } from "react-spring";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEdit,
-  faSave,
-  faTimes,
   faSearch,
+  faTimes,
+  faUser,
+  faEnvelope,
+  faPhone,
+  faBriefcase,
+  faCommentAlt,
+  faCheck,
+  faBan,
+  faSort,
+  faFilter,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "./ThemeContext";
-
-const EditUserForm = ({ user, onSave, onCancel, theme }) => {
-  const [formData, setFormData] = useState({
-    UserID: user.UserID,
-    FullName: user.FullName,
-    Email: user.Email,
-    Phone: user.Phone,
-    Role: user.Role,
-    Message: user.Message,
-  });
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    onSave(formData);
-  };
-
-  return (
-    <div
-      className={`fixed inset-0 flex items-center justify-center z-50 transition-opacity duration-300 ${
-        theme === "dark"
-          ? "bg-black bg-opacity-80"
-          : "bg-gray-500 bg-opacity-50"
-      }`}
-    >
-      <div
-        className={`rounded-lg shadow-xl p-8 w-full max-w-lg transition-transform transform ${
-          theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-gray-900"
-        }`}
-      >
-        <h2 className="text-3xl font-semibold mb-6">Edit User</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Full Name</label>
-            <input
-              value={formData.FullName}
-              name="FullName"
-              type="text"
-              placeholder="Full Name"
-              required
-              className={`w-full p-3 border rounded focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "bg-gray-800 border-gray-700 text-white focus:ring-blue-500"
-                  : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-blue-500"
-              }`}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Email</label>
-            <input
-              value={formData.Email}
-              name="Email"
-              type="email"
-              placeholder="Email"
-              className={`w-full p-3 border rounded focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "bg-gray-800 border-gray-700 text-white focus:ring-blue-500"
-                  : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-blue-500"
-              }`}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Phone</label>
-            <input
-              value={formData.Phone}
-              name="Phone"
-              type="tel"
-              placeholder="Phone"
-              className={`w-full p-3 border rounded focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "bg-gray-800 border-gray-700 text-white focus:ring-blue-500"
-                  : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-blue-500"
-              }`}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">Role</label>
-            <input
-              value={formData.Role}
-              name="Role"
-              type="text"
-              placeholder="Role"
-              required
-              className={`w-full p-3 border rounded focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "bg-gray-800 border-gray-700 text-white focus:ring-blue-500"
-                  : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-blue-500"
-              }`}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">Message</label>
-            <textarea
-              value={formData.Message}
-              name="Message"
-              placeholder="Message"
-              className={`w-full p-3 border rounded focus:outline-none focus:ring-2 ${
-                theme === "dark"
-                  ? "bg-gray-800 border-gray-700 text-white focus:ring-blue-500"
-                  : "bg-gray-100 border-gray-300 text-gray-900 focus:ring-blue-500"
-              }`}
-              onChange={handleChange}
-            ></textarea>
-          </div>
-          <div className="flex justify-end space-x-3">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white py-2 px-5 rounded-full hover:bg-blue-700 transition duration-300"
-            >
-              <FontAwesomeIcon icon={faSave} className="mr-2" /> Save
-            </button>
-            <button
-              onClick={onCancel}
-              className="bg-red-600 text-white py-2 px-5 rounded-full hover:bg-red-700 transition duration-300"
-            >
-              <FontAwesomeIcon icon={faTimes} className="mr-2" /> Cancel
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 const ControlUsers = () => {
   const [users, setUsers] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const { theme } = useTheme();
+  const [filterRole, setFilterRole] = useState("All");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState("asc");
   const [subdomain, setSubdomain] = useState("");
+  const { theme } = useTheme();
 
   useEffect(() => {
     const extractSubdomain = () => {
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        setSubdomain(subdomainPart);
-      } else {
-        setSubdomain("");
-      }
+      setSubdomain(parts.length > 2 ? parts[0] : "");
     };
     extractSubdomain();
   }, []);
@@ -164,19 +39,12 @@ const ControlUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const hostname = window.location.hostname;
-        const parts = hostname.split(".");
-        let baseUrl;
-
-        if (parts.length > 2) {
-          const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
-        } else {
-          baseUrl = "https://test.ogfieldticket.com";
-        }
+        const baseUrl = subdomain
+          ? `https://${subdomain}.ogfieldticket.com`
+          : "https://test.ogfieldticket.com";
         const response = await axios.get(`${baseUrl}/api/userdetails.php`);
-        const filteredUsers = response.data.users.filter(
-          (user) => user.Role === "P" || user.Role === "O" || user.Role === "A"
+        const filteredUsers = response.data.users.filter((user) =>
+          ["P", "O", "A"].includes(user.Role)
         );
         setUsers(filteredUsers || []);
       } catch (error) {
@@ -186,32 +54,29 @@ const ControlUsers = () => {
     fetchUsers();
   }, [subdomain]);
 
-  const handleEdit = (user) => {
-    setEditingUser(user);
-  };
+  const handleEdit = (user) => setEditingUser(user);
+  const handleCancel = () => setEditingUser(null);
+  const handleSearch = (e) => setSearchTerm(e.target.value);
+  const handleFilterChange = (e) => setFilterRole(e.target.value);
+  const handleSortChange = (e) => setSortBy(e.target.value);
+  const toggleSortOrder = () =>
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc");
 
   const handleSave = async (updatedUserData) => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
-      } else {
-        baseUrl = "https://test.ogfieldticket.com";
-      }
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogfieldticket.com`
+        : "https://test.ogfieldticket.com";
       const response = await axios.patch(
         `${baseUrl}/api/userdetails.php?id=${updatedUserData.UserID}`,
         updatedUserData
       );
-
       if (response.data.success) {
-        const updatedUsers = users.map((user) =>
-          user.UserID === updatedUserData.UserID ? updatedUserData : user
+        setUsers(
+          users.map((user) =>
+            user.UserID === updatedUserData.UserID ? updatedUserData : user
+          )
         );
-        setUsers(updatedUsers);
         setEditingUser(null);
       } else {
         console.error("Error updating user details:", response.data.message);
@@ -221,104 +86,311 @@ const ControlUsers = () => {
     }
   };
 
-  const handleCancel = () => {
-    setEditingUser(null);
-  };
-
-  const handleSearch = (e) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const filteredUsers = users.filter((user) =>
-    user.FullName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const userListAnimation = useSpring({
-    from: { opacity: 0 },
-    to: { opacity: 1 },
-    config: { duration: 500 },
-  });
+  const filteredAndSortedUsers = users
+    .filter(
+      (user) =>
+        (filterRole === "All" || user.Role === filterRole) &&
+        (user.FullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.Email.toLowerCase().includes(searchTerm.toLowerCase()))
+    )
+    .sort((a, b) => {
+      const factor = sortOrder === "asc" ? 1 : -1;
+      if (sortBy === "name")
+        return factor * a.FullName.localeCompare(b.FullName);
+      if (sortBy === "role") return factor * a.Role.localeCompare(b.Role);
+      return 0;
+    });
 
   return (
     <div
-      className={`container mx-auto mt-10 p-6 rounded-lg shadow-xl transition-colors duration-300 ${
+      className={`min-h-screen ${
         theme === "dark"
-          ? "bg-gray-900 text-white"
+          ? "bg-gray-900 text-gray-100"
           : "bg-gray-100 text-gray-900"
       }`}
     >
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-3xl font-bold">User Management</h2>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search by name..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className={`px-4 py-2 rounded-full border focus:outline-none focus:ring-2 transition-shadow ${
-              theme === "dark"
-                ? "bg-gray-800 border-gray-700 text-white focus:ring-blue-500"
-                : "bg-white border-gray-300 text-gray-900 focus:ring-blue-500"
-            }`}
-          />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold mb-8 text-center">User Management</h1>
+        <div className="mb-8 flex flex-col md:flex-row items-center gap-4">
+          <div className="relative flex-grow w-full md:w-auto">
+            <input
+              type="text"
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={handleSearch}
+              className={`w-full px-4 py-2 pl-10 rounded-full border ${
+                theme === "dark"
+                  ? "border-gray-700 bg-gray-800 text-gray-300"
+                  : "border-gray-300"
+              }`}
+            />
             <FontAwesomeIcon
               icon={faSearch}
-              className={theme === "dark" ? "text-gray-400" : "text-gray-700"}
+              className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                theme === "dark" ? "text-gray-400" : "text-gray-600"
+              }`}
+            />
+          </div>
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <FontAwesomeIcon
+              icon={faFilter}
+              className={theme === "dark" ? "text-gray-300" : "text-gray-600"}
+            />
+            <select
+              value={filterRole}
+              onChange={handleFilterChange}
+              className={`px-4 py-2 rounded-lg border ${
+                theme === "dark"
+                  ? "border-gray-700 bg-gray-800 text-gray-300"
+                  : "border-gray-300"
+              }`}
+            >
+              <option value="All">All Roles</option>
+              <option value="P">Pumper</option>
+              <option value="O">Owner</option>
+              <option value="A">Admin</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <FontAwesomeIcon
+              icon={faSort}
+              className={theme === "dark" ? "text-gray-300" : "text-gray-600"}
+            />
+            <select
+              value={sortBy}
+              onChange={handleSortChange}
+              className={`px-4 py-2 rounded-lg border ${
+                theme === "dark"
+                  ? "border-gray-700 bg-gray-800 text-gray-300"
+                  : "border-gray-300"
+              }`}
+            >
+              <option value="name">Sort by Name</option>
+              <option value="role">Sort by Role</option>
+            </select>
+            <button
+              onClick={toggleSortOrder}
+              className={`px-2 py-1 ${
+                theme === "dark"
+                  ? "bg-gray-700 text-gray-300"
+                  : "bg-gray-200 text-gray-900"
+              } rounded-md`}
+            >
+              {sortOrder === "asc" ? "↑" : "↓"}
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredAndSortedUsers.map((user) => (
+            <div
+              key={user.UserID}
+              className={`p-6 rounded-lg shadow-lg hover:shadow-xl transition ${
+                theme === "dark" ? "bg-gray-800" : "bg-white"
+              }`}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3
+                  className={`text-3xl font-semibold ${
+                    theme === "dark" ? "text-gray-200" : "text-gray-900"
+                  }`}
+                >
+                  {user.FullName}
+                </h3>
+                <button
+                  onClick={() => handleEdit(user)}
+                  className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition"
+                  aria-label="Edit user"
+                >
+                  <FontAwesomeIcon icon={faEdit} />
+                </button>
+              </div>
+              <div className="space-y-2">
+                <p className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faUser}
+                    className="mr-2 text-gray-500"
+                  />
+                  <span className="font-medium">Role: </span>&nbsp;{user.Role}
+                </p>
+                <p className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faEnvelope}
+                    className="mr-2 text-gray-500"
+                  />
+                  <span className="font-medium">Email: </span>&nbsp;{user.Email}
+                </p>
+                <p className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faPhone}
+                    className="mr-2 text-gray-500"
+                  />
+                  <span className="font-medium">Phone: </span>&nbsp;{user.Phone}
+                </p>
+                <p className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faCommentAlt}
+                    className="mr-2 text-gray-500"
+                  />
+                  <span className="font-medium">Message: </span>&nbsp;
+                  {user.Message}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {editingUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 px-4">
+          <div
+            className={`rounded-lg shadow-2xl w-full max-w-2xl overflow-hidden ${
+              theme === "dark" ? "bg-gray-900 text-gray-100" : "bg-white"
+            }`}
+          >
+            <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-4 flex justify-between items-center">
+              <h2 className="text-2xl font-semibold">
+                Edit User: {editingUser.FullName}
+              </h2>
+              <button
+                onClick={handleCancel}
+                className="text-white hover:text-gray-200 transition"
+                aria-label="Close"
+              >
+                <FontAwesomeIcon icon={faTimes} size="lg" />
+              </button>
+            </div>
+            <EditUserForm
+              user={editingUser}
+              onSave={handleSave}
+              onCancel={handleCancel}
             />
           </div>
         </div>
-      </div>
-      <animated.div
-        style={userListAnimation}
-        className="rounded-lg shadow-lg overflow-hidden"
-      >
-        {filteredUsers.length > 0 ? (
-          filteredUsers.map((user) => (
-            <div
-              key={user.UserID}
-              className={`p-4 flex justify-between items-center border-b transition-colors ${
-                theme === "dark"
-                  ? "border-gray-800 bg-gray-900 text-gray-400"
-                  : "border-gray-200 bg-white text-gray-900"
-              }`}
-            >
-              {editingUser && editingUser.UserID === user.UserID ? (
-                <EditUserForm
-                  user={user}
-                  onSave={handleSave}
-                  onCancel={handleCancel}
-                  theme={theme}
-                />
-              ) : (
-                <>
-                  <div className="flex-1 px-4">
-                    <p className="text-lg font-semibold">{user.FullName}</p>
-                    <p className="text-sm">
-                      {user.Email} | {user.Role}
-                    </p>
-                    <p className="text-sm">Phone: {user.Phone}</p>
-                    <p className="text-sm">Message: {user.Message}</p>
-                  </div>
-                  <button
-                    onClick={() => handleEdit(user)}
-                    className={`p-2 rounded-full hover:bg-opacity-75 transition ${
-                      theme === "dark"
-                        ? "bg-gray-700 text-white"
-                        : "bg-blue-600 text-white"
-                    }`}
-                  >
-                    <FontAwesomeIcon icon={faEdit} />
-                  </button>
-                </>
-              )}
-            </div>
-          ))
-        ) : (
-          <p className="p-4 text-center">No users found.</p>
-        )}
-      </animated.div>
+      )}
     </div>
+  );
+};
+
+const EditUserForm = ({ user, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({ ...user });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { theme } = useTheme();
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.FullName.trim()) newErrors.FullName = "Full Name is required";
+    if (!formData.Email.trim()) newErrors.Email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(formData.Email))
+      newErrors.Email = "Email is invalid";
+    if (!formData.Phone.trim()) newErrors.Phone = "Phone is required";
+    if (!formData.Role.trim()) newErrors.Role = "Role is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (validateForm()) {
+      setIsSubmitting(true);
+      try {
+        await onSave(formData);
+      } catch (error) {
+        console.error("Error saving user:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  const fields = [
+    { name: "FullName", icon: faUser, placeholder: "Full Name" },
+    {
+      name: "Email",
+      icon: faEnvelope,
+      placeholder: "Email Address",
+      type: "email",
+    },
+    { name: "Phone", icon: faPhone, placeholder: "Phone Number" },
+    { name: "Role", icon: faBriefcase, placeholder: "User Role" },
+    {
+      name: "Message",
+      icon: faCommentAlt,
+      placeholder: "Message",
+      textarea: true,
+    },
+  ];
+
+  return (
+    <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {fields.map((field) => (
+          <div
+            key={field.name}
+            className={`relative ${
+              field.name === "Message" ? "md:col-span-2" : ""
+            }`}
+          >
+            <FontAwesomeIcon
+              icon={field.icon}
+              className="absolute top-3 left-3 text-gray-400"
+            />
+            {field.textarea ? (
+              <textarea
+                name={field.name}
+                value={formData[field.name]}
+                onChange={handleChange}
+                placeholder={field.placeholder}
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+                  errors[field.name] ? "border-red-500" : "border-gray-300"
+                } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
+                rows="4"
+              />
+            ) : (
+              <input
+                type={field.type || "text"}
+                name={field.name}
+                value={formData[field.name]}
+                onChange={handleChange}
+                placeholder={field.placeholder}
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+                  errors[field.name] ? "border-red-500" : "border-gray-300"
+                } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
+              />
+            )}
+            {errors[field.name] && (
+              <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-end space-x-4 mt-6">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition flex items-center"
+        >
+          <FontAwesomeIcon icon={faBan} className="mr-2" />
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition flex items-center ${
+            isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+        >
+          <FontAwesomeIcon icon={faCheck} className="mr-2" />
+          {isSubmitting ? "Saving..." : "Save Changes"}
+        </button>
+      </div>
+    </form>
   );
 };
 
