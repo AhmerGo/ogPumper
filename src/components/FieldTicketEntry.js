@@ -242,7 +242,6 @@ function FieldTicketEntry() {
         UOM: item.UOM || "",
         UseCost: item.UseCost,
         UseQuantity: item.UseQuantity,
-        ItemQuantity: item.ItemQuantity,
       }));
 
       const normalizedTicket = {
