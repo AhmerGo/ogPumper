@@ -229,21 +229,25 @@ function FieldTicketEntry() {
         note: formFields.note,
         ticketDate: formattedDate, // Ensure the date is correctly formatted here
       };
-
       const updatedOfflineItems = updatedItems.map((item, index) => ({
+        Active: "Y",
+        Cost: item.ItemCost,
         ItemCost: item.ItemCost,
-        JobTypeID: ticketData.JobTypeID,
         ItemDescription: item.ItemDescription || "",
-        JobItemID: item.ItemDescription,
-        Note: item.note || null,
-        Quantity: item.quantity || item.ItemQuantity || 0,
+        ItemID: item.ItemID || "",
+        ItemOrder: item.ItemdOrder,
+        JobItemID: item.JobItemID || "",
+        Quantity: item.Quantity || item.quantity || item.ItemQuantity || "0",
         Ticket: formFields.ticketNumber,
         TicketLine: index.toString(),
-        UOM: item.UOM || "",
-        UseCost: item.UseCost,
-        UseQuantity: item.UseQuantity,
+        UOM: item.UOM || null,
+        UseCost: item.UseCost || "Y",
+        UseQuantity: item.UseQuantity || "Y",
+        totalCost: (
+          parseFloat(item.ItemCost) *
+          parseFloat(item.Quantity || item.quantity || item.ItemQuantity || "0")
+        ).toFixed(2),
       }));
-
       const normalizedTicket = {
         Billed: "N",
         LeaseID: ticketData.lease,
