@@ -19,7 +19,7 @@ import {
   faFolderOpen,
   faPlusCircle,
 } from "@fortawesome/free-solid-svg-icons";
-import PrintSection from "./PrintSection"; // Import the PrintSection component
+import PrintSection from "./PrintSection";
 import { parseISO, format } from "date-fns";
 
 const ConfirmationModal = ({
@@ -286,6 +286,16 @@ const ViewFieldTicket = () => {
     [uploadedImages, ticket]
   );
 
+  const handleCostChange = (e, ticketLine) => {
+    const newCost = parseFloat(e.target.value);
+    setTicket((prevTicket) => ({
+      ...prevTicket,
+      Items: prevTicket.Items.map((item) =>
+        item.TicketLine === ticketLine ? { ...item, Cost: newCost } : item
+      ),
+    }));
+  };
+
   const handleChange = useCallback(
     (e, itemId) => {
       const { name, value } = e.target;
@@ -346,7 +356,6 @@ const ViewFieldTicket = () => {
       const updatedTicket = { ...ticket, Note: fieldNote };
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
-
       const baseUrl =
         parts.length > 2
           ? `https://${parts.shift()}.ogfieldticket.com`
@@ -354,6 +363,8 @@ const ViewFieldTicket = () => {
 
       localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
       const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
+
+      // Update patchData to include modified costs for items without JobItemID
       const patchData = {
         ...updatedTicket,
         TicketDate: ticket.TicketDate,
@@ -362,8 +373,17 @@ const ViewFieldTicket = () => {
         Note: fieldNote,
         addedImages: [],
         removedImages: [],
+        Items: ticket.Items.map((item) => {
+          const cost = (item.Cost || item.ItemCost || "0").toString();
+          const quantity = parseFloat(item.Quantity) || 0;
+          return {
+            ...item,
+            Cost: cost,
+            ItemCost: cost, // Set ItemCost to be the same as Cost
+            totalCost: (parseFloat(cost) * quantity).toFixed(2),
+          };
+        }),
       };
-
       const existingImageNames = Array.isArray(retrievedImages)
         ? retrievedImages.map((image) => image.split("/").pop())
         : [];
@@ -411,10 +431,10 @@ const ViewFieldTicket = () => {
       );
 
       if (response.ok) {
-        setIsEditing(false); // Ensure isEditing is set to false
+        setIsEditing(false);
         const updatedStoredTickets = storedTickets.map((t) =>
           t.Ticket === ticket.Ticket
-            ? { ...updatedTicket, ImageDirectory: uploadedImages.join(",") }
+            ? { ...patchData, ImageDirectory: uploadedImages.join(",") }
             : t
         );
         localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
@@ -423,15 +443,19 @@ const ViewFieldTicket = () => {
           TicketDate: patchData.TicketDate,
           LeaseName: patchData.LeaseName,
           WellID: patchData.WellID,
-        })); // Update the state immediately
+          Note: fieldNote,
+          Items: patchData.Items,
+        }));
 
-        // Update formattedDate
         setFormattedDate(format(parseISO(ticket.TicketDate), "MMMM dd, yyyy"));
+        console.log("Ticket updated successfully");
       } else {
         console.error("Error updating ticket:", response.statusText);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
       console.error("Error updating ticket:", error);
+      // You might want to show an error message to the user here
     }
   };
   const handleDeleteClick = () => {
@@ -712,196 +736,177 @@ const ViewFieldTicket = () => {
                 theme === "dark" ? "text-gray-200" : "text-gray-800"
               } mb-10 text-center`}
             >
-              Field Ticket Entry Summary
+              Field Ticket
             </h2>
             <div className="px-4 mb-8">
               {/* Desktop layout */}
-              <div className="hidden sm:block">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-lg mb-8 items-center">
-                  <div className="flex flex-col justify-center items-center">
-                    <animated.p
-                      style={itemAnimation}
-                      className={`text-center font-bold ${
-                        theme === "dark" ? "text-blue-300" : "text-blue-700"
-                      }`}
+              <div className="hidden sm:grid grid-cols-3 gap-8 mb-8 items-center text-center">
+                <div>
+                  <p
+                    className={`text-lg font-bold ${
+                      theme === "dark" ? "text-blue-300" : "text-blue-700"
+                    }`}
+                  >
+                    Ticket Number:{" "}
+                    <span
+                      className={
+                        theme === "dark"
+                          ? "font-semibold text-gray-300"
+                          : "font-semibold text-gray-700"
+                      }
                     >
-                      Date:{" "}
-                      {isEditing ? (
-                        <input
-                          type="date"
-                          name="TicketDate"
-                          value={ticket.TicketDate}
-                          onChange={handleChange}
-                          className={`form-input w-40 px-4 py-2 rounded-md border text-base ${
-                            theme === "dark"
-                              ? "border-gray-600 bg-gray-800 text-gray-300"
-                              : "border-gray-400 bg-white text-gray-700"
-                          } focus:ring-indigo-400 focus:border-indigo-400 transition`}
-                          style={{
-                            colorScheme: theme === "dark" ? "dark" : "light",
-                          }}
-                        />
-                      ) : (
-                        <span
-                          className={`block text-center ${
-                            theme === "dark" ? "text-gray-300" : "text-gray-700"
-                          }`}
-                        >
-                          {formattedDate}
-                        </span>
-                      )}
-                    </animated.p>
-                  </div>
-                  <div className="flex flex-col justify-center items-center">
-                    {userRole !== "P" ? (
-                      <animated.p
-                        style={itemAnimation}
-                        className={`text-center font-bold ${
-                          theme === "dark" ? "text-blue-300" : "text-blue-700"
-                        }`}
-                      >
-                        Lease/User:{" "}
-                        <span
-                          className={
-                            theme === "dark"
-                              ? "font-semibold text-gray-300"
-                              : "font-semibold text-gray-700"
-                          }
-                        >
-                          {ticket.LeaseName || "N/A"} / {ticket.UserID || "N/A"}
-                        </span>
-                      </animated.p>
-                    ) : (
-                      <animated.p
-                        style={itemAnimation}
-                        className={`text-center font-bold ${
-                          theme === "dark" ? "text-blue-300" : "text-blue-700"
-                        }`}
-                      >
-                        Lease:{" "}
-                        <span
-                          className={
-                            theme === "dark"
-                              ? "font-semibold text-gray-300"
-                              : "font-semibold text-gray-700"
-                          }
-                        >
-                          {ticket.LeaseName || "N/A"}
-                        </span>
-                      </animated.p>
-                    )}
-                  </div>
-                  <div className="flex flex-col justify-center items-center">
-                    <animated.p
-                      style={itemAnimation}
-                      className={`text-center font-bold ${
-                        theme === "dark" ? "text-blue-300" : "text-blue-700"
-                      }`}
-                    >
-                      Well:{" "}
-                      <span
-                        className={
-                          theme === "dark"
-                            ? "font-semibold text-gray-300"
-                            : "font-semibold text-gray-700"
-                        }
-                      >
-                        {ticket.WellID || "N/A"}
-                      </span>
-                    </animated.p>
-                  </div>
-                  <div className="flex flex-col justify-center items-center">
-                    <animated.p
-                      style={itemAnimation}
-                      className={`text-center font-bold ${
-                        theme === "dark" ? "text-blue-300" : "text-blue-700"
-                      }`}
-                    >
-                      Ticket Type:{" "}
-                      <span
-                        className={
-                          theme === "dark"
-                            ? "font-semibold text-gray-300"
-                            : "font-semibold text-gray-700"
-                        }
-                      >
-                        {ticket.JobDescription || "N/A"}
-                      </span>
-                    </animated.p>
-                  </div>
-                  <div className="flex flex-col justify-center items-center">
-                    <animated.p
-                      style={itemAnimation}
-                      className={`text-center font-bold ${
-                        theme === "dark" ? "text-blue-300" : "text-blue-700"
-                      }`}
-                    >
-                      Ticket Number:{" "}
-                      <span
-                        className={
-                          theme === "dark"
-                            ? "font-semibold text-gray-300"
-                            : "font-semibold text-gray-700"
-                        }
-                      >
-                        {ticket.Ticket || "N/A"}
-                      </span>
-                    </animated.p>
-                  </div>
-                  <div className="flex flex-col justify-center items-center">
-                    {userRole !== "P" && (
-                      <animated.p
-                        style={itemAnimation}
-                        className={`text-center font-bold ${
-                          theme === "dark" ? "text-blue-300" : "text-blue-700"
-                        }`}
-                      >
-                        Billed:{" "}
-                        <span
-                          className={
-                            theme === "dark"
-                              ? "font-semibold text-gray-300"
-                              : "font-semibold text-gray-700"
-                          }
-                        >
-                          {ticket.Billed || "N/A"}
-                        </span>
-                      </animated.p>
-                    )}
-                  </div>
-                  <div className="flex flex-col justify-center items-center col-span-1 md:col-span-3">
-                    {userRole !== "P" && (
-                      <animated.p
-                        style={itemAnimation}
-                        className={`text-center font-bold ${
-                          theme === "dark" ? "text-blue-300" : "text-blue-700"
-                        }`}
-                      >
-                        Net Cost:{" "}
-                        <span
-                          className={
-                            theme === "dark"
-                              ? "font-semibold text-gray-300"
-                              : "font-semibold text-gray-700"
-                          }
-                        >
-                          {ticket.Items && Array.isArray(ticket.Items)
-                            ? `$${ticket.Items.reduce(
-                                (sum, item) =>
-                                  sum + (Number(item.totalCost) || 0),
-                                0
-                              ).toFixed(2)}`
-                            : "$0.00"}
-                        </span>
-                      </animated.p>
-                    )}
-                  </div>
+                      {ticket.Ticket || "N/A"}
+                    </span>
+                  </p>
                 </div>
-              </div>
 
+                <div>
+                  <p
+                    className={`text-lg font-bold ${
+                      theme === "dark" ? "text-blue-300" : "text-blue-700"
+                    }`}
+                  >
+                    Date:{" "}
+                    {isEditing ? (
+                      <input
+                        type="date"
+                        name="TicketDate"
+                        value={ticket.TicketDate}
+                        onChange={handleChange}
+                        className={`form-input px-2 py-1 rounded-md border text-base inline-block ${
+                          theme === "dark"
+                            ? "border-gray-600 bg-gray-800 text-gray-300"
+                            : "border-gray-400 bg-white text-gray-700"
+                        } focus:ring-indigo-400 focus:border-indigo-400 transition`}
+                        style={{
+                          colorScheme: theme === "dark" ? "dark" : "light",
+                        }}
+                      />
+                    ) : (
+                      <span
+                        className={
+                          theme === "dark"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
+                        }
+                      >
+                        {formattedDate}
+                      </span>
+                    )}
+                  </p>
+                </div>
+
+                <div>
+                  <p
+                    className={`text-lg font-bold ${
+                      theme === "dark" ? "text-blue-300" : "text-blue-700"
+                    }`}
+                  >
+                    {userRole !== "P" ? "Lease/User:" : "Lease/Well:"}{" "}
+                    <span
+                      className={
+                        theme === "dark"
+                          ? "font-semibold text-gray-300"
+                          : "font-semibold text-gray-700"
+                      }
+                    >
+                      {ticket.LeaseName || "N/A"}
+                      {userRole !== "P" && ticket.UserID
+                        ? ` / ${ticket.UserID}`
+                        : ""}
+                      {ticket.WellID && !ticket.LeaseName?.includes("#")
+                        ? ` # ${ticket.WellID}`
+                        : ""}
+                    </span>
+                  </p>
+                </div>
+
+                <div>
+                  <p
+                    className={`text-lg font-bold ${
+                      theme === "dark" ? "text-blue-300" : "text-blue-700"
+                    }`}
+                  >
+                    Ticket Type:{" "}
+                    <span
+                      className={
+                        theme === "dark"
+                          ? "font-semibold text-gray-300"
+                          : "font-semibold text-gray-700"
+                      }
+                    >
+                      {ticket.JobDescription || "N/A"}
+                    </span>
+                  </p>
+                </div>
+
+                {userRole !== "P" && (
+                  <div>
+                    <p
+                      className={`text-lg font-bold ${
+                        theme === "dark" ? "text-blue-300" : "text-blue-700"
+                      }`}
+                    >
+                      Billed:{" "}
+                      <span
+                        className={
+                          theme === "dark"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
+                        }
+                      >
+                        {ticket.Billed || "N/A"}
+                      </span>
+                    </p>
+                  </div>
+                )}
+
+                {userRole !== "P" && (
+                  <div>
+                    <p
+                      className={`text-lg font-bold ${
+                        theme === "dark" ? "text-blue-300" : "text-blue-700"
+                      }`}
+                    >
+                      Net Cost:{" "}
+                      <span
+                        className={
+                          theme === "dark"
+                            ? "font-semibold text-gray-300"
+                            : "font-semibold text-gray-700"
+                        }
+                      >
+                        {ticket.Items && Array.isArray(ticket.Items)
+                          ? `$${ticket.Items.reduce(
+                              (sum, item) =>
+                                sum + (Number(item.totalCost) || 0),
+                              0
+                            ).toFixed(2)}`
+                          : "$0.00"}
+                      </span>
+                    </p>
+                  </div>
+                )}
+              </div>
               {/* Mobile layout */}
               <div className="sm:hidden">
                 <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col items-center">
+                    <p
+                      className={`font-bold ${
+                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                      } text-center`}
+                    >
+                      Ticket Number
+                    </p>
+                    <span
+                      className={`block text-center ${
+                        theme === "dark" ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      {ticket.Ticket || "N/A"}
+                    </span>
+                  </div>
                   <div className="flex flex-col items-center">
                     <p
                       className={`font-bold ${
@@ -935,7 +940,6 @@ const ViewFieldTicket = () => {
                       </span>
                     )}
                   </div>
-
                   <div className="flex flex-col items-center">
                     <p
                       className={`font-bold ${
@@ -944,7 +948,6 @@ const ViewFieldTicket = () => {
                     >
                       Lease
                     </p>
-
                     <span
                       className={`block text-center ${
                         theme === "dark" ? "text-gray-300" : "text-gray-700"
@@ -961,7 +964,6 @@ const ViewFieldTicket = () => {
                     >
                       Well
                     </p>
-
                     <span
                       className={`block text-center ${
                         theme === "dark" ? "text-gray-300" : "text-gray-700"
@@ -986,22 +988,6 @@ const ViewFieldTicket = () => {
                       {ticket.JobDescription || "N/A"}
                     </span>
                   </div>
-                  <div className="flex flex-col items-center">
-                    <p
-                      className={`font-bold ${
-                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      } text-center`}
-                    >
-                      Ticket Number
-                    </p>
-                    <span
-                      className={`block text-center ${
-                        theme === "dark" ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      {ticket.Ticket || "N/A"}
-                    </span>
-                  </div>
                   {userRole !== "P" && (
                     <div className="flex flex-col items-center">
                       <p
@@ -1019,6 +1005,32 @@ const ViewFieldTicket = () => {
                         }`}
                       >
                         {ticket.Billed || "N/A"}
+                      </span>
+                    </div>
+                  )}
+                  {userRole !== "P" && (
+                    <div className="flex flex-col items-center col-span-2">
+                      <p
+                        className={`font-bold ${
+                          theme === "dark"
+                            ? "text-indigo-400"
+                            : "text-indigo-600"
+                        } text-center`}
+                      >
+                        Net Cost
+                      </p>
+                      <span
+                        className={`block text-center ${
+                          theme === "dark" ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        {ticket.Items && Array.isArray(ticket.Items)
+                          ? `$${ticket.Items.reduce(
+                              (sum, item) =>
+                                sum + (Number(item.totalCost) || 0),
+                              0
+                            ).toFixed(2)}`
+                          : "$0.00"}
                       </span>
                     </div>
                   )}
@@ -1057,14 +1069,45 @@ const ViewFieldTicket = () => {
                   <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-12">
                     {userRole !== "P" && item.UseCost !== "N" && (
                       <div className="flex-1 text-center md:text-center">
-                        <p
-                          className={`text-base ${
-                            theme === "dark" ? "text-gray-400" : "text-gray-600"
-                          }`}
-                        >
-                          <span className="font-medium">Cost:</span> $
-                          {item.totalCost}
-                        </p>
+                        {isEditing && !item.JobItemID ? (
+                          <div className="flex items-center justify-center md:justify-end">
+                            <label
+                              className={`mr-2 ${
+                                theme === "dark"
+                                  ? "text-gray-400"
+                                  : "text-gray-600"
+                              } font-medium text-lg`}
+                            >
+                              Cost:
+                            </label>
+                            <input
+                              type="number"
+                              name="Cost"
+                              value={item.Cost}
+                              onChange={(e) =>
+                                handleCostChange(e, item.TicketLine)
+                              }
+                              onClick={(e) => e.target.select()}
+                              className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
+                                theme === "dark"
+                                  ? "border-gray-600 bg-gray-800 text-gray-300"
+                                  : "border-gray-400 bg-white text-gray-700"
+                              } focus:ring-indigo-400 focus:border-indigo-400 transition`}
+                              placeholder="0.00"
+                            />
+                          </div>
+                        ) : (
+                          <p
+                            className={`text-base ${
+                              theme === "dark"
+                                ? "text-gray-400"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            <span className="font-medium">Cost:</span> $
+                            {item.totalCost}
+                          </p>
+                        )}
                       </div>
                     )}
                     <div className="w-full md:w-auto text-center md:text-right">
@@ -1079,7 +1122,7 @@ const ViewFieldTicket = () => {
                           >
                             Qty:
                           </label>
-                          {item.UseQuantity === "Y" && item.Quantity !== 0 ? (
+                          {item.UseQuantity === "Y" ? (
                             <input
                               type="number"
                               name="Quantity"
@@ -1248,7 +1291,8 @@ const ViewFieldTicket = () => {
                         </div>
                       );
                     })}
-                  {isEditing && (
+
+                  {isEditing && navigator.onLine && (
                     <div
                       onClick={() => triggerFileInput(false)}
                       className={`relative w-48 h-64 p-6 rounded-lg border-2 cursor-pointer transition-colors duration-500 z-10 ${

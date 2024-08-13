@@ -11,20 +11,24 @@ import {
   faCamera,
   faFolderOpen,
   faPlusCircle,
+  faChevronDown,
+  faChevronUp,
 } from "@fortawesome/free-solid-svg-icons";
 
 function FieldTicketEntry() {
   const { state } = useLocation();
   const { ticketType } = state;
   const { theme } = useTheme();
-  const { userRole, userID } = useUser();
+  const { userID } = useUser();
   const [subdomain, setSubdomain] = useState("");
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isScrolled, setIsScrolled] = useState(false);
   const fileInputRef = useRef(null);
+  const scrollButtonRef = useRef(null);
   const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 
   const navigate = useNavigate();
@@ -40,6 +44,8 @@ function FieldTicketEntry() {
   });
 
   const [items, setItems] = useState([]);
+  const [itemTypes, setItemTypes] = useState([]);
+  const [selectedItem, setSelectedItem] = useState("");
   const [ticketTypes, setTicketTypes] = useState([]);
 
   useEffect(() => {
@@ -56,7 +62,6 @@ function FieldTicketEntry() {
 
     extractSubdomain();
     window.scrollTo(0, 0);
-    console.log(formattedDate);
   }, []);
 
   useEffect(() => {
@@ -71,37 +76,55 @@ function FieldTicketEntry() {
     };
   }, []);
 
-  const handleImageChange = (event) => {
-    const files = Array.from(event.target.files);
-    const imageUrls = files.map((file) => URL.createObjectURL(file));
-    setUploadedImages((prevImages) => [...prevImages, ...imageUrls]);
-    onImageChange(event);
-  };
-
   useEffect(() => {
-    const fetchTicketTypes = async () => {
+    const fetchItems = async () => {
       try {
         const hostname = window.location.hostname;
         const parts = hostname.split(".");
         let baseUrl;
 
         if (parts.length > 2) {
-          const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+          baseUrl = `https://${parts[0]}.ogfieldticket.com`;
         } else {
           baseUrl = "https://test.ogfieldticket.com";
         }
+
         const response = await fetch(`${baseUrl}/api/jobs.php`);
         const data = await response.json();
-        setTicketTypes(data);
-        setItems(
-          data.find((type) => type.Description === ticketType)?.Items || []
+
+        const selectedType = data.find(
+          (type) => type.Description === ticketType
         );
+        setItems(selectedType?.Items || []);
       } catch (error) {
-        console.error("Error fetching ticket types:", error);
+        console.error("Error fetching job items:", error);
       }
     };
-    fetchTicketTypes();
+
+    const fetchItemTypes = async () => {
+      try {
+        const hostname = window.location.hostname;
+        const parts = hostname.split(".");
+        let baseUrl;
+
+        if (parts.length > 2) {
+          baseUrl = `https://${parts[0]}.ogfieldticket.com`;
+        } else {
+          baseUrl = "https://test.ogfieldticket.com";
+        }
+
+        const response = await fetch(`${baseUrl}/api/jobitem.php?item_types=1`);
+        const data = await response.json();
+        setItemTypes(
+          (data.itemTypes || []).filter((item) => !item.ItemID.includes("_"))
+        );
+      } catch (error) {
+        console.error("Error fetching item types:", error);
+      }
+    };
+
+    fetchItems();
+    fetchItemTypes();
   }, [ticketType, subdomain]);
 
   const handleChange = (e, itemId) => {
@@ -113,16 +136,34 @@ function FieldTicketEntry() {
       }));
     } else if (name === "quantity") {
       const quantity = parseFloat(value);
-      if (quantity > 0) {
-        setItems((prevItems) =>
-          prevItems.map((item) =>
-            item.JobItemID === itemId ? { ...item, [name]: quantity } : item
-          )
-        );
-      } else {
-        console.warn("Quantity must be a positive number");
-      }
+      setItems((prevItems) =>
+        prevItems.map((item) =>
+          item.ItemID === itemId ? { ...item, quantity } : item
+        )
+      );
     }
+  };
+
+  const addItem = (itemID) => {
+    const itemToAdd = itemTypes.find((item) => item.ItemID === itemID);
+    if (itemToAdd) {
+      setItems((prevItems) => [
+        ...prevItems,
+        {
+          ...itemToAdd,
+          quantity: 0,
+          ItemID: `${itemToAdd.ItemID}-${Date.now()}`,
+        },
+      ]);
+    }
+    setSelectedItem("");
+  };
+
+  const handleImageChange = (event) => {
+    const files = Array.from(event.target.files);
+    const imageUrls = files.map((file) => URL.createObjectURL(file));
+    setUploadedImages((prevImages) => [...prevImages, ...imageUrls]);
+    onImageChange(event);
   };
 
   const onImageChange = (event) => {
@@ -136,7 +177,7 @@ function FieldTicketEntry() {
     );
 
     if (validFiles.length !== files.length) {
-      alert("Some files are too large. Maximum file size is 2MB.");
+      alert("Some files are too large. Maximum file size is 6MB.");
     }
 
     if (validFiles.length > 0) {
@@ -193,7 +234,6 @@ function FieldTicketEntry() {
     to: { opacity: 1, y: 0 },
     config: { mass: 1, tension: 280, friction: 25 },
   });
-
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -205,9 +245,19 @@ function FieldTicketEntry() {
 
       const jobTypeID = selectedTicketType ? selectedTicketType.JobTypeID : "";
 
-      const updatedItems = items.map((item) => ({
-        ...item,
-        quantity: item.quantity || item.ItemQuantity || 0,
+      const updatedItems = items.map((item, index) => ({
+        Active: item.Active || "Y",
+        ItemCost: item.ItemCost || "0.00",
+        ItemDescription: item.ItemDescription || "",
+        ItemID: item.ItemID || "",
+        ItemOrder: item.ItemOrder || index.toString(),
+        ItemQuantity: item.ItemQuantity || null,
+        JobItemID: item.JobItemID || "",
+        JobTypeID: formFields.jobTypeID || jobTypeID,
+        UOM: item.UOM || "",
+        UseCost: item.UseCost || "Y",
+        UseQuantity: item.UseQuantity || "Y",
+        quantity: item.quantity || 0,
       }));
 
       const formattedDate = (() => {
@@ -221,45 +271,49 @@ function FieldTicketEntry() {
         : "https://test.ogfieldticket.com";
 
       const ticketData = {
-        ...formFields,
-        lease: formFields.leaseID,
-        JobTypeID: jobTypeID,
+        leaseID: formFields.leaseID,
+        ticketDate: formattedDate,
+        lease: formFields.lease,
+        well: formFields.well,
+        ticketType: formFields.ticketType,
+        ticketNumber: formFields.ticketNumber, // Include ticketNumber
         userID: userID,
-        items: updatedItems,
         note: formFields.note,
-        ticketDate: formattedDate, // Ensure the date is correctly formatted here
+        JobTypeID: "1",
+        items: updatedItems,
       };
+
       const updatedOfflineItems = updatedItems.map((item, index) => ({
         Active: "Y",
-        Cost: item.ItemCost,
         ItemCost: item.ItemCost,
-        ItemDescription: item.ItemDescription || "",
-        ItemID: item.ItemID || "",
-        ItemOrder: item.ItemdOrder,
-        JobItemID: item.JobItemID || "",
-        Quantity: item.Quantity || item.quantity || item.ItemQuantity || "0",
+        ItemDescription: item.ItemDescription,
+        ItemID: item.ItemID,
+        ItemOrder: item.ItemOrder,
+        JobItemID: item.JobItemID,
+        JobTypeID: item.JobTypeID,
+        UOM: item.UOM,
+        UseCost: item.UseCost,
+        UseQuantity: item.UseQuantity,
+        Quantity: item.quantity,
         Ticket: formFields.ticketNumber,
         TicketLine: index.toString(),
-        UOM: item.UOM || null,
-        UseCost: item.UseCost || "Y",
-        UseQuantity: item.UseQuantity || "Y",
         totalCost: (
-          parseFloat(item.ItemCost) *
-          parseFloat(item.Quantity || item.quantity || item.ItemQuantity || "0")
+          parseFloat(item.ItemCost) * parseFloat(item.quantity || 0)
         ).toFixed(2),
       }));
+
       const normalizedTicket = {
         Billed: "N",
-        LeaseID: ticketData.lease,
-        TicketDate: formattedDate, // Ensure the date is correctly formatted here
+        LeaseID: formFields.leaseID,
+        TicketDate: formattedDate,
         LeaseName: formFields.lease,
-        WellID: ticketData.well || null,
-        Comments: ticketData.note || "",
-        JobDescription: ticketData.ticketType,
-        JobTypeID: ticketData.JobTypeID,
+        WellID: formFields.well || null,
+        Comments: formFields.note || "",
+        JobDescription: formFields.ticketType,
+        JobTypeID: formFields.jobTypeID || jobTypeID,
         Items: updatedOfflineItems,
-        Note: ticketData.note || "",
-        UserID: ticketData.userID,
+        Note: formFields.note || "",
+        UserID: userID,
         Ticket: formFields.ticketNumber,
       };
 
@@ -356,11 +410,18 @@ function FieldTicketEntry() {
   const formattedDate = (() => {
     const date = new Date(formFields.ticketDate);
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return date.toISOString().split("T")[0]; // Ensure the date is in "YYYY-MM-DD" format
   })();
+
+  const scrollToBottom = () => {
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    setIsScrolled(true);
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setIsScrolled(false);
+  };
 
   return (
     <animated.main
@@ -443,8 +504,8 @@ function FieldTicketEntry() {
               <div className="hidden sm:grid grid-cols-3 gap-8 mb-8 items-center text-center">
                 <div>
                   <p
-                    className={`text-lg ${
-                      theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                    className={`text-lg font-bold ${
+                      theme === "dark" ? "text-blue-300" : "text-blue-700"
                     }`}
                   >
                     Ticket Number:{" "}
@@ -462,8 +523,8 @@ function FieldTicketEntry() {
 
                 <div>
                   <p
-                    className={`text-lg ${
-                      theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                    className={`text-lg font-bold ${
+                      theme === "dark" ? "text-blue-300" : "text-blue-700"
                     }`}
                   >
                     Date:{" "}
@@ -480,11 +541,11 @@ function FieldTicketEntry() {
                 </div>
                 <div>
                   <p
-                    className={`text-lg ${
-                      theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                    className={`text-lg font-bold ${
+                      theme === "dark" ? "text-blue-300" : "text-blue-700"
                     }`}
                   >
-                    Lease:{" "}
+                    Lease/Well:{" "}
                     <span
                       className={
                         theme === "dark"
@@ -492,32 +553,18 @@ function FieldTicketEntry() {
                           : "font-semibold text-gray-700"
                       }
                     >
-                      {formFields.lease || "N/A"}
+                      {formFields.lease || "N/A"}{" "}
+                      {formFields.well && !formFields.lease.includes("#")
+                        ? `# ${formFields.well}`
+                        : ""}
                     </span>
                   </p>
                 </div>
+
                 <div>
                   <p
-                    className={`text-lg ${
-                      theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                    }`}
-                  >
-                    Well:{" "}
-                    <span
-                      className={
-                        theme === "dark"
-                          ? "font-semibold text-gray-300"
-                          : "font-semibold text-gray-700"
-                      }
-                    >
-                      {formFields.well || "N/A"}
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <p
-                    className={`text-lg ${
-                      theme === "dark" ? "text-indigo-400" : "text-indigo-600"
+                    className={`text-lg font-bold ${
+                      theme === "dark" ? "text-blue-300" : "text-blue-700"
                     }`}
                   >
                     Ticket Type:{" "}
@@ -533,6 +580,7 @@ function FieldTicketEntry() {
                   </p>
                 </div>
               </div>
+
               {/* Mobile layout */}
               <div className="sm:hidden">
                 <div className="grid grid-cols-2 gap-4 mb-8">
@@ -570,7 +618,6 @@ function FieldTicketEntry() {
                       {formattedDate}
                     </span>
                   </div>
-                  {/* Lease Section */}
 
                   <div className="flex flex-col items-center">
                     <p
@@ -578,7 +625,7 @@ function FieldTicketEntry() {
                         theme === "dark" ? "text-indigo-400" : "text-indigo-600"
                       } text-center`}
                     >
-                      Lease
+                      Lease/Well:
                     </p>
                     <span
                       className={`block text-center ${
@@ -586,26 +633,12 @@ function FieldTicketEntry() {
                       }`}
                     >
                       {formFields.lease || "N/A"}
+                      {formFields.well && !formFields.lease.includes("#") ? (
+                        <span> # {formFields.well}</span>
+                      ) : null}
                     </span>
                   </div>
 
-                  {/* Well Section */}
-                  <div className="flex flex-col items-center">
-                    <p
-                      className={`font-bold ${
-                        theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      } text-center`}
-                    >
-                      Well
-                    </p>
-                    <span
-                      className={`block text-center ${
-                        theme === "dark" ? "text-gray-300" : "text-gray-700"
-                      }`}
-                    >
-                      {formFields.well || "N/A"}
-                    </span>
-                  </div>
                   {/* Ticket Type Section */}
                   <div className="flex flex-col items-center">
                     <p
@@ -625,6 +658,40 @@ function FieldTicketEntry() {
                   </div>
                 </div>
               </div>
+
+              {/* Add Item Section */}
+              <div className="mb-8">
+                <label className="block font-medium transition-colors duration-500 mb-2">
+                  Add Item:
+                </label>
+                <select
+                  value={selectedItem}
+                  onChange={(e) => setSelectedItem(e.target.value)}
+                  className={`form-select w-full px-4 py-2 rounded-md transition-colors duration-500 ${
+                    theme === "dark"
+                      ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
+                      : "border border-gray-300 focus:ring-gray-500"
+                  }`}
+                >
+                  <option value="" disabled>
+                    Select an item...
+                  </option>
+                  {itemTypes.map((item, index) => (
+                    <option key={index} value={item.ItemID}>
+                      {`${item.ItemID} / ${item.ItemDescription} ${
+                        item.UOM ? `/ ${item.UOM}` : ""
+                      }`}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => addItem(selectedItem)}
+                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-300"
+                >
+                  Add Item
+                </button>
+              </div>
+
               {items.map((item, index) => (
                 <div
                   key={index}
@@ -663,7 +730,7 @@ function FieldTicketEntry() {
                         type="number"
                         name="quantity"
                         value={item.quantity || 0}
-                        onChange={(e) => handleChange(e, item.JobItemID)}
+                        onChange={(e) => handleChange(e, item.ItemID)}
                         onClick={(e) => e.target.select()}
                         className={`form-input w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
                           theme === "dark"
@@ -676,6 +743,7 @@ function FieldTicketEntry() {
                   </div>
                 </div>
               ))}
+
               <div className="mb-8 md:mb-16">
                 <label className="block font-medium transition-colors duration-500 mb-2">
                   Note:
@@ -811,7 +879,6 @@ function FieldTicketEntry() {
                         accept="image/*"
                         multiple
                         onChange={(e) => {
-                          console.log("Files selected: ", e.target.files);
                           handleImageChange(e);
                         }}
                         ref={fileInputRef}
@@ -887,6 +954,13 @@ function FieldTicketEntry() {
               </div>
             </div>
           </div>
+          <button
+            ref={scrollButtonRef}
+            className="fixed bottom-5 right-5 bg-blue-500 bg-opacity-75 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-all duration-300 transform focus:outline-none z-50 hover:bg-blue-700 hover:bg-opacity-100 hover:scale-110 animate-pulse md:hidden"
+            onClick={isScrolled ? scrollToTop : scrollToBottom}
+          >
+            <FontAwesomeIcon icon={isScrolled ? faChevronUp : faChevronDown} />
+          </button>
         </>
       )}
     </animated.main>
