@@ -246,7 +246,7 @@ function SignInPage() {
           setShowPrompt(true);
           setToken(token);
         } else {
-          setError("Google Sign-In failed.");
+          setError(data.message);
         }
       })
       .catch((error) => {

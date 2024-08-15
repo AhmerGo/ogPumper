@@ -14,6 +14,8 @@ import {
   faBan,
   faSort,
   faFilter,
+  faLock,
+  faLockOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "./ThemeContext";
 
@@ -37,22 +39,20 @@ const ControlUsers = () => {
   }, []);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const baseUrl = subdomain
-          ? `https://${subdomain}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
-        const response = await axios.get(`${baseUrl}/api/userdetails.php`);
-        const filteredUsers = response.data.users.filter((user) =>
-          ["P", "O", "A"].includes(user.Role)
-        );
-        setUsers(filteredUsers || []);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      }
-    };
     fetchUsers();
   }, [subdomain]);
+
+  const fetchUsers = async () => {
+    try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogfieldticket.com`
+        : "https://lcs.ogfieldticket.com";
+      const response = await axios.get(`${baseUrl}/api/userdetails.php`);
+      setUsers(response.data.users || []);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
 
   const handleEdit = (user) => setEditingUser(user);
   const handleCancel = () => setEditingUser(null);
@@ -66,9 +66,9 @@ const ControlUsers = () => {
     try {
       const baseUrl = subdomain
         ? `https://${subdomain}.ogfieldticket.com`
-        : "https://test.ogfieldticket.com";
+        : "https://lcs.ogfieldticket.com";
       const response = await axios.patch(
-        `${baseUrl}/api/userdetails.php?id=${updatedUserData.UserID}`,
+        `${baseUrl}/api/userdetails.php`,
         updatedUserData
       );
       if (response.data.success) {
@@ -83,6 +83,66 @@ const ControlUsers = () => {
       }
     } catch (error) {
       console.error("Error updating user details:", error);
+    }
+  };
+
+  const handleDisable = async (userId) => {
+    try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogfieldticket.com`
+        : "https://lcs.ogfieldticket.com";
+      const response = await axios.patch(`${baseUrl}/api/userdetails.php`, {
+        UserID: userId,
+        Action: "disable",
+      });
+      if (response.data.success) {
+        setUsers(
+          users.map((user) =>
+            user.UserID === userId ? { ...user, Disabled: "1" } : user
+          )
+        );
+        alert("User account has been disabled.");
+      } else {
+        console.error("Error disabling user:", response.data.message);
+        alert(
+          `Failed to disable user. Server message: ${response.data.message}`
+        );
+      }
+    } catch (error) {
+      console.error("Error disabling user:", error);
+      alert(
+        `An error occurred while disabling the user. Error: ${error.message}`
+      );
+    }
+  };
+
+  const handleEnable = async (userId) => {
+    try {
+      const baseUrl = subdomain
+        ? `https://${subdomain}.ogfieldticket.com`
+        : "https://lcs.ogfieldticket.com";
+      const response = await axios.patch(`${baseUrl}/api/userdetails.php`, {
+        UserID: userId,
+        Action: "enable",
+      });
+      if (response.data.success) {
+        setUsers(
+          users.map((user) =>
+            user.UserID === userId ? { ...user, Disabled: "0" } : user
+          )
+        );
+        alert("User account has been enabled.");
+      } else {
+        console.error("Error enabling user:", response.data.message);
+        alert(
+          `Failed to enable user. Server message: ${response.data.message}`
+        );
+      }
+    } catch (error) {
+      console.error("Error enabling user:", error);
+      alert(
+        `An error occurred while enabling the user. Error: ${error.message}`
+      );
     }
   };
 
@@ -147,8 +207,10 @@ const ControlUsers = () => {
             >
               <option value="All">All Roles</option>
               <option value="P">Pumper</option>
-              <option value="O">Owner</option>
+              <option value="O">Operator</option>
               <option value="A">Admin</option>
+              <option value="I">Investor</option>
+              <option value="R">Read Only</option>
             </select>
           </div>
           <div className="flex items-center gap-2 w-full md:w-auto">
@@ -181,62 +243,89 @@ const ControlUsers = () => {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredAndSortedUsers.map((user) => (
-            <div
-              key={user.UserID}
-              className={`p-6 rounded-lg shadow-lg hover:shadow-xl transition ${
-                theme === "dark" ? "bg-gray-800" : "bg-white"
-              }`}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3
-                  className={`text-3xl font-semibold ${
-                    theme === "dark" ? "text-gray-200" : "text-gray-900"
-                  }`}
+          {filteredAndSortedUsers.map(
+            (user) =>
+              user.UserID !== "unassigned" && (
+                <div
+                  key={user.UserID}
+                  className={`p-6 rounded-lg shadow-lg hover:shadow-xl transition ${
+                    theme === "dark" ? "bg-gray-800" : "bg-white"
+                  } ${user.Disabled === "1" ? "opacity-50" : ""}`}
                 >
-                  {user.FullName}
-                </h3>
-                <button
-                  onClick={() => handleEdit(user)}
-                  className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition"
-                  aria-label="Edit user"
-                >
-                  <FontAwesomeIcon icon={faEdit} />
-                </button>
-              </div>
-              <div className="space-y-2">
-                <p className="flex items-center">
-                  <FontAwesomeIcon
-                    icon={faUser}
-                    className="mr-2 text-gray-500"
-                  />
-                  <span className="font-medium">Role: </span>&nbsp;{user.Role}
-                </p>
-                <p className="flex items-center">
-                  <FontAwesomeIcon
-                    icon={faEnvelope}
-                    className="mr-2 text-gray-500"
-                  />
-                  <span className="font-medium">Email: </span>&nbsp;{user.Email}
-                </p>
-                <p className="flex items-center">
-                  <FontAwesomeIcon
-                    icon={faPhone}
-                    className="mr-2 text-gray-500"
-                  />
-                  <span className="font-medium">Phone: </span>&nbsp;{user.Phone}
-                </p>
-                <p className="flex items-center">
-                  <FontAwesomeIcon
-                    icon={faCommentAlt}
-                    className="mr-2 text-gray-500"
-                  />
-                  <span className="font-medium">Message: </span>&nbsp;
-                  {user.Message}
-                </p>
-              </div>
-            </div>
-          ))}
+                  <div className="flex justify-between items-center mb-4">
+                    <h3
+                      className={`text-3xl font-semibold ${
+                        theme === "dark" ? "text-gray-200" : "text-gray-900"
+                      }`}
+                    >
+                      {user.FullName}
+                    </h3>
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleEdit(user)}
+                        className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition"
+                        aria-label="Edit user"
+                      >
+                        <FontAwesomeIcon icon={faEdit} />
+                      </button>
+                      {user.Disabled === "1" ? (
+                        <button
+                          onClick={() => handleEnable(user.UserID)}
+                          className="p-2 rounded-full bg-green-500 text-white hover:bg-green-600 transition"
+                          aria-label="Enable user"
+                        >
+                          <FontAwesomeIcon icon={faLockOpen} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDisable(user.UserID)}
+                          className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
+                          aria-label="Disable user"
+                        >
+                          <FontAwesomeIcon icon={faLock} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="flex items-center">
+                      <FontAwesomeIcon
+                        icon={faUser}
+                        className="mr-2 text-gray-500"
+                      />
+                      <span className="font-medium">{user.Role}</span>
+                    </p>
+                    <p className="flex items-center">
+                      <FontAwesomeIcon
+                        icon={faEnvelope}
+                        className="mr-2 text-gray-500"
+                      />
+                      <span>{user.Email}</span>
+                    </p>
+                    <p className="flex items-center">
+                      <FontAwesomeIcon
+                        icon={faPhone}
+                        className="mr-2 text-gray-500"
+                      />
+                      <span>{user.Phone}</span>
+                    </p>
+                    <p className="flex items-center">
+                      <FontAwesomeIcon
+                        icon={faCommentAlt}
+                        className="mr-2 text-gray-500"
+                      />
+                      <span>{user.Message}</span>
+                    </p>
+                    {user.Disabled === "1" && (
+                      <p className="flex items-center text-red-500">
+                        <FontAwesomeIcon icon={faLock} className="mr-2" />
+                        <span>Disabled</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )
+          )}
         </div>
       </div>
 
@@ -279,11 +368,6 @@ const EditUserForm = ({ user, onSave, onCancel }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.FullName.trim()) newErrors.FullName = "Full Name is required";
-    if (!formData.Email.trim()) newErrors.Email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.Email))
-      newErrors.Email = "Email is invalid";
-    if (!formData.Phone.trim()) newErrors.Phone = "Phone is required";
     if (!formData.Role.trim()) newErrors.Role = "Role is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -309,8 +393,20 @@ const EditUserForm = ({ user, onSave, onCancel }) => {
     }
   };
 
+  const roleDescriptions = {
+    A: "Admin",
+    O: "Operator",
+    P: "Pumper",
+    R: "Read Only",
+    I: "Investor",
+  };
+
   const fields = [
-    { name: "FullName", icon: faUser, placeholder: "Full Name" },
+    {
+      name: "FullName",
+      icon: faUser,
+      placeholder: "Full Name",
+    },
     {
       name: "Email",
       icon: faEnvelope,
@@ -318,7 +414,12 @@ const EditUserForm = ({ user, onSave, onCancel }) => {
       type: "email",
     },
     { name: "Phone", icon: faPhone, placeholder: "Phone Number" },
-    { name: "Role", icon: faBriefcase, placeholder: "User Role" },
+    {
+      name: "Role",
+      icon: faBriefcase,
+      placeholder: "User Role",
+      required: true,
+    },
     {
       name: "Message",
       icon: faCommentAlt,
@@ -341,7 +442,22 @@ const EditUserForm = ({ user, onSave, onCancel }) => {
               icon={field.icon}
               className="absolute top-3 left-3 text-gray-400"
             />
-            {field.textarea ? (
+            {field.name === "Role" ? (
+              <select
+                name={field.name}
+                value={formData[field.name]}
+                onChange={handleChange}
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+                  errors[field.name] ? "border-red-500" : "border-gray-300"
+                } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
+              >
+                {Object.entries(roleDescriptions).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            ) : field.textarea ? (
               <textarea
                 name={field.name}
                 value={formData[field.name]}

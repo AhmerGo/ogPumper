@@ -105,11 +105,10 @@ const ChartComponent = () => {
     let date;
     if (reportType === "CM" && chartView === "production") {
       date = moment(tickItem, "MM-YYYY");
-      return date.format("MMMM YYYY");
     } else {
       date = moment(tickItem, "YYYY-MM-DD");
-      return date.format("MMM DD");
     }
+    return date.format("M/D/YY");
   };
 
   const fetchPreferences = useCallback(async () => {
@@ -118,8 +117,8 @@ const ChartComponent = () => {
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
-          : "https://lcs.ogpumper.net";
+          ? `https://${parts.shift()}.ogfieldticket.com`
+          : "https://lcs.ogfieldticket.com";
 
       const response = await fetch(
         `${baseUrl}/api/userdetails.php?id=${userID}&chartsPref=true`
@@ -149,8 +148,8 @@ const ChartComponent = () => {
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
-          : "https://lcs.ogpumper.net";
+          ? `https://${parts.shift()}.ogfieldticket.com`
+          : "https://lcs.ogfieldticket.com";
 
       const response = await fetch(`${baseUrl}/api/leases.php`);
       if (!response.ok) throw new Error("Network response was not ok");
@@ -184,8 +183,8 @@ const ChartComponent = () => {
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
-          : "https://lcs.ogpumper.net";
+          ? `https://${parts.shift()}.ogfieldticket.com`
+          : "https://lcs.ogfieldticket.com";
 
       const rpt = selectedLeaseID === "~ALL~" ? "C" : "P";
       const response = await fetch(
@@ -220,9 +219,9 @@ const ChartComponent = () => {
       let baseUrl;
 
       if (parts.length > 2 && parts[1] === "ogpumper") {
-        baseUrl = `https://${parts[0]}.ogpumper.net`;
+        baseUrl = `https://${parts[0]}.ogfieldticket.com`;
       } else {
-        baseUrl = "https://lcs.ogpumper.net"; // Fallback base URL
+        baseUrl = "https://lcs.ogfieldticket.com"; // Fallback base URL
       }
 
       const response = await fetch(
@@ -290,8 +289,8 @@ const ChartComponent = () => {
         const parts = hostname.split(".");
         const baseUrl =
           parts.length > 2
-            ? `https://${parts.shift()}.ogpumper.net`
-            : "https://lcs.ogpumper.net";
+            ? `https://${parts.shift()}.ogfieldticket.com`
+            : "https://lcs.ogfieldticket.com";
 
         const response = await fetch(`${baseUrl}/api/userdetails.php`, {
           method: "PATCH",
@@ -485,6 +484,16 @@ const ChartComponent = () => {
     const leaseName =
       leases.find((lease) => lease.LeaseID === selectedLeaseID)?.LeaseName ||
       "All Leases";
+
+    // Function to format date to m/d/yy
+    const formatDate = (dateString) => {
+      const date = new Date(dateString);
+      return `${date.getMonth() + 1}/${date.getDate()}/${date
+        .getFullYear()
+        .toString()
+        .substr(-2)}`;
+    };
+
     const style = `
       <style>
         @media print {
@@ -504,7 +513,7 @@ const ChartComponent = () => {
             flex-direction: column;
           }
           #headerInfo {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             font-size: 12px;
           }
           #headerInfo h1 {
@@ -537,19 +546,32 @@ const ChartComponent = () => {
         }
       </style>
     `;
+
     const headerInfo = `
       <div id="headerInfo">
         <h1>${
           chartView === "production" ? "Production Chart" : "Well Test Chart"
         }</h1>
-        <p><strong>Date Range:</strong> ${fromDate} to ${thruDate}</p>
+        <p><strong>Date Range:</strong> ${formatDate(fromDate)} to ${formatDate(
+      thruDate
+    )}</p>
         <p><strong>Lease:</strong> ${leaseName}</p>
-        <p><strong>Tag:</strong> ${selectedTag}</p>
+        ${
+          chartView === "production" && selectedTag !== "all"
+            ? `<p><strong>Tag:</strong> ${selectedTag}</p>`
+            : ""
+        }
+        ${
+          chartView === "wellTest"
+            ? `<p><strong>Well:</strong> ${selectedWellID || "All Wells"}</p>`
+            : ""
+        }
         <p><strong>Y-Axis Scale:</strong> ${
           logarithmic ? "Logarithmic" : "Linear"
         }</p>
       </div>
     `;
+
     document.body.innerHTML =
       style +
       `
@@ -562,7 +584,6 @@ const ChartComponent = () => {
     document.body.innerHTML = originalContents;
     window.location.reload();
   };
-
   const handleEditClick = () => {
     setIsSidePanelOpen(!isSidePanelOpen);
     setIsEditing(!isEditing);
@@ -614,17 +635,34 @@ const ChartComponent = () => {
               </div>
 
               <div className="filter-item">
-                <label>Leases</label>
+                <label>Lease</label>
                 <select
                   value={selectedLeaseID}
                   onChange={(e) => setSelectedLeaseID(e.target.value)}
                 >
-                  <option value="~ALL~">All Leases</option>
-                  {leases.map((lease) => (
-                    <option key={lease.LeaseID} value={lease.LeaseID}>
-                      {lease.LeaseName}
-                    </option>
-                  ))}
+                  {chartView === "production" ? (
+                    <option value="~ALL~">All Leases</option>
+                  ) : (
+                    leases.length > 0 && (
+                      <option value={leases[0].LeaseID} key={leases[0].LeaseID}>
+                        {leases[0].LeaseName}
+                      </option>
+                    )
+                  )}
+                  {leases
+                    .filter(
+                      (lease) =>
+                        chartView === "production" || lease.WellType !== "INJ"
+                    )
+                    .map((lease, index) => (
+                      <option
+                        key={lease.LeaseID}
+                        value={lease.LeaseID}
+                        selected={chartView !== "production" && index === 0}
+                      >
+                        {lease.LeaseName}
+                      </option>
+                    ))}
                 </select>
                 <button className="next-well-button" onClick={handleNextLease}>
                   <FontAwesomeIcon icon={faArrowRight} />
@@ -632,7 +670,7 @@ const ChartComponent = () => {
               </div>
               {chartView === "production" ? (
                 <div className="filter-item">
-                  <label>Tags</label>
+                  <label>Tag</label>
                   <select
                     value={selectedTag}
                     onChange={(e) => setSelectedTag(e.target.value)}
@@ -646,7 +684,7 @@ const ChartComponent = () => {
                 </div>
               ) : (
                 <div className="filter-item">
-                  <label>Wells</label>
+                  <label>Well</label>
                   <select
                     value={selectedWellID}
                     onChange={(e) => setSelectedWellID(e.target.value)}
@@ -655,7 +693,7 @@ const ChartComponent = () => {
                     <option value="">Select a well</option>
                     {wells.map((well) => (
                       <option key={well.UniqID} value={well.WellID}>
-                        Well {well.WellID}
+                        {well.WellID}
                       </option>
                     ))}
                   </select>

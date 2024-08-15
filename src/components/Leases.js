@@ -3,26 +3,28 @@ import { useSpring, animated } from "react-spring";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEdit,
+  faSearch,
+  faSort,
+  faChevronUp,
+  faChevronDown,
   faTrash,
   faTimes,
   faPlus,
-  faChevronUp,
-  faChevronDown,
 } from "@fortawesome/free-solid-svg-icons";
-import { useTheme } from "./ThemeContext";
 import axios from "axios";
 
 const Leases = () => {
-  const { theme } = useTheme();
+  const { theme } = "light";
   const [leases, setLeases] = useState([]);
   const [filteredLeases, setFilteredLeases] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortKey, setSortKey] = useState("LeaseName");
+  const [sortOrder, setSortOrder] = useState("asc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [leasesPerPage] = useState(10);
+  const [leasesPerPage] = useState(12);
   const [editLease, setEditLease] = useState(null);
   const [formData, setFormData] = useState({});
   const [subdomain, setSubdomain] = useState("");
-  const [purchasers, setPurchasers] = useState([]);
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -30,11 +32,8 @@ const Leases = () => {
       const parts = hostname.split(".");
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        console.log(`sub domain ${subdomainPart}`);
         setSubdomain(subdomainPart);
       } else {
-        console.log(`sub domain ${parts}`);
-
         setSubdomain("");
       }
     };
@@ -44,7 +43,6 @@ const Leases = () => {
 
   useEffect(() => {
     fetchLeases();
-    fetchPurchasers();
   }, []);
 
   const fetchLeases = async () => {
@@ -56,41 +54,16 @@ const Leases = () => {
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
+        baseUrl = "https://lcs.ogfieldticket.com";
       }
 
       const response = await axios.get(`${baseUrl}/api/leases.php`);
-
       const data = response.data;
       setLeases(data);
       setFilteredLeases(data);
     } catch (error) {
       console.error("Error fetching leases:", error);
-    }
-  };
-
-  const fetchPurchasers = async () => {
-    try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
-      } else {
-        baseUrl = "https://test.ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
-      }
-
-      const response = await axios.get(`${baseUrl}/api/usertags.php`);
-      setPurchasers(response.data);
-    } catch (error) {
-      console.error("Error fetching purchasers:", error);
     }
   };
 
@@ -102,11 +75,37 @@ const Leases = () => {
       (lease) =>
         lease.LeaseID.toLowerCase().includes(searchTerm) ||
         lease.LeaseName.toLowerCase().includes(searchTerm) ||
-        lease.PumperID.toLowerCase().includes(searchTerm)
+        lease.PumperID.toLowerCase().includes(searchTerm) ||
+        lease.RRC.toLowerCase().includes(searchTerm)
     );
 
     setFilteredLeases(filtered);
     setCurrentPage(1);
+  };
+
+  const handleSort = (key) => {
+    let order = sortOrder === "asc" ? "desc" : "asc";
+    setSortOrder(order);
+    setSortKey(key);
+
+    const sorted = [...filteredLeases].sort((a, b) => {
+      if (order === "asc") {
+        return a[key] > b[key] ? 1 : -1;
+      } else {
+        return a[key] < b[key] ? 1 : -1;
+      }
+    });
+
+    setFilteredLeases(sorted);
+  };
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+  const handleSortClick = (key) => {
+    handleSort(key);
+    setIsMenuOpen(false); // Close the menu after sorting
   };
 
   const indexOfLastLease = currentPage * leasesPerPage;
@@ -125,7 +124,7 @@ const Leases = () => {
 
   const handleEdit = (lease) => {
     setEditLease(lease);
-    setFormData({ ...lease }); // Create a copy of the lease object
+    setFormData({ ...lease });
   };
 
   const handleInputChange = (e) => {
@@ -142,12 +141,11 @@ const Leases = () => {
   const handleSubmit = async (e, data) => {
     e.preventDefault();
     try {
-      const { tanks, wells } = data; // Extract tanks and wells from the data object
+      const { tanks, wells } = data;
 
       const formDataTanks = formData.Tanks || [];
       const formDataWells = formData.Wells || [];
 
-      // Filter out duplicates from formData
       const filteredTanks = tanks.filter(
         (tank) =>
           !formDataTanks.some((formTank) => formTank.UniqID === tank.UniqID)
@@ -170,14 +168,9 @@ const Leases = () => {
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
+        baseUrl = "https://lcs.ogfieldticket.com";
       }
-
-      console.log(`The updated lease:`);
-      console.log(updatedLease);
 
       const response = await axios.patch(
         `${baseUrl}/api/leases.php`,
@@ -194,13 +187,12 @@ const Leases = () => {
         fetchLeases();
       } else {
         console.error("Error updating lease:", response.data.message);
-        // Display an error message to the user
       }
     } catch (error) {
       console.error("Error updating lease:", error);
-      // Display an error message to the user
     }
   };
+
   return (
     <div
       className={`container mx-auto mt-5 p-4 rounded shadow ${
@@ -208,19 +200,61 @@ const Leases = () => {
       }`}
     >
       <h1 className="text-4xl font-bold mb-8">Leases</h1>
-      <div className="mb-4">
+      <div className="mb-4 flex justify-between items-center space-x-2">
         <input
           type="text"
-          placeholder="Search by LeaseID, LeaseName, or PumperID"
+          placeholder="Search by LeaseID, LeaseName, PumperID, or RRC"
           value={searchTerm}
           onChange={handleSearch}
-          className={`w-full px-4 py-2 rounded ${
+          className={`flex-grow px-4 py-2 rounded ${
             theme === "dark"
               ? "bg-gray-700 text-white"
               : "bg-gray-200 text-gray-800"
           }`}
         />
+        <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+          <FontAwesomeIcon icon={faSearch} />
+        </button>
+        <div className="relative">
+          <button
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+            onClick={toggleMenu}
+          >
+            <FontAwesomeIcon icon={faSort} /> Sort
+          </button>
+          {isMenuOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded z-50">
+              <ul>
+                <li
+                  className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${
+                    sortKey === "LeaseName" ? "font-bold" : ""
+                  }`}
+                  onClick={() => handleSortClick("LeaseName")}
+                >
+                  Lease Name
+                </li>
+                <li
+                  className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${
+                    sortKey === "LeaseID" ? "font-bold" : ""
+                  }`}
+                  onClick={() => handleSortClick("LeaseID")}
+                >
+                  Lease ID
+                </li>
+                <li
+                  className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${
+                    sortKey === "PumperID" ? "font-bold" : ""
+                  }`}
+                  onClick={() => handleSortClick("PumperID")}
+                >
+                  Pumper ID
+                </li>
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {currentLeases.map((lease) => (
           <animated.div
@@ -234,122 +268,57 @@ const Leases = () => {
               <button
                 className={`${
                   theme === "dark" ? "text-white" : "text-gray-800"
-                } hover:text-blue-500 mr-2`}
+                } hover:text-blue-500`}
                 onClick={() => handleEdit(lease)}
               >
                 <FontAwesomeIcon icon={faEdit} />
               </button>
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-4">{lease.LeaseName}</h2>
+              <h2 className="text-xl font-bold mb-2">{lease.LeaseName}</h2>
               {lease.LeaseID && (
-                <p className="mb-2">
+                <p>
                   <strong>LeaseID:</strong> {lease.LeaseID}
                 </p>
               )}
               {lease.PumperID && (
-                <p className="mb-2">
+                <p>
                   <strong>Pumper:</strong> {lease.PumperID}
                 </p>
               )}
               {lease.Active && (
-                <p className="mb-2">
+                <p>
                   <strong>Active:</strong> {lease.Active}
                 </p>
               )}
-              {lease.ReliefID && (
-                <p className="mb-2">
-                  <strong>Relief:</strong> {lease.ReliefID}
-                </p>
-              )}
-              {lease.District && (
-                <p className="mb-2">
-                  <strong>District:</strong> {lease.District}
-                </p>
-              )}
               {lease.RRC && (
-                <p className="mb-2">
+                <p>
                   <strong>RRC:</strong> {lease.RRC}
                 </p>
               )}
-              {lease.FieldName && (
-                <p className="mb-2">
-                  <strong>Field Name:</strong> {lease.FieldName}
+              {lease.Wells && (
+                <p>
+                  <strong>Wells:</strong> {lease.Wells.length}
                 </p>
               )}
-              {lease.Tag1 && (
-                <p className="mb-2">
-                  <strong>Tag 1:</strong> {lease.Tag1}
-                </p>
-              )}
-              {lease.Tag2 && (
-                <p className="mb-2">
-                  <strong>Tag 2:</strong> {lease.Tag2}
-                </p>
-              )}
-              {lease.Tag3 && (
-                <p className="mb-2">
-                  <strong>Tag 3:</strong> {lease.Tag3}
-                </p>
-              )}
-              {lease.Tag4 && (
-                <p className="mb-2">
-                  <strong>Tag 4:</strong> {lease.Tag4}
-                </p>
-              )}
-              {lease.Purchaser && (
-                <p className="mb-2">
-                  <strong>Purchaser:</strong> {lease.Purchaser}
-                </p>
-              )}
-              {lease.PurchaserLeaseNo && (
-                <p className="mb-2">
-                  <strong>Purchaser Lease No:</strong> {lease.PurchaserLeaseNo}
-                </p>
-              )}
-              {lease.MaxInj && (
-                <p className="mb-2">
-                  <strong>Max Inj:</strong> {lease.MaxInj}
-                </p>
-              )}
-              {lease.MaxPressure && (
-                <p className="mb-2">
-                  <strong>Max Pressure:</strong> {lease.MaxPressure}
-                </p>
-              )}
-              {lease.PropertyNum && (
-                <p className="mb-2">
-                  <strong>External Property #:</strong> {lease.PropertyNum}
-                </p>
-              )}
-              {lease.Wells && lease.Wells.length > 0 && (
-                <p className="mb-2">
-                  <strong>Wells:</strong>{" "}
-                  {lease.Wells.map((well) => (
-                    <span key={well.UniqID}> {well.WellID}</span>
-                  ))}
-                </p>
-              )}
-              {lease.Tanks && lease.Tanks.length > 0 && (
-                <p className="mb-2">
-                  <strong>Tanks:</strong>{" "}
-                  {lease.Tanks.map((tank) => (
-                    <span key={tank.UniqID}> {tank.TankID}</span>
-                  ))}
+              {lease.Tanks && (
+                <p>
+                  <strong>Tanks:</strong> {lease.Tanks.length}
                 </p>
               )}
             </div>
           </animated.div>
         ))}
       </div>
-      <div className="mt-8 flex justify-center">
+
+      <div className="mt-8 flex justify-center flex-wrap">
         {Array.from(
           { length: Math.ceil(filteredLeases.length / leasesPerPage) },
           (_, i) => (
             <button
               key={i}
               onClick={() => paginate(i + 1)}
-              className={`mx-1 px-3 py-1 rounded ${
+              className={`mx-1 my-1 px-2 py-1 rounded ${
                 currentPage === i + 1
                   ? theme === "dark"
                     ? "bg-gray-700 text-white"
@@ -364,6 +333,7 @@ const Leases = () => {
           )
         )}
       </div>
+
       {editLease && (
         <EditLeaseModal
           lease={editLease}
@@ -371,13 +341,13 @@ const Leases = () => {
           onInputChange={handleInputChange}
           onSave={handleSubmit}
           onClose={() => setEditLease(null)}
-          setFormData={setFormData} // Pass setFormData as a prop
-          purchasers={purchasers}
+          setFormData={setFormData}
         />
       )}
     </div>
   );
 };
+
 const EditLeaseModal = ({
   lease,
   formData,
@@ -388,7 +358,7 @@ const EditLeaseModal = ({
   purchasers,
 }) => {
   const [activeTab, setActiveTab] = useState("basic");
-  const { theme } = useTheme();
+  const { theme } = "light";
   const [tagOptions, setTagOptions] = useState([]);
   const [pumperOptions, setPumperOptions] = useState([]);
   const [reliefOptions, setReliefOptions] = useState([]);
@@ -399,6 +369,7 @@ const EditLeaseModal = ({
   const [expandedWellIndex, setExpandedWellIndex] = useState(null);
   const tankSectionRef = useRef(null);
   const wellSectionRef = useRef(null);
+  const [toast, setToast] = useState({ visible: false, message: "" });
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -406,11 +377,8 @@ const EditLeaseModal = ({
       const parts = hostname.split(".");
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        console.log(`sub domain ${subdomainPart}`);
         setSubdomain(subdomainPart);
       } else {
-        console.log(`sub domain ${parts}`);
-
         setSubdomain("");
       }
     };
@@ -449,10 +417,8 @@ const EditLeaseModal = ({
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
+        baseUrl = "https://lcs.ogfieldticket.com";
       }
 
       const response = await axios.delete(`${baseUrl}/api/leases.php`, {
@@ -460,18 +426,16 @@ const EditLeaseModal = ({
       });
 
       if (response.status === 200) {
-        // Update the form data state to remove the deleted well
         setFormData({
           ...formData,
           Wells: formData.Wells.filter((well) => well.UniqID !== wellId),
         });
       } else {
         console.error("Error deleting well:", response.data.message);
-        // Display an error message to the user
       }
     } catch (error) {
       console.error("Error deleting well:", error);
-      // Display an error message to the user
+      setToast({ visible: true, message: "Well is currently being used" });
     }
   };
 
@@ -484,10 +448,8 @@ const EditLeaseModal = ({
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
+        baseUrl = "https://lcs.ogfieldticket.com";
       }
 
       const response = await axios.get(`${baseUrl}/api/usertags.php`);
@@ -537,10 +499,8 @@ const EditLeaseModal = ({
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
-        console.log(`Using default URL: ${baseUrl}`);
+        baseUrl = "https://lcs.ogfieldticket.com";
       }
 
       const response = await axios.delete(`${baseUrl}/api/leases.php`, {
@@ -548,18 +508,16 @@ const EditLeaseModal = ({
       });
 
       if (response.status === 200) {
-        // Update the form data state to remove the deleted tank
         setFormData({
           ...formData,
           Tanks: formData.Tanks.filter((tank) => tank.UniqID !== tankId),
         });
       } else {
         console.error("Error deleting tank:", response.data.message);
-        // Display an error message to the user
       }
     } catch (error) {
       console.error("Error deleting tank:", error);
-      // Display an error message to the user
+      setToast({ visible: true, message: "Tank is currently being used" });
     }
   };
 
@@ -582,6 +540,7 @@ const EditLeaseModal = ({
       wellSectionRef.current.scrollIntoView({ behavior: "smooth" });
     }, 100);
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     onSave(e, { wells, tanks });
@@ -589,47 +548,20 @@ const EditLeaseModal = ({
 
   return (
     <div
-      className={`fixed inset-0 flex items-center justify-center z-50 ${
-        theme === "light"
-          ? "bg-white bg-opacity-90"
-          : "bg-gray-800 bg-opacity-90"
-      }`}
+      className="fixed inset-0 flex items-center justify-center z-50 bg-white bg-opacity-90"
       style={{ background: "rgba(0, 0, 0, 0.5)" }}
     >
       <div
-        className={`relative bg-transparent w-full max-w-3xl mx-auto p-6 rounded-lg ${
-          theme === "light" ? "bg-white" : "bg-gray-700"
-        }`}
+        className="relative bg-transparent w-full max-w-3xl mx-auto p-6 rounded-lg"
         style={{ maxHeight: "800px", overflowY: "auto" }}
       >
-        {/* <div
-          className={`rounded-lg shadow-lg overflow-hidden transform transition-all ${
-            theme === "light" ? "bg-white" : "bg-gray-700"
-          }`}
-        > */}
-        <div
-          className={`relative ${
-            theme === "light" ? "bg-white" : "bg-gray-700"
-          }`}
-        >
+        <div className="relative bg-white">
           <form
             onSubmit={(e) => handleSubmit(e, tanks, wells)}
-            className={`max-w-3xl mx-auto p-8 shadow-lg rounded-lg ${
-              theme === "light" ? "bg-white" : "bg-gray-700"
-            }`}
+            className="max-w-3xl mx-auto p-8 shadow-lg rounded-lg bg-white"
           >
-            <div
-              className={`flex justify-between items-center border-b pb-4 mb-6 ${
-                theme === "light"
-                  ? "text-gray-700 border-gray-300"
-                  : "text-white border-gray-600"
-              }`}
-            >
-              <h3
-                className={`text-3xl font-semibold ${
-                  theme === "light" ? "text-gray-900" : "text-white"
-                }`}
-              >
+            <div className="flex justify-between items-center border-b pb-4 mb-6 text-gray-700 border-gray-300">
+              <h3 className="text-3xl font-semibold text-gray-900">
                 Edit Lease
               </h3>
               <button
@@ -642,7 +574,7 @@ const EditLeaseModal = ({
             </div>
 
             <div className="flex space-x-4 mb-8">
-              {["basic", "additional", "tanks", "wells"].map((tab) => (
+              {["basic", "additional", "tags", "tanks", "wells"].map((tab) => (
                 <button
                   key={tab}
                   type="button"
@@ -657,6 +589,8 @@ const EditLeaseModal = ({
                     ? "Basic Info"
                     : tab === "additional"
                     ? "Additional Info"
+                    : tab === "tags"
+                    ? "Tags"
                     : tab === "tanks"
                     ? "Tanks"
                     : "Wells"}
@@ -666,13 +600,10 @@ const EditLeaseModal = ({
 
             {activeTab === "basic" && (
               <div className="grid grid-cols-2 gap-6">
-                {/* Lease Name */}
                 <div>
                   <label
                     htmlFor="LeaseName"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
+                    className="block text-sm font-medium text-gray-700"
                   >
                     Lease Name
                   </label>
@@ -683,21 +614,14 @@ const EditLeaseModal = ({
                     onChange={(e) =>
                       setFormData({ ...formData, LeaseName: e.target.value })
                     }
-                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
+                    className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                   />
                 </div>
 
-                {/* Pumper */}
                 <div>
                   <label
                     htmlFor="PumperID"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
+                    className="block text-sm font-medium text-gray-700"
                   >
                     Pumper
                   </label>
@@ -707,11 +631,7 @@ const EditLeaseModal = ({
                     onChange={(e) =>
                       setFormData({ ...formData, PumperID: e.target.value })
                     }
-                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
+                    className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                   >
                     {pumperOptions.map((pumper) => (
                       <option key={pumper.UserID} value={pumper.UserID}>
@@ -721,13 +641,10 @@ const EditLeaseModal = ({
                   </select>
                 </div>
 
-                {/* Relief */}
                 <div>
                   <label
                     htmlFor="ReliefID"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
+                    className="block text-sm font-medium text-gray-700"
                   >
                     Relief
                   </label>
@@ -737,11 +654,7 @@ const EditLeaseModal = ({
                     onChange={(e) =>
                       setFormData({ ...formData, ReliefID: e.target.value })
                     }
-                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
+                    className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                   >
                     <option value="">
                       {formData.ReliefID ? "Remove Relief" : "Select Relief"}
@@ -754,13 +667,10 @@ const EditLeaseModal = ({
                   </select>
                 </div>
 
-                {/* Active */}
                 <div>
                   <label
                     htmlFor="Active"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
+                    className="block text-sm font-medium text-gray-700"
                   >
                     Active
                   </label>
@@ -770,11 +680,7 @@ const EditLeaseModal = ({
                     onChange={(e) =>
                       setFormData({ ...formData, Active: e.target.value })
                     }
-                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
+                    className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                   >
                     <option value="Y">Yes</option>
                     <option value="N">No</option>
@@ -785,39 +691,259 @@ const EditLeaseModal = ({
 
             {activeTab === "additional" && (
               <div className="grid grid-cols-2 gap-6">
-                {/* Lease ID */}
                 <div>
                   <label
                     htmlFor="LeaseID"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
+                    className="block text-sm font-medium text-gray-700"
                   >
                     Lease ID
                   </label>
                   <input
                     type="text"
                     name="LeaseID"
-                    value={formData.LeaseID}
-                    onChange={(e) =>
-                      setFormData({ ...formData, LeaseID: e.target.value })
-                    }
-                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
+                    value={formData.LeaseID || ""}
+                    readOnly
+                    className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 focus:outline-none focus:border-blue-300 transition duration-150"
                   />
                 </div>
 
-                {/* Tags */}
+                <div>
+                  <label
+                    htmlFor="District"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    District
+                  </label>
+                  <input
+                    type="text"
+                    name="District"
+                    value={formData.District || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, District: e.target.value })
+                    }
+                    className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="RRC"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    RRC
+                  </label>
+                  <input
+                    type="text"
+                    name="RRC"
+                    value={formData.RRC || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, RRC: e.target.value })
+                    }
+                    className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="WellType"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Well Type
+                  </label>
+                  <input
+                    type="text"
+                    name="WellType"
+                    value={formData.WellType || ""}
+                    readOnly
+                    className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 focus:outline-none focus:border-blue-300 transition duration-150"
+                  />
+                </div>
+
+                {formData.WellType !== "INJ" && (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="ShowOil"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Show Oil
+                      </label>
+                      <select
+                        name="ShowOil"
+                        value={formData.ShowOil || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, ShowOil: e.target.value })
+                        }
+                        className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                      >
+                        <option value="Y">Yes</option>
+                        <option value="N">No</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="ShowWater"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Show Water
+                      </label>
+                      <select
+                        name="ShowWater"
+                        value={formData.ShowWater || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            ShowWater: e.target.value,
+                          })
+                        }
+                        className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                      >
+                        <option value="Y">Yes</option>
+                        <option value="N">No</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="ShowGas"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Show Gas
+                      </label>
+                      <select
+                        name="ShowGas"
+                        value={formData.ShowGas || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, ShowGas: e.target.value })
+                        }
+                        className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                      >
+                        <option value="Y">Yes</option>
+                        <option value="N">No</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label
+                    htmlFor="Purchaser"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Purchaser
+                  </label>
+                  <select
+                    name="Purchaser"
+                    value={formData.Purchaser || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, Purchaser: e.target.value })
+                    }
+                    className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                  >
+                    <option value="">Select Purchaser</option>
+                    {purchasers &&
+                      purchasers.map((purchaser) => (
+                        <option
+                          key={purchaser.PurchaserID}
+                          value={purchaser.PurchaserID}
+                        >
+                          {purchaser.PurchaserName}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="PurchaserLeaseNo"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    Purchaser Lease No
+                  </label>
+                  <input
+                    type="text"
+                    name="PurchaserLeaseNo"
+                    value={formData.PurchaserLeaseNo || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        PurchaserLeaseNo: e.target.value,
+                      })
+                    }
+                    className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                  />
+                </div>
+
+                {formData.WellType === "INJ" && (
+                  <>
+                    <div>
+                      <label
+                        htmlFor="MaxInj"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Max Inj
+                      </label>
+                      <input
+                        type="text"
+                        name="MaxInj"
+                        value={formData.MaxInj || ""}
+                        onChange={(e) =>
+                          setFormData({ ...formData, MaxInj: e.target.value })
+                        }
+                        className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="MaxPressure"
+                        className="block text-sm font-medium text-gray-700"
+                      >
+                        Max Pressure
+                      </label>
+                      <input
+                        type="text"
+                        name="MaxPressure"
+                        value={formData.MaxPressure || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            MaxPressure: e.target.value,
+                          })
+                        }
+                        className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div>
+                  <label
+                    htmlFor="PropertyNum"
+                    className="block text-sm font-medium text-gray-700"
+                  >
+                    External Property #
+                  </label>
+                  <input
+                    type="text"
+                    name="PropertyNum"
+                    value={formData.PropertyNum || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, PropertyNum: e.target.value })
+                    }
+                    className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                  />
+                </div>
+              </div>
+            )}
+            {activeTab === "tags" && (
+              <div className="grid grid-cols-2 gap-6">
                 {[1, 2, 3, 4].map((tagNum) => (
                   <div key={tagNum}>
                     <label
                       htmlFor={`Tag${tagNum}`}
-                      className={`block text-sm font-medium ${
-                        theme === "light" ? "text-gray-700" : "text-white"
-                      }`}
+                      className="block text-sm font-medium text-gray-700"
                     >
                       Tag {tagNum}
                     </label>
@@ -830,156 +956,18 @@ const EditLeaseModal = ({
                           [`Tag${tagNum}`]: e.target.value,
                         })
                       }
-                      className={`mt-1 form-select block w-full px-3 py-2 ${
-                        theme === "light"
-                          ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                          : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                      } transition duration-150`}
+                      className="mt-1 form-select block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                     >
-                      <option value="">
-                        {formData[`Tag${tagNum}`] ? "Remove Tag" : "Select Tag"}
-                      </option>
-                      {tagOptions.map((tag) => (
-                        <option key={tag.TagID} value={tag.TagID}>
-                          {tag.TagID} - {tag.TagDesc}
-                        </option>
-                      ))}
+                      <option value="">Select Tag</option>
+                      {tagOptions &&
+                        tagOptions.map((tag) => (
+                          <option key={tag.TagID} value={tag.TagID}>
+                            {tag.TagID} - {tag.TagDesc}
+                          </option>
+                        ))}
                     </select>
                   </div>
                 ))}
-
-                {/* Purchaser */}
-                <div>
-                  <label
-                    htmlFor="Purchaser"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
-                  >
-                    Purchaser
-                  </label>
-                  <select
-                    name="Purchaser"
-                    value={formData.Purchaser || ""}
-                    onChange={onInputChange}
-                    className={`mt-1 form-select block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
-                  >
-                    <option value="">
-                      {formData.Purchaser
-                        ? "Remove Purchaser"
-                        : "Select Purchaser"}
-                    </option>
-                    {purchasers
-                      .filter(
-                        (purchaser) =>
-                          purchaser.PurchaserName && purchaser.PurchaserID
-                      )
-                      .map((purchaser) => (
-                        <option
-                          key={purchaser.PurchaserID}
-                          value={purchaser.PurchaserID}
-                        >
-                          {purchaser.PurchaserName}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                {/* Purchaser Lease No */}
-                <div>
-                  <label
-                    htmlFor="PurchaserLeaseNo"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
-                  >
-                    Purchaser Lease No
-                  </label>
-                  <input
-                    type="text"
-                    name="PurchaserLeaseNo"
-                    value={formData.PurchaserLeaseNo || ""}
-                    onChange={onInputChange}
-                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
-                  />
-                </div>
-
-                {/* Max Inj */}
-                <div>
-                  <label
-                    htmlFor="MaxInj"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
-                  >
-                    Max Inj
-                  </label>
-                  <input
-                    type="text"
-                    name="MaxInj"
-                    value={formData.MaxInj || "0"}
-                    onChange={onInputChange}
-                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
-                  />
-                </div>
-
-                {/* Max Pressure */}
-                <div>
-                  <label
-                    htmlFor="MaxPressure"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
-                  >
-                    Max Pressure
-                  </label>
-                  <input
-                    type="text"
-                    name="MaxPressure"
-                    value={formData.MaxPressure || "0"}
-                    onChange={onInputChange}
-                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
-                  />
-                </div>
-
-                {/* External Property # */}
-                <div>
-                  <label
-                    htmlFor="PropertyNum"
-                    className={`block text-sm font-medium ${
-                      theme === "light" ? "text-gray-700" : "text-white"
-                    }`}
-                  >
-                    External Property #
-                  </label>
-                  <input
-                    type="text"
-                    name="PropertyNum"
-                    value={formData.PropertyNum || "1000"}
-                    onChange={onInputChange}
-                    className={`mt-1 form-input block w-full px-3 py-2 ${
-                      theme === "light"
-                        ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                        : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                    } transition duration-150`}
-                  />
-                </div>
               </div>
             )}
 
@@ -1008,11 +996,7 @@ const EditLeaseModal = ({
                           <div className="col-span-2">
                             <label
                               htmlFor="TankID"
-                              className={`block text-sm font-medium ${
-                                theme === "light"
-                                  ? "text-gray-700"
-                                  : "text-white"
-                              }`}
+                              className="block text-sm font-medium text-gray-700"
                             >
                               Tank ID
                             </label>
@@ -1031,22 +1015,14 @@ const EditLeaseModal = ({
                                   ),
                                 })
                               }
-                              className={`mt-1 form-input block w-full px-3 py-2 ${
-                                theme === "light"
-                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                              } transition duration-150`}
+                              className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                               required
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="size"
-                              className={`block text-sm font-medium ${
-                                theme === "light"
-                                  ? "text-gray-700"
-                                  : "text-white"
-                              }`}
+                              className="block text-sm font-medium text-gray-700"
                             >
                               Size
                             </label>
@@ -1065,21 +1041,14 @@ const EditLeaseModal = ({
                                   ),
                                 })
                               }
-                              className={`mt-1 form-input block w-full px-3 py-2 ${
-                                theme === "light"
-                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                              } transition duration-150`}
+                              step="0.1" // Added step attribute
+                              className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="BBL"
-                              className={`block text-sm font-medium ${
-                                theme === "light"
-                                  ? "text-gray-700"
-                                  : "text-white"
-                              }`}
+                              className="block text-sm font-medium text-gray-700"
                             >
                               BBLSperInch
                             </label>
@@ -1098,21 +1067,13 @@ const EditLeaseModal = ({
                                   ),
                                 })
                               }
-                              className={`mt-1 form-input block w-full px-3 py-2 ${
-                                theme === "light"
-                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                              } transition duration-150`}
+                              className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                             />
                           </div>
                           <div>
                             <label
                               htmlFor="Type"
-                              className={`block text-sm font-medium ${
-                                theme === "light"
-                                  ? "text-gray-700"
-                                  : "text-white"
-                              }`}
+                              className="block text-sm font-medium text-gray-700"
                             >
                               Type
                             </label>
@@ -1129,32 +1090,25 @@ const EditLeaseModal = ({
                                   ),
                                 })
                               }
-                              className={`mt-1 form-input block w-full px-3 py-2 ${
-                                theme === "light"
-                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                              } transition duration-150`}
+                              className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                             >
-                              <option value="F">F</option>
-                              <option value="T">T</option>
-                              <option value="W">W</option>
+                              <option value="F">Frac</option>
+                              <option value="T">Tank</option>
+                              <option value="W">Water</option>
                             </select>
                           </div>
                           <div>
                             <label
                               htmlFor="TankNum"
-                              className={`block text-sm font-medium ${
-                                theme === "light"
-                                  ? "text-gray-700"
-                                  : "text-white"
-                              }`}
+                              className="block text-sm font-medium text-gray-700"
                             >
                               Tank Num
                             </label>
 
                             <input
                               type="text"
-                              placeholder="WP Tank Num"
+                              placeholder="External Tank Num
+                              "
                               value={tank.WPTankNum}
                               onChange={(e) =>
                                 setFormData({
@@ -1166,21 +1120,13 @@ const EditLeaseModal = ({
                                   ),
                                 })
                               }
-                              className={`mt-1 form-input block w-full px-3 py-2 ${
-                                theme === "light"
-                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                              } transition duration-150`}
+                              className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                             />
                           </div>
                           <div className="col-span-2">
                             <label
                               htmlFor="active"
-                              className={`block text-sm font-medium ${
-                                theme === "light"
-                                  ? "text-gray-700"
-                                  : "text-white"
-                              }`}
+                              className="block text-sm font-medium text-gray-700"
                             >
                               Active
                             </label>
@@ -1196,11 +1142,7 @@ const EditLeaseModal = ({
                                   ),
                                 })
                               }
-                              className={`mt-1 form-input block w-full px-3 py-2 ${
-                                theme === "light"
-                                  ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                                  : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                              } transition duration-150`}
+                              className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                               required
                             >
                               <option value="Y">Active</option>
@@ -1221,6 +1163,21 @@ const EditLeaseModal = ({
                     </div>
                   ))}
                 </div>
+                {toast.visible && (
+                  <div className="fixed inset-0 flex items-center justify-center z-50">
+                    <div className="bg-red-500 text-white p-4 rounded shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <span>{toast.message}</span>
+                        <button
+                          onClick={() => setToast({ ...toast, visible: false })}
+                          className="ml-4"
+                        >
+                          <FontAwesomeIcon icon={faTimes} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -1246,9 +1203,7 @@ const EditLeaseModal = ({
                         <div className="col-span-2">
                           <label
                             htmlFor="WellID"
-                            className={`block text-sm font-medium ${
-                              theme === "light" ? "text-gray-700" : "text-white"
-                            }`}
+                            className="block text-sm font-medium text-gray-700"
                           >
                             Well ID
                           </label>
@@ -1266,50 +1221,115 @@ const EditLeaseModal = ({
                                 ),
                               })
                             }
-                            className={`mt-1 form-input block w-full px-3 py-2 ${
-                              theme === "light"
-                                ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                                : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                            } transition duration-150`}
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                             required
                           />
                         </div>
+                        {/* New External Property # Field */}
                         <div>
                           <label
-                            htmlFor="AllocPct"
-                            className={`block text-sm font-medium ${
-                              theme === "light" ? "text-gray-700" : "text-white"
-                            }`}
+                            htmlFor="ExternalPropertyNumber"
+                            className="block text-sm font-medium text-gray-700"
                           >
-                            Allocation Percentage
+                            External Property #
                           </label>
                           <input
-                            type="number"
-                            placeholder="Allocation Percentage"
-                            value={well.AllocPct}
+                            type="text"
+                            placeholder="External Property #"
+                            value={well.ExternalPropertyNumber}
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
                                 Wells: formData.Wells.map((w, i) =>
                                   i === index
-                                    ? { ...w, AllocPct: e.target.value }
+                                    ? {
+                                        ...w,
+                                        ExternalPropertyNumber: e.target.value,
+                                      }
                                     : w
                                 ),
                               })
                             }
-                            className={`mt-1 form-input block w-full px-3 py-2 ${
-                              theme === "light"
-                                ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                                : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                            } transition duration-150`}
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          />
+                        </div>
+                        {/* New API Field */}
+                        <div>
+                          <label
+                            htmlFor="API"
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            API
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="API"
+                            value={well.API}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                Wells: formData.Wells.map((w, i) =>
+                                  i === index
+                                    ? { ...w, API: e.target.value }
+                                    : w
+                                ),
+                              })
+                            }
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          />
+                        </div>
+                        {/* New RRC Field */}
+                        <div>
+                          <label
+                            htmlFor="RRC"
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            RRC
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="RRC"
+                            value={well.RRC}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                Wells: formData.Wells.map((w, i) =>
+                                  i === index
+                                    ? { ...w, RRC: e.target.value }
+                                    : w
+                                ),
+                              })
+                            }
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
+                          />
+                        </div>
+                        {/* New CP Field */}
+                        <div>
+                          <label
+                            htmlFor="CP"
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            CP
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="CP"
+                            value={well.CP}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                Wells: formData.Wells.map((w, i) =>
+                                  i === index ? { ...w, CP: e.target.value } : w
+                                ),
+                              })
+                            }
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                           />
                         </div>
                         <div>
                           <label
                             htmlFor="Active"
-                            className={`block text-sm font-medium ${
-                              theme === "light" ? "text-gray-700" : "text-white"
-                            }`}
+                            className="block text-sm font-medium text-gray-700"
                           >
                             Active
                           </label>
@@ -1325,11 +1345,7 @@ const EditLeaseModal = ({
                                 ),
                               })
                             }
-                            className={`mt-1 form-input block w-full px-3 py-2 ${
-                              theme === "light"
-                                ? "border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300"
-                                : "border border-gray-600 rounded-md shadow-sm focus:outline-none focus:border-blue-300 bg-gray-700 text-white"
-                            } transition duration-150`}
+                            className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                             required
                           >
                             <option value="Y">Active</option>
@@ -1349,16 +1365,25 @@ const EditLeaseModal = ({
                     )}
                   </div>
                 ))}
+                {toast.visible && (
+                  <div className="fixed inset-0 flex items-center justify-center z-50">
+                    <div className="bg-red-500 text-white p-4 rounded shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <span>{toast.message}</span>
+                        <button
+                          onClick={() => setToast({ ...toast, visible: false })}
+                          className="ml-4"
+                        >
+                          <FontAwesomeIcon icon={faTimes} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
-            <div
-              className={`sticky bottom-0 p-4 ${
-                theme === "light"
-                  ? "bg-white bg-opacity-90"
-                  : "bg-gray-700 bg-opacity-90"
-              }`}
-            >
+            <div className="sticky bottom-0 p-4 bg-white bg-opacity-90">
               <div className="flex justify-end space-x-4">
                 {activeTab === "wells" && (
                   <button
@@ -1397,7 +1422,6 @@ const EditLeaseModal = ({
               </div>
             </div>
           </form>
-          {/* </div> */}
         </div>
       </div>
     </div>
