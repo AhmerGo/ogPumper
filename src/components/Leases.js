@@ -55,7 +55,7 @@ const Leases = () => {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
       } else {
-        baseUrl = "https://lcs.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await axios.get(`${baseUrl}/api/leases.php`);
@@ -169,7 +169,7 @@ const Leases = () => {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
       } else {
-        baseUrl = "https://lcs.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await axios.patch(
@@ -418,7 +418,7 @@ const EditLeaseModal = ({
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
       } else {
-        baseUrl = "https://lcs.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await axios.delete(`${baseUrl}/api/leases.php`, {
@@ -449,7 +449,7 @@ const EditLeaseModal = ({
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
       } else {
-        baseUrl = "https://lcs.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await axios.get(`${baseUrl}/api/usertags.php`);
@@ -500,7 +500,7 @@ const EditLeaseModal = ({
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
       } else {
-        baseUrl = "https://lcs.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.com";
       }
 
       const response = await axios.delete(`${baseUrl}/api/leases.php`, {
@@ -1041,7 +1041,7 @@ const EditLeaseModal = ({
                                   ),
                                 })
                               }
-                              step="0.1" // Added step attribute
+                              step="1" // Added step attribute
                               className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                             />
                           </div>
@@ -1067,6 +1067,7 @@ const EditLeaseModal = ({
                                   ),
                                 })
                               }
+                              step="0.01" // Added step attribute
                               className="mt-1 form-input block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:border-blue-300 transition duration-150"
                             />
                           </div>
