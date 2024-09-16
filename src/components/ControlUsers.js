@@ -132,10 +132,11 @@ const ControlUsers = () => {
       );
     }
   };
-
   const filteredAndSortedUsers = users
     .filter(
       (user) =>
+        user.UserID !== "unassigned" && // Ensure it's not an unassigned user
+        user.UserID !== "admin" && // Exclude the user with UserID "Administrator"
         (filterRole === "All" || user.Role === filterRole) &&
         ((user.FullName &&
           user.FullName.toLowerCase().includes(searchTerm.toLowerCase())) ||

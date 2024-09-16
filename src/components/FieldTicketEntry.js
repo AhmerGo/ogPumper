@@ -39,8 +39,9 @@ function FieldTicketEntry() {
     lease: state?.lease || "",
     well: state?.well || "",
     ticketType: state?.ticketType || "",
-    ticketNumber: (state?.highestTicketNumber).toString(),
+    ticketNumber: (state?.highestTicketNumber || "").toString(),
     note: state?.noteDefault || "",
+    jobTypeID: state?.jobTypeID || "", // Add this line
   });
 
   const [items, setItems] = useState([]);
@@ -242,6 +243,7 @@ function FieldTicketEntry() {
       const selectedTicketType = ticketTypes.find(
         (type) => type.Description === formFields.ticketType
       );
+      console.log(selectedTicketType);
 
       const jobTypeID = selectedTicketType ? selectedTicketType.JobTypeID : "";
 
@@ -276,10 +278,10 @@ function FieldTicketEntry() {
         lease: formFields.lease,
         well: formFields.well,
         ticketType: formFields.ticketType,
-        ticketNumber: formFields.ticketNumber, // Include ticketNumber
+        ticketNumber: formFields.ticketNumber,
         userID: userID,
         note: formFields.note,
-        JobTypeID: "1",
+        JobTypeID: formFields.jobTypeID, // Use jobTypeID from formFields
         items: updatedItems,
       };
 

@@ -179,6 +179,7 @@ function CreateFieldTicket() {
         ticketType: ticketTypeDescription,
         noteDefault,
         highestTicketNumber, // Add highestTicketNumber to the state
+        jobTypeID: ticketType,
       },
     });
   };
