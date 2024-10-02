@@ -113,7 +113,7 @@ function SignInPage() {
         setUser(user.Role, user.UserID);
         localStorage.setItem("userRole", user.Role);
         localStorage.setItem("userID", user.UserID);
-        navigate("/home");
+        navigate("/dashboard");
       } else {
         setError("Failed to create new user");
       }
@@ -176,7 +176,11 @@ function SignInPage() {
             })
           );
 
-          navigate("/home");
+          if (user.Role === "P") {
+            navigate("/home");
+          } else {
+            navigate("/ticketGrid");
+          }
         } else {
           setError(message);
         }
@@ -205,7 +209,11 @@ function SignInPage() {
         localStorage.setItem("userRole", role);
         localStorage.setItem("userID", userID);
 
-        navigate("/home");
+        if (role === "P") {
+          navigate("/home");
+        } else {
+          navigate("/dashboard");
+        }
       } else {
         setError("Invalid credentials. Please sign in online first.");
       }
