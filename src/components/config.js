@@ -7,7 +7,7 @@ const getBaseUrl = () => {
     return `https://${parts[0]}.ogfieldticket.com`;
   }
 
-  return "https://test.ogfieldticket.com"; // Fallback base URL
+  return "https://beta.ogpumper.net"; // Fallback base URL
 };
 
 export const baseUrl = getBaseUrl();

@@ -12,9 +12,10 @@ import {
   faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
+import { useTheme } from "./ThemeContext";
 
 const Leases = () => {
-  const { theme } = "light";
+  const { theme } = useTheme();
   const [leases, setLeases] = useState([]);
   const [filteredLeases, setFilteredLeases] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -223,28 +224,34 @@ const Leases = () => {
             <FontAwesomeIcon icon={faSort} /> Sort
           </button>
           {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded z-50">
+            <div
+              className={`absolute right-0 mt-2 w-48 shadow-lg rounded z-50 ${
+                theme === "dark"
+                  ? "bg-gray-800 text-white"
+                  : "bg-white text-black"
+              }`}
+            >
               <ul>
                 <li
-                  className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${
-                    sortKey === "LeaseName" ? "font-bold" : ""
-                  }`}
+                  className={`px-4 py-2 cursor-pointer ${
+                    theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  } ${sortKey === "LeaseName" ? "font-bold" : ""}`}
                   onClick={() => handleSortClick("LeaseName")}
                 >
                   Lease Name
                 </li>
                 <li
-                  className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${
-                    sortKey === "LeaseID" ? "font-bold" : ""
-                  }`}
+                  className={`px-4 py-2 cursor-pointer ${
+                    theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  } ${sortKey === "LeaseID" ? "font-bold" : ""}`}
                   onClick={() => handleSortClick("LeaseID")}
                 >
                   Lease ID
                 </li>
                 <li
-                  className={`px-4 py-2 hover:bg-gray-100 cursor-pointer ${
-                    sortKey === "PumperID" ? "font-bold" : ""
-                  }`}
+                  className={`px-4 py-2 cursor-pointer ${
+                    theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  } ${sortKey === "PumperID" ? "font-bold" : ""}`}
                   onClick={() => handleSortClick("PumperID")}
                 >
                   Pumper ID

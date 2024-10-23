@@ -49,6 +49,7 @@ const TicketGrid = () => {
         headerName: "Ticket",
         field: "Ticket",
         sortable: true,
+        sort: "desc", // Set the default sort order to descending
         filter: true,
         width: 100,
         cellStyle: { textAlign: "center" },

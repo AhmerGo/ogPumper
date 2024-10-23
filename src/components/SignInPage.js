@@ -12,7 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import logo from "../assets/logo.jpg";
 import { useUser } from "./UserContext";
-
+import { baseUrl } from "./config";
 function SignInPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -249,7 +249,11 @@ function SignInPage() {
           setUser(user.Role, user.UserID);
           localStorage.setItem("userRole", user.Role);
           localStorage.setItem("userID", user.UserID);
-          navigate("/home");
+          if (user.Role === "P") {
+            navigate("/home");
+          } else {
+            navigate("/ticketGrid");
+          }
         } else if (data.message === "User not found") {
           setShowPrompt(true);
           setToken(token);

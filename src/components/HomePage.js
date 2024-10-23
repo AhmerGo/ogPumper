@@ -49,6 +49,12 @@ const HomePage = React.memo(() => {
     []
   );
 
+  useEffect(() => {
+    if (userRole !== "P") {
+      navigate("/ticketGrid");
+    }
+  }, [userRole, navigate]);
+
   const handleSearchChange = useCallback(
     (event) => {
       debouncedSearch(event.target.value);
