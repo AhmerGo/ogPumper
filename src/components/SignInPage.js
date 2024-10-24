@@ -109,10 +109,12 @@ function SignInPage() {
 
       const data = await response.json();
       if (data.success) {
-        const { user } = data;
-        setUser(user.Role, user.UserID);
+        const { success, message, user, companyName } = data;
+        setUser(user.Role, user.UserID, companyName);
         localStorage.setItem("userRole", user.Role);
         localStorage.setItem("userID", user.UserID);
+        localStorage.setItem("companyName", companyName);
+
         navigate("/dashboard");
       } else {
         setError("Failed to create new user");
@@ -164,6 +166,7 @@ function SignInPage() {
         const { success, message, user, companyName } = data;
         if (success) {
           setUser(user.Role, user.UserID, companyName);
+
           localStorage.setItem("userRole", user.Role);
           localStorage.setItem("userID", user.UserID);
           localStorage.setItem("companyName", companyName);

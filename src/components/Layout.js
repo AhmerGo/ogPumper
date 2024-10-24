@@ -334,9 +334,12 @@ function Layout({ children }) {
       <NavBarContainer style={navBarAnimation} theme={theme}>
         <Logo onClick={() => navigate("/home")} theme={theme}>
           <HomeIcon className="material-icon" />
-          {companyName && companyName.lenght > 3
-            ? companyName
-            : "ogFieldTicket"}
+          <span>
+            {" "}
+            {companyName && companyName.length > 3
+              ? companyName
+              : "ogFieldTicket"}
+          </span>
         </Logo>
         <NavItems>
           {userRole !== "P" && (
