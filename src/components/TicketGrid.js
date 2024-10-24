@@ -61,10 +61,12 @@ const TicketGrid = () => {
         filter: "agDateColumnFilter",
         width: 120,
         valueFormatter: (params) =>
-          params.value ? new Date(params.value).toLocaleDateString() : "",
+          params.value
+            ? new Date(params.value + "T00:00:00").toLocaleDateString()
+            : "",
         filterParams: {
           comparator: function (filterLocalDateAtMidnight, cellValue) {
-            const cellDate = new Date(cellValue);
+            const cellDate = new Date(cellValue + "T00:00:00"); // Ensure consistent time for filtering
             if (cellDate < filterLocalDateAtMidnight) {
               return -1;
             } else if (cellDate > filterLocalDateAtMidnight) {
@@ -75,6 +77,7 @@ const TicketGrid = () => {
           },
         },
       },
+
       {
         headerName: "Lease/Well",
         field: "LeaseWell",

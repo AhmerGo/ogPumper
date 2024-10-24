@@ -161,11 +161,13 @@ function SignInPage() {
           body: JSON.stringify({ username, password }),
         });
         const data = await response.json();
-        const { success, message, user } = data;
+        const { success, message, user, companyName } = data;
         if (success) {
-          setUser(user.Role, user.UserID);
+          setUser(user.Role, user.UserID, companyName);
           localStorage.setItem("userRole", user.Role);
           localStorage.setItem("userID", user.UserID);
+          localStorage.setItem("companyName", companyName);
+
           localStorage.setItem(
             "credentials",
             JSON.stringify({
@@ -173,6 +175,7 @@ function SignInPage() {
               password: hashPassword(password),
               role: user.Role,
               userID: user.UserID,
+              companyName: companyName,
             })
           );
 
@@ -198,6 +201,7 @@ function SignInPage() {
         password: storedPasswordHash,
         role,
         userID,
+        companyName,
       } = storedCredentials;
       const enteredPasswordHash = hashPassword(password);
 
@@ -205,9 +209,10 @@ function SignInPage() {
         username === storedUsername &&
         enteredPasswordHash === storedPasswordHash
       ) {
-        setUser(role, userID);
+        setUser(role, userID, companyName);
         localStorage.setItem("userRole", role);
         localStorage.setItem("userID", userID);
+        localStorage.setItem("companyName", companyName);
 
         if (role === "P") {
           navigate("/home");
@@ -245,10 +250,12 @@ function SignInPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const { user } = data;
-          setUser(user.Role, user.UserID);
+          const { success, message, user, companyName } = data;
+          setUser(user.Role, user.UserID, companyName);
           localStorage.setItem("userRole", user.Role);
           localStorage.setItem("userID", user.UserID);
+          localStorage.setItem("companyName", companyName);
+
           if (user.Role === "P") {
             navigate("/home");
           } else {
@@ -288,10 +295,12 @@ function SignInPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const { user } = data;
-          setUser(user.Role, user.UserID);
+          const { success, message, user, companyName } = data;
+          setUser(user.Role, user.UserID, companyName);
           localStorage.setItem("userRole", user.Role);
           localStorage.setItem("userID", user.UserID);
+          localStorage.setItem("companyName", companyName);
+
           navigate("/home");
         } else {
           setError("Google Sign-In failed.");

@@ -275,9 +275,10 @@ const CloseIcon = styled.div`
 function Layout({ children }) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
-  const { userRole, userID, setUser } = useUser();
+  const { userRole, userID, setUser, companyName } = useUser();
   const [spinning, setSpinning] = useState(false);
   const [profileCardVisible, setProfileCardVisible] = useState(false);
+  const [subdomain, setSubdomain] = useState("");
 
   const profileCardAnimation = useSpring({
     opacity: profileCardVisible ? 1 : 0,
@@ -333,7 +334,9 @@ function Layout({ children }) {
       <NavBarContainer style={navBarAnimation} theme={theme}>
         <Logo onClick={() => navigate("/home")} theme={theme}>
           <HomeIcon className="material-icon" />
-          <span>ogFieldTicket</span>
+          {companyName && companyName.lenght > 3
+            ? companyName
+            : "ogFieldTicket"}
         </Logo>
         <NavItems>
           {userRole !== "P" && (

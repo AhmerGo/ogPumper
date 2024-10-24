@@ -153,8 +153,9 @@ const PrintSection = ({
                 <div class="section">
                   <h2>Ticket Information & Items</h2>
                   <div><strong>Date:</strong> ${new Date(
-                    ticket.TicketDate
-                  ).toLocaleDateString()}</div>
+                    ticket.TicketDate + "T00:00:00"
+                  ).toLocaleDateString()}
+</div>
                   <div><strong>Lease/User:</strong> ${
                     ticket.LeaseName || "N/A"
                   } / ${ticket.UserID || "N/A"}</div>
