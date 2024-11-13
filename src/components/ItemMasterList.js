@@ -15,9 +15,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import "tailwindcss/tailwind.css";
 
-// Import ag-grid-enterprise package
-import "ag-grid-enterprise";
-
 Modal.setAppElement("#root");
 
 const MasterList = () => {
@@ -188,8 +185,9 @@ const MasterList = () => {
   };
 
   const onExportClick = () => {
+    const currentDate = new Date().toISOString().slice(0, 10); // Gets YYYY-MM-DD
     const params = {
-      fileName: "master-list.csv",
+      fileName: `master-list-${currentDate}.csv`,
     };
     gridApiRef.current.exportDataAsCsv(params);
   };

@@ -1,3 +1,5 @@
+// SignInPage.js
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
@@ -12,7 +14,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import logo from "../assets/logo.jpg";
 import { useUser } from "./UserContext";
-import { baseUrl } from "./config";
+
 function SignInPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -25,6 +27,8 @@ function SignInPage() {
   const [isExistingUser, setIsExistingUser] = useState(null);
   const [userID, setUserID] = useState("");
   const [token, setToken] = useState("");
+  const [existingUserPassword, setExistingUserPassword] = useState("");
+  const [existingUserError, setExistingUserError] = useState("");
 
   const formAnimation = useSpring({
     opacity: 1,
@@ -85,45 +89,6 @@ function SignInPage() {
       setError("An error occurred while sending password reset email.");
       setSuccessMessage(""); // Clear any previous success message
     }
-  };
-  const handleCreateNewUser = async () => {
-    try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
-      } else {
-        baseUrl = "https://test.ogfieldticket.com";
-      }
-
-      const response = await fetch(`${baseUrl}/api/google_login.php`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token, password }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        const { success, message, user, companyName } = data;
-        setUser(user.Role, user.UserID, companyName);
-        localStorage.setItem("userRole", user.Role);
-        localStorage.setItem("userID", user.UserID);
-        localStorage.setItem("companyName", companyName);
-
-        navigate("/dashboard");
-      } else {
-        setError("Failed to create new user");
-      }
-    } catch (error) {
-      setError("An error occurred while creating new user");
-    }
-
-    setShowPrompt(false);
   };
 
   function hashPassword(password) {
@@ -253,7 +218,7 @@ function SignInPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const { success, message, user, companyName } = data;
+          const { user, companyName } = data;
           setUser(user.Role, user.UserID, companyName);
           localStorage.setItem("userRole", user.Role);
           localStorage.setItem("userID", user.UserID);
@@ -276,6 +241,10 @@ function SignInPage() {
       });
   };
 
+  const handleGoogleLoginError = () => {
+    setError("Google Sign-In failed.");
+  };
+
   const handleExistingUserSubmit = () => {
     const hostname = window.location.hostname;
     const parts = hostname.split(".");
@@ -293,35 +262,72 @@ function SignInPage() {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ token, userID, password }),
+      body: JSON.stringify({
+        token,
+        userID,
+        password: existingUserPassword,
+      }),
     })
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const { success, message, user, companyName } = data;
+          const { user, companyName } = data;
           setUser(user.Role, user.UserID, companyName);
           localStorage.setItem("userRole", user.Role);
           localStorage.setItem("userID", user.UserID);
           localStorage.setItem("companyName", companyName);
-
           navigate("/home");
         } else {
-          setError("Google Sign-In failed.");
+          setExistingUserError(data.message);
         }
       })
       .catch((error) => {
-        setError("An error occurred during Google Sign-In.");
+        setExistingUserError("An error occurred during Google Sign-In.");
       });
+  };
+
+  const handleCreateNewUser = async () => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+      } else {
+        baseUrl = "https://test.ogfieldticket.com";
+      }
+
+      const response = await fetch(`${baseUrl}/api/google_login.php`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token, password }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        const { user, companyName } = data;
+        setUser(user.Role, user.UserID, companyName);
+        localStorage.setItem("userRole", user.Role);
+        localStorage.setItem("userID", user.UserID);
+        localStorage.setItem("companyName", companyName);
+
+        navigate("/dashboard");
+      } else {
+        setError("Failed to create new user");
+      }
+    } catch (error) {
+      setError("An error occurred while creating new user");
+    }
 
     setShowPrompt(false);
   };
 
-  const handleGoogleLoginError = () => {
-    setError("Google Sign-In failed.");
-  };
-
   return (
-    <GoogleOAuthProvider clientId="43210536118-10g29la6m8pfd5epk6u16851igpnlrqc.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
       <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200">
         <animated.div
           style={formAnimation}
@@ -458,6 +464,7 @@ function SignInPage() {
                 onClick={() => {
                   setShowPrompt(false);
                   setIsExistingUser(null);
+                  setExistingUserError("");
                 }}
               >
                 <FontAwesomeIcon icon={faTimes} className="text-2xl" />
@@ -467,7 +474,7 @@ function SignInPage() {
                 className="text-blue-500 text-4xl mb-4"
               />
               <h2 className="text-2xl font-semibold text-gray-700">
-                Enter your User ID
+                Enter your User ID and Password
               </h2>
               <input
                 type="text"
@@ -476,6 +483,22 @@ function SignInPage() {
                 className="w-full border-gray-300 border-2 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300"
                 placeholder="User ID"
               />
+              <input
+                type="password"
+                value={existingUserPassword}
+                onChange={(e) => setExistingUserPassword(e.target.value)}
+                className="w-full border-gray-300 border-2 rounded-md px-4 py-2 text-base focus:outline-none focus:ring-4 focus:ring-gray-400 focus:border-transparent transition-all duration-300 mt-4"
+                placeholder="Password"
+              />
+              {existingUserError && (
+                <p className="text-red-500 text-base sm:text-lg animate-pulse">
+                  <FontAwesomeIcon
+                    icon={faExclamationCircle}
+                    className="mr-2"
+                  />
+                  {existingUserError}
+                </p>
+              )}
               <button
                 className="bg-green-500 text-white py-2 px-6 rounded-md hover:bg-green-600 transition duration-300 shadow-md mt-4"
                 onClick={handleExistingUserSubmit}
