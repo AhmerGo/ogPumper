@@ -327,7 +327,7 @@ function SignInPage() {
   };
 
   return (
-    <GoogleOAuthProvider clientId="YOUR_GOOGLE_CLIENT_ID">
+    <GoogleOAuthProvider clientId="43210536118-10g29la6m8pfd5epk6u16851igpnlrqc.apps.googleusercontent.com">
       <div className="min-h-screen flex flex-col justify-center items-center relative overflow-hidden bg-gradient-to-r from-gray-100 to-gray-200">
         <animated.div
           style={formAnimation}
