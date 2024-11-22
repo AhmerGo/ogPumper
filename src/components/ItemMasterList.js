@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSpring, animated } from "react-spring";
 import Modal from "react-modal";
 import axios from "axios";
-import { useTheme } from "./ThemeContext";
+import { useTheme } from "ogcommon";
 import { AgGridReact } from "ag-grid-react";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";

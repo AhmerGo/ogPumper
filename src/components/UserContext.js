@@ -1,5 +1,5 @@
 // UserContext.js
-import { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 const UserContext = createContext();
 
@@ -25,7 +25,7 @@ export const UserProvider = ({ children }) => {
 
     const storedCompanyName = localStorage.getItem("companyName");
     if (storedCompanyName) {
-      setUserID(storedCompanyName);
+      setCompanyName(storedCompanyName);
     }
   }, []);
 

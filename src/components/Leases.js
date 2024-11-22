@@ -12,7 +12,7 @@ import {
   faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
-import { useTheme } from "./ThemeContext";
+import { useTheme } from "ogcommon";
 
 const Leases = () => {
   const { theme } = useTheme();
@@ -62,27 +62,27 @@ const Leases = () => {
       const response = await axios.get(`${baseUrl}/api/leases.php`);
       const data = response.data;
       setLeases(data);
-      setFilteredLeases(data);
     } catch (error) {
       console.error("Error fetching leases:", error);
     }
   };
 
   const handleSearch = (e) => {
-    const searchTerm = e.target.value.toLowerCase();
-    setSearchTerm(searchTerm);
+    setSearchTerm(e.target.value.toLowerCase());
+    setCurrentPage(1);
+  };
 
+  useEffect(() => {
     const filtered = leases.filter(
       (lease) =>
-        lease.LeaseID.toLowerCase().includes(searchTerm) ||
-        lease.LeaseName.toLowerCase().includes(searchTerm) ||
-        lease.PumperID.toLowerCase().includes(searchTerm) ||
-        lease.RRC.toLowerCase().includes(searchTerm)
+        lease.LeaseID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lease.LeaseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lease.PumperID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lease.RRC.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     setFilteredLeases(filtered);
-    setCurrentPage(1);
-  };
+  }, [leases, searchTerm]);
 
   const handleSort = (key) => {
     let order = sortOrder === "asc" ? "desc" : "asc";
@@ -1264,7 +1264,7 @@ const EditLeaseModal = ({
                           <input
                             type="text"
                             placeholder="External Property #"
-                            value={well.ExternalPropertyNumber}
+                            value={well.PropertyNum}
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
@@ -1272,7 +1272,7 @@ const EditLeaseModal = ({
                                   i === index
                                     ? {
                                         ...w,
-                                        ExternalPropertyNumber: e.target.value,
+                                        PropertyNum: e.target.value,
                                       }
                                     : w
                                 ),
@@ -1292,13 +1292,13 @@ const EditLeaseModal = ({
                           <input
                             type="text"
                             placeholder="API"
-                            value={well.API}
+                            value={well.AllocPct}
                             onChange={(e) =>
                               setFormData({
                                 ...formData,
                                 Wells: formData.Wells.map((w, i) =>
                                   i === index
-                                    ? { ...w, API: e.target.value }
+                                    ? { ...w, AllocPct: e.target.value }
                                     : w
                                 ),
                               })

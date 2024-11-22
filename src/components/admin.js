@@ -8,7 +8,7 @@ import {
   faList,
 } from "@fortawesome/free-solid-svg-icons";
 import Modal from "react-modal";
-import { useTheme } from "./ThemeContext";
+import { useTheme } from "ogcommon";
 import JobListPage from "./JobTypeForm";
 import Leases from "./Leases";
 import ControlUsers from "./ControlUsers";

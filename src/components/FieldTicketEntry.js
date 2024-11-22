@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useTheme } from "./ThemeContext";
 import { useSpring, animated } from "react-spring";
-import { useUser } from "./UserContext";
+import { useUser, useTheme } from "ogcommon";
 import Modal from "react-modal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {

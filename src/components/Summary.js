@@ -8,8 +8,7 @@ import React, {
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
-import { useTheme } from "./ThemeContext";
-import { useUser } from "./UserContext";
+import { useTheme, useUser } from "ogcommon";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Modal from "react-modal";
 import {
@@ -21,7 +20,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import PrintSection from "./PrintSection";
 import { parseISO, format } from "date-fns";
-
+import * as XLSX from "xlsx";
 const ConfirmationModal = ({
   isOpen,
   onConfirm,
@@ -218,6 +217,107 @@ const ViewFieldTicket = () => {
       }
     }
   }, [location.state]);
+
+  const handleExport = () => {
+    // Define the headers
+    const headers = [
+      "Ticket",
+      "TicketLine",
+      "JobItemID",
+      "ItemID",
+      "ItemDescription",
+      "UOM",
+      "Quantity",
+      "Cost",
+      "UseQuantity",
+      "UseCost",
+      "ItemOrder",
+      "Active",
+      "Ticket",
+      "LeaseID",
+      "WellID",
+      "TicketDate",
+      "Comments",
+      "JobTypeID",
+      "UserID",
+      "Billed",
+      "Note",
+    ];
+
+    // Initialize the data array with headers
+    const data = [headers];
+
+    // Loop through ticket items and format the data
+    ticket.Items.forEach((item) => {
+      const row = [
+        ticket.Ticket || "",
+        item.TicketLine || "",
+        item.JobItemID || "",
+        item.ItemID || "",
+        item.ItemDescription || "",
+        item.UOM || "",
+        item.Quantity || "",
+        item.Cost || "",
+        item.UseQuantity || "",
+        item.UseCost || "",
+        item.ItemOrder || "",
+        item.Active || "",
+        ticket.Ticket || "",
+        ticket.LeaseID || "",
+        ticket.WellID || "",
+        ticket.TicketDate || "",
+        ticket.Comments || "",
+        ticket.JobTypeID || "",
+        ticket.UserID || "",
+        ticket.Billed || "",
+        ticket.Note || "",
+      ];
+
+      data.push(row);
+    });
+
+    // Create a new workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+
+    // Apply formatting to the worksheet
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
+
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const column = XLSX.utils.encode_col(C);
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        const cell_address = { c: C, r: R };
+        const cell_ref = XLSX.utils.encode_cell(cell_address);
+        if (!worksheet[cell_ref]) continue;
+
+        // Apply left alignment and text wrapping
+        worksheet[cell_ref].s = {
+          alignment: {
+            vertical: "top",
+            horizontal: "left",
+            wrapText: true,
+          },
+        };
+      }
+
+      // Auto-fit columns
+      const max_length = data.reduce((max, row) => {
+        const cell_value = row[C] ? row[C].toString() : "";
+        return Math.max(max, cell_value.length);
+      }, 10); // Minimum column width
+      worksheet["!cols"] = worksheet["!cols"] || [];
+      worksheet["!cols"][C] = { width: max_length };
+    }
+
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ticket Data");
+
+    // Generate a filename
+    const filename = `Ticket_${ticket.Ticket || "export"}.xlsx`;
+
+    // Export the workbook
+    XLSX.writeFile(workbook, filename);
+  };
 
   const handleDeleteImage = useCallback(
     async (index) => {
@@ -1390,6 +1490,19 @@ const ViewFieldTicket = () => {
             <animated.div style={buttonAnimation} className="text-center mt-12">
               {!isEditing ? (
                 <div className="flex flex-wrap gap-2 justify-center">
+                  {userRole !== "P" && (
+                    <button
+                      onClick={handleExport}
+                      className={`w-full sm:w-auto px-4 py-2 font-semibold rounded-md transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 ${
+                        theme === "dark"
+                          ? "bg-yellow-600 hover:bg-yellow-700 text-gray-200"
+                          : "bg-yellow-500 hover:bg-yellow-600 text-white"
+                      }`}
+                    >
+                      Export
+                    </button>
+                  )}
+
                   {userRole !== "P" && (
                     <div className="hidden md:block">
                       <PrintSection

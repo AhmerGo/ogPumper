@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { useTheme } from "./ThemeContext";
+import { useTheme } from "ogcommon";
 import { useSpring, animated } from "react-spring";
 import debounce from "lodash.debounce";
 

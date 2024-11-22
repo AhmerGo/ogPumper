@@ -7,8 +7,8 @@ import React, {
   useMemo,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "./ThemeContext";
-import { useUser } from "./UserContext";
+import { useTheme } from "ogcommon";
+import { useUser } from "ogcommon";
 import debounce from "lodash.debounce";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";

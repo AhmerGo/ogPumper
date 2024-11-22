@@ -6,13 +6,11 @@ import CreateFieldTicket from "./components/CreateFieldTicket";
 import Layout from "./components/Layout";
 import "./index.css";
 import FieldTicketEntry from "./components/FieldTicketEntry";
-import { ThemeProvider } from "./components/ThemeContext";
 import Summary from "./components/Summary";
 import JobForm from "./components/JobTypeForm";
-import Details from "./components/Details";
+import { Details, UserProvider, ThemeProvider } from "ogcommon";
 import MasterList from "./components/ItemMasterList";
 import TicketGrid from "./components/TicketGrid";
-import { UserProvider } from "./components/UserContext";
 import Admin from "./components/admin";
 function App() {
   return (

@@ -17,7 +17,7 @@ import {
   faLock,
   faLockOpen,
 } from "@fortawesome/free-solid-svg-icons";
-import { useTheme } from "./ThemeContext";
+import { useTheme } from "ogcommon";
 import { baseUrl } from "./config"; // Importing baseUrl from config
 
 const roleDescriptions = {

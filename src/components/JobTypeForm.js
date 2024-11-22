@@ -13,7 +13,7 @@ import {
   faTasks,
   faStickyNote,
 } from "@fortawesome/free-solid-svg-icons";
-import { useTheme } from "./ThemeContext";
+import { useTheme } from "ogcommon";
 import Modal from "react-modal";
 import axios from "axios";
 import { Tooltip } from "react-tooltip";

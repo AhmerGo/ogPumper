@@ -6,8 +6,8 @@ import React, {
   useRef,
 } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "./ThemeContext";
-import { useUser } from "./UserContext";
+import { useTheme } from "ogcommon";
+import { useUser } from "ogcommon";
 import { AgGridReact } from "ag-grid-react";
 import debounce from "lodash.debounce";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";

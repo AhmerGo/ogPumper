@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useTheme } from "./ThemeContext";
-import { useUser } from "./UserContext";
+import { useTheme } from "ogcommon";
+import { useUser } from "ogcommon";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEnvelope,
@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 
 function UserProfile() {
   const { theme } = useTheme();
-  const { userID } = useUser();
+  const { userID, companyName, userRole } = useUser();
   const [user, setUser] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [editedUser, setEditedUser] = useState(null);
@@ -57,6 +57,10 @@ function UserProfile() {
           baseUrl = "https://test.ogfieldticket.com";
           console.log(`Using default URL: ${baseUrl}`);
         }
+
+        console.log(userID);
+        console.log(companyName);
+        console.log(userRole);
 
         const response = await axios.get(
           `${baseUrl}/api/userdetails.php?id=${userID}`
