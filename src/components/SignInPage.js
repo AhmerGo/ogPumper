@@ -130,11 +130,12 @@ function SignInPage() {
         const data = await response.json();
         const { success, message, user, companyName } = data;
         if (success) {
-          setUser(user.Role, user.UserID, companyName);
+          setUser(user.Role, user.UserID, companyName, user.JobRole);
 
           localStorage.setItem("userRole", user.Role);
           localStorage.setItem("userID", user.UserID);
           localStorage.setItem("companyName", companyName);
+          localStorage.setItem("jobRole", user.JobRole);
 
           localStorage.setItem(
             "credentials",

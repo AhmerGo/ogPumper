@@ -5,7 +5,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTheme } from "ogcommon";
 import { useSpring, animated } from "react-spring";
 import debounce from "lodash.debounce";
-
+import { useUser } from "ogcommon";
 function CreateFieldTicket() {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -14,7 +14,7 @@ function CreateFieldTicket() {
   const [well, setWell] = useState("");
   const [ticketType, setTicketType] = useState("");
   const location = useLocation();
-
+  const { userRole, userID, jobRole } = useUser();
   const { highestTicketNumber } = useParams();
   const [leases, setLeases] = useState([]);
   const [wells, setWells] = useState([]);
@@ -26,6 +26,7 @@ function CreateFieldTicket() {
 
   useEffect(() => {
     const extractSubdomain = () => {
+      console.log(jobRole);
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
       if (parts.length > 2) {
@@ -138,7 +139,21 @@ function CreateFieldTicket() {
 
       const response = await fetch(`${baseUrl}/api/jobs.php`);
       const data = await response.json();
-      setTicketTypes(data);
+
+      // Check if 'jobRole' is null or an empty string
+      if (jobRole === null || jobRole === "") {
+        // If 'jobRole' is null or empty, show all jobs
+        setTicketTypes(data);
+      } else {
+        // Otherwise, filter the data based on 'jobRole'
+        const filteredData = data.filter((job) => {
+          if (!job.JobRole) return false; // Exclude jobs without a JobRole
+          const roles = job.JobRole.split(",").map((role) => role.trim());
+          return roles.includes(jobRole);
+        });
+
+        setTicketTypes(filteredData);
+      }
     } catch (error) {
       console.error("Error fetching ticket types:", error);
     }

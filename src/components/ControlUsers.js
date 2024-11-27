@@ -1,3 +1,4 @@
+// Import necessary modules and components
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -18,8 +19,9 @@ import {
   faLockOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "ogcommon";
-import { baseUrl } from "./config"; // Importing baseUrl from config
+import { baseUrl } from "./config"; // Import base URL from config
 
+// Define role descriptions for user roles
 const roleDescriptions = {
   A: "Admin",
   O: "Operator",
@@ -28,8 +30,11 @@ const roleDescriptions = {
   I: "Investor",
 };
 
+// Main ControlUsers component
 const ControlUsers = () => {
+  // State variables
   const [users, setUsers] = useState([]);
+  const [jobRoles, setJobRoles] = useState([]); // New state for job roles
   const [editingUser, setEditingUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("All");
@@ -37,10 +42,13 @@ const ControlUsers = () => {
   const [sortOrder, setSortOrder] = useState("asc");
   const { theme } = useTheme();
 
+  // Fetch users and job roles when the component mounts
   useEffect(() => {
     fetchUsers();
+    fetchJobRoles(); // Fetch job roles
   }, []);
 
+  // Function to fetch users from the API
   const fetchUsers = async () => {
     try {
       const response = await axios.get(`${baseUrl}/api/userdetails.php`);
@@ -50,6 +58,57 @@ const ControlUsers = () => {
     }
   };
 
+  // Function to fetch job roles from the API
+  const fetchJobRoles = async () => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseApiUrl;
+
+      // Determine the base API URL based on the hostname
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseApiUrl = `https://${subdomainPart}.ogfieldticket.com`;
+      } else {
+        baseApiUrl = "https://test.ogfieldticket.com";
+      }
+
+      const response = await axios.get(`${baseApiUrl}/api/jobs.php`);
+      const data = response.data;
+
+      // Check if data is an array
+      if (!Array.isArray(data)) {
+        console.error("Expected data to be an array, but got:", data);
+        return;
+      }
+
+      // Extract JobRole values from each job type
+      let allJobRoles = [];
+
+      data.forEach((job) => {
+        // Ensure JobRole is a non-empty string
+        if (typeof job.JobRole === "string" && job.JobRole.trim() !== "") {
+          // Split the JobRole string by commas and trim whitespace
+          const roles = job.JobRole.split(",").map((role) => role.trim());
+          allJobRoles = allJobRoles.concat(roles);
+        }
+      });
+
+      // Remove duplicates and set the jobRoles state
+      const uniqueJobRoles = Array.from(new Set(allJobRoles));
+
+      // If no job roles were found, you might want to handle this case
+      if (uniqueJobRoles && uniqueJobRoles.length === 0) {
+        console.warn("No job roles found in the API response.");
+      }
+
+      setJobRoles(uniqueJobRoles);
+    } catch (error) {
+      console.error("Error fetching job roles:", error);
+    }
+  };
+
+  // Handler functions
   const handleEdit = (user) => setEditingUser(user);
   const handleCancel = () => setEditingUser(null);
   const handleSearch = (e) => setSearchTerm(e.target.value);
@@ -58,6 +117,7 @@ const ControlUsers = () => {
   const toggleSortOrder = () =>
     setSortOrder(sortOrder === "asc" ? "desc" : "asc");
 
+  // Function to save the updated user data
   const handleSave = async (updatedUserData) => {
     try {
       const response = await axios.patch(
@@ -79,6 +139,7 @@ const ControlUsers = () => {
     }
   };
 
+  // Function to disable a user account
   const handleDisable = async (userId) => {
     try {
       const response = await axios.patch(`${baseUrl}/api/userdetails.php`, {
@@ -106,6 +167,7 @@ const ControlUsers = () => {
     }
   };
 
+  // Function to enable a user account
   const handleEnable = async (userId) => {
     try {
       const response = await axios.patch(`${baseUrl}/api/userdetails.php`, {
@@ -132,11 +194,13 @@ const ControlUsers = () => {
       );
     }
   };
+
+  // Filter and sort users based on search and filter criteria
   const filteredAndSortedUsers = users
     .filter(
       (user) =>
-        user.UserID !== "unassigned" && // Ensure it's not an unassigned user
-        user.UserID !== "admin" && // Exclude the user with UserID "Administrator"
+        user.UserID !== "unassigned" && // Exclude unassigned users
+        user.UserID !== "admin" && // Exclude admin user
         (filterRole === "All" || user.Role === filterRole) &&
         ((user.FullName &&
           user.FullName.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -151,6 +215,7 @@ const ControlUsers = () => {
       return 0;
     });
 
+  // Main render
   return (
     <div
       className={`min-h-screen ${
@@ -160,8 +225,12 @@ const ControlUsers = () => {
       }`}
     >
       <div className="container mx-auto px-4 py-8">
+        {/* Page Title */}
         <h1 className="text-4xl font-bold mb-8 text-center">User Management</h1>
+
+        {/* Search, Filter, and Sort Controls */}
         <div className="mb-8 flex flex-col md:flex-row items-center gap-4">
+          {/* Search Input */}
           <div className="relative flex-grow w-full md:w-auto">
             <input
               type="text"
@@ -181,6 +250,8 @@ const ControlUsers = () => {
               }`}
             />
           </div>
+
+          {/* Role Filter */}
           <div className="flex items-center gap-2 w-full md:w-auto">
             <FontAwesomeIcon
               icon={faFilter}
@@ -203,6 +274,8 @@ const ControlUsers = () => {
               <option value="R">Read Only</option>
             </select>
           </div>
+
+          {/* Sort Controls */}
           <div className="flex items-center gap-2 w-full md:w-auto">
             <FontAwesomeIcon
               icon={faSort}
@@ -232,99 +305,115 @@ const ControlUsers = () => {
             </button>
           </div>
         </div>
+
+        {/* User Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredAndSortedUsers.map(
-            (user) =>
-              user.UserID !== "unassigned" && (
-                <div
-                  key={user.UserID}
-                  className={`p-6 rounded-lg shadow-lg hover:shadow-xl transition ${
-                    theme === "dark" ? "bg-gray-800" : "bg-white"
-                  } ${
-                    user.Disabled === "1" || user.Disabled === 1
-                      ? "opacity-50"
-                      : ""
+          {filteredAndSortedUsers.map((user) => (
+            <div
+              key={user.UserID}
+              className={`p-6 rounded-lg shadow-lg hover:shadow-xl transition ${
+                theme === "dark" ? "bg-gray-800" : "bg-white"
+              } ${
+                user.Disabled === "1" || user.Disabled === 1 ? "opacity-50" : ""
+              }`}
+            >
+              {/* User Header */}
+              <div className="flex justify-between items-center mb-4">
+                <h3
+                  className={`text-3xl font-semibold ${
+                    theme === "dark" ? "text-gray-200" : "text-gray-900"
                   }`}
                 >
-                  <div className="flex justify-between items-center mb-4">
-                    <h3
-                      className={`text-3xl font-semibold ${
-                        theme === "dark" ? "text-gray-200" : "text-gray-900"
-                      }`}
+                  {user.FullName}
+                </h3>
+                <div className="flex space-x-2">
+                  {/* Edit Button */}
+                  <button
+                    onClick={() => handleEdit(user)}
+                    className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition"
+                    aria-label="Edit user"
+                  >
+                    <FontAwesomeIcon icon={faEdit} />
+                  </button>
+                  {/* Enable/Disable Button */}
+                  {user.Disabled === "1" || user.Disabled === 1 ? (
+                    <button
+                      onClick={() => handleEnable(user.UserID)}
+                      className="p-2 rounded-full bg-green-500 text-white hover:bg-green-600 transition"
+                      aria-label="Enable user"
                     >
-                      {user.FullName}
-                    </h3>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(user)}
-                        className="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition"
-                        aria-label="Edit user"
-                      >
-                        <FontAwesomeIcon icon={faEdit} />
-                      </button>
-                      {user.Disabled === "1" || user.Disabled === 1 ? (
-                        <button
-                          onClick={() => handleEnable(user.UserID)}
-                          className="p-2 rounded-full bg-green-500 text-white hover:bg-green-600 transition"
-                          aria-label="Enable user"
-                        >
-                          <FontAwesomeIcon icon={faLockOpen} />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleDisable(user.UserID)}
-                          className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
-                          aria-label="Disable user"
-                        >
-                          <FontAwesomeIcon icon={faLock} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="flex items-center">
-                      <FontAwesomeIcon
-                        icon={faUser}
-                        className="mr-2 text-gray-500"
-                      />
-                      <span className="font-medium">
-                        {roleDescriptions[user.Role] || user.Role}
-                      </span>
-                    </p>
-                    <p className="flex items-center">
-                      <FontAwesomeIcon
-                        icon={faEnvelope}
-                        className="mr-2 text-gray-500"
-                      />
-                      <span>{user.Email}</span>
-                    </p>
-                    <p className="flex items-center">
-                      <FontAwesomeIcon
-                        icon={faPhone}
-                        className="mr-2 text-gray-500"
-                      />
-                      <span>{user.Phone}</span>
-                    </p>
-                    <p className="flex items-center">
-                      <FontAwesomeIcon
-                        icon={faCommentAlt}
-                        className="mr-2 text-gray-500"
-                      />
-                      <span>{user.Message}</span>
-                    </p>
-                    {user.Disabled === "1" && (
-                      <p className="flex items-center text-red-500">
-                        <FontAwesomeIcon icon={faLock} className="mr-2" />
-                        <span>Disabled</span>
-                      </p>
-                    )}
-                  </div>
+                      <FontAwesomeIcon icon={faLockOpen} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleDisable(user.UserID)}
+                      className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition"
+                      aria-label="Disable user"
+                    >
+                      <FontAwesomeIcon icon={faLock} />
+                    </button>
+                  )}
                 </div>
-              )
-          )}
+              </div>
+
+              {/* User Details */}
+              <div className="space-y-2">
+                {/* Role */}
+                <p className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faUser}
+                    className="mr-2 text-gray-500"
+                  />
+                  <span className="font-medium">
+                    {roleDescriptions[user.Role] || user.Role}
+                  </span>
+                </p>
+                {/* Job Role */}
+                <p className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faBriefcase}
+                    className="mr-2 text-gray-500"
+                  />
+                  <span>{user.JobRole || "N/A"}</span>
+                </p>
+                {/* Email */}
+                <p className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faEnvelope}
+                    className="mr-2 text-gray-500"
+                  />
+                  <span>{user.Email}</span>
+                </p>
+                {/* Phone */}
+                <p className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faPhone}
+                    className="mr-2 text-gray-500"
+                  />
+                  <span>{user.Phone}</span>
+                </p>
+                {/* Message */}
+                <p className="flex items-center">
+                  <FontAwesomeIcon
+                    icon={faCommentAlt}
+                    className="mr-2 text-gray-500"
+                  />
+                  <span>{user.Message}</span>
+                </p>
+                {/* Disabled Indicator */}
+                {user.Disabled === "1" && (
+                  <p className="flex items-center text-red-500">
+                    <FontAwesomeIcon icon={faLock} className="mr-2" />
+                    <span>Disabled</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
+      {/* Edit User Modal */}
       {editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 px-4">
           <div
@@ -332,6 +421,7 @@ const ControlUsers = () => {
               theme === "dark" ? "bg-gray-900 text-gray-100" : "bg-white"
             }`}
           >
+            {/* Modal Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-4 flex justify-between items-center">
               <h2 className="text-2xl font-semibold">
                 Edit User: {editingUser.FullName}
@@ -344,10 +434,12 @@ const ControlUsers = () => {
                 <FontAwesomeIcon icon={faTimes} size="lg" />
               </button>
             </div>
+            {/* Edit User Form */}
             <EditUserForm
               user={editingUser}
               onSave={handleSave}
               onCancel={handleCancel}
+              jobRoles={jobRoles} // Pass jobRoles to the form
             />
           </div>
         </div>
@@ -356,25 +448,33 @@ const ControlUsers = () => {
   );
 };
 
-const EditUserForm = ({ user, onSave, onCancel }) => {
+// Export the component
+
+// EditUserForm component
+const EditUserForm = ({ user, onSave, onCancel, jobRoles }) => {
   const [formData, setFormData] = useState({ ...user });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { theme } = useTheme();
 
+  // Validate the form inputs
   const validateForm = () => {
     const newErrors = {};
     if (!formData.Role.trim()) newErrors.Role = "Role is required";
+    if (!formData.JobRole || !formData.JobRole.trim())
+      newErrors.JobRole = "Job Role is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
@@ -389,6 +489,7 @@ const EditUserForm = ({ user, onSave, onCancel }) => {
     }
   };
 
+  // Form fields
   const fields = [
     {
       name: "FullName",
@@ -402,78 +503,117 @@ const EditUserForm = ({ user, onSave, onCancel }) => {
       type: "email",
     },
     { name: "Phone", icon: faPhone, placeholder: "Phone Number" },
-    {
-      name: "Role",
-      icon: faBriefcase,
-      placeholder: "User Role",
-      required: true,
-    },
-    {
-      name: "Message",
-      icon: faCommentAlt,
-      placeholder: "Message",
-      textarea: true,
-    },
   ];
 
+  // Render the form
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Render input fields */}
         {fields.map((field) => (
-          <div
-            key={field.name}
-            className={`relative ${
-              field.name === "Message" ? "md:col-span-2" : ""
-            }`}
-          >
+          <div key={field.name} className="relative">
             <FontAwesomeIcon
               icon={field.icon}
               className="absolute top-3 left-3 text-gray-400"
             />
-            {field.name === "Role" ? (
-              <select
-                name={field.name}
-                value={formData[field.name]}
-                onChange={handleChange}
-                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
-                  errors[field.name] ? "border-red-500" : "border-gray-300"
-                } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
-              >
-                {Object.entries(roleDescriptions).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            ) : field.textarea ? (
-              <textarea
-                name={field.name}
-                value={formData[field.name]}
-                onChange={handleChange}
-                placeholder={field.placeholder}
-                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
-                  errors[field.name] ? "border-red-500" : "border-gray-300"
-                } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
-                rows="4"
-              />
-            ) : (
-              <input
-                type={field.type || "text"}
-                name={field.name}
-                value={formData[field.name]}
-                onChange={handleChange}
-                placeholder={field.placeholder}
-                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
-                  errors[field.name] ? "border-red-500" : "border-gray-300"
-                } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
-              />
-            )}
+            <input
+              type={field.type || "text"}
+              name={field.name}
+              value={formData[field.name]}
+              onChange={handleChange}
+              placeholder={field.placeholder}
+              className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+                errors[field.name] ? "border-red-500" : "border-gray-300"
+              } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
+            />
             {errors[field.name] && (
               <p className="text-red-500 text-sm mt-1">{errors[field.name]}</p>
             )}
           </div>
         ))}
+
+        {/* Role Dropdown */}
+        <div className="relative">
+          <FontAwesomeIcon
+            icon={faBriefcase}
+            className="absolute top-3 left-3 text-gray-400"
+          />
+          <select
+            name="Role"
+            value={formData.Role}
+            onChange={handleChange}
+            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+              errors["Role"] ? "border-red-500" : "border-gray-300"
+            } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
+          >
+            <option value="">Select User Role</option>
+            {Object.entries(roleDescriptions).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+          {errors["Role"] && (
+            <p className="text-red-500 text-sm mt-1">{errors["Role"]}</p>
+          )}
+        </div>
+
+        {/* JobRole Dropdown */}
+        <div className="relative">
+          <FontAwesomeIcon
+            icon={faBriefcase}
+            className="absolute top-3 left-3 text-gray-400"
+          />
+          <select
+            name="JobRole"
+            value={formData.JobRole || ""}
+            onChange={handleChange}
+            disabled={jobRoles.length === 0}
+            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+              errors["JobRole"] ? "border-red-500" : "border-gray-300"
+            } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
+          >
+            {jobRoles.length === 0 ? (
+              <option value="">No Job Roles Available</option>
+            ) : (
+              <>
+                <option value="">Select Job Role</option>
+                {jobRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </>
+            )}
+          </select>
+          {errors["JobRole"] && (
+            <p className="text-red-500 text-sm mt-1">{errors["JobRole"]}</p>
+          )}
+        </div>
+
+        {/* Message Field */}
+        <div className="relative md:col-span-2">
+          <FontAwesomeIcon
+            icon={faCommentAlt}
+            className="absolute top-3 left-3 text-gray-400"
+          />
+          <textarea
+            name="Message"
+            value={formData.Message}
+            onChange={handleChange}
+            placeholder="Message"
+            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition ${
+              errors["Message"] ? "border-red-500" : "border-gray-300"
+            } ${theme === "dark" ? "bg-gray-800 text-gray-300" : ""}`}
+            rows="4"
+          />
+          {errors["Message"] && (
+            <p className="text-red-500 text-sm mt-1">{errors["Message"]}</p>
+          )}
+        </div>
       </div>
+
+      {/* Form Buttons */}
       <div className="flex justify-end space-x-4 mt-6">
         <button
           type="button"
@@ -498,4 +638,5 @@ const EditUserForm = ({ user, onSave, onCancel }) => {
   );
 };
 
+// Export the component
 export default ControlUsers;

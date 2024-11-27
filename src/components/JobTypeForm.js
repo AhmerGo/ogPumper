@@ -12,6 +12,7 @@ import {
   faTimes,
   faTasks,
   faStickyNote,
+  faUserTag,
 } from "@fortawesome/free-solid-svg-icons";
 import { useTheme } from "ogcommon";
 import Modal from "react-modal";
@@ -34,6 +35,11 @@ const JobListPage = () => {
   const [editingJobName, setEditingJobName] = useState(null);
   const [editingJobNote, setEditingJobNote] = useState(null);
   const [subdomain, setSubdomain] = useState("");
+  const [isJobRoleModalOpen, setIsJobRoleModalOpen] = useState(false);
+  const [selectedJobTypeId, setSelectedJobTypeId] = useState(null);
+  const [jobRoles, setJobRoles] = useState([]);
+  const [selectedJobRoleIds, setSelectedJobRoleIds] = useState([]); // Updated state for multiple selections
+  const [newJobRoleName, setNewJobRoleName] = useState("");
 
   useEffect(() => {
     const extractSubdomain = () => {
@@ -76,8 +82,46 @@ const JobListPage = () => {
     }
   };
 
+  const fetchJobRoles = async () => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+      } else {
+        baseUrl = "https://test.ogfieldticket.com";
+      }
+
+      const response = await fetch(`${baseUrl}/api/jobs.php`);
+      const data = await response.json();
+
+      // Extract JobRole values from each job type
+      let allJobRoles = [];
+
+      data.forEach((job) => {
+        if (job.JobRole) {
+          // Split the JobRole string by commas and trim whitespace
+          const roles = job.JobRole.split(",").map((role) => role.trim());
+          allJobRoles = allJobRoles.concat(roles);
+        }
+      });
+
+      // Remove duplicates
+      const uniqueJobRoles = Array.from(new Set(allJobRoles));
+
+      // Set the jobRoles state
+      setJobRoles(uniqueJobRoles);
+    } catch (error) {
+      console.error("Error fetching job roles:", error);
+    }
+  };
+
   useEffect(() => {
     fetchTicketTypes();
+    fetchJobRoles();
   }, [subdomain]);
 
   const toggleNoteVisibility = (e, jobId) => {
@@ -341,6 +385,80 @@ const JobListPage = () => {
     }
   };
 
+  const handleJobRoleClick = (jobTypeId) => {
+    setSelectedJobTypeId(jobTypeId);
+    setIsJobRoleModalOpen(true);
+    // Pre-fill selected job roles if available
+    const job = ticketTypes.find((job) => job.JobTypeID === jobTypeId);
+    if (job && job.JobRole) {
+      const roles = job.JobRole.split(",").map((role) => role.trim());
+      setSelectedJobRoleIds(roles);
+    } else {
+      setSelectedJobRoleIds([]);
+    }
+    setNewJobRoleName("");
+  };
+
+  const handleJobRoleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      let baseUrl;
+
+      if (parts.length > 2) {
+        const subdomainPart = parts.shift();
+        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+      } else {
+        baseUrl = "https://test.ogfieldticket.com";
+      }
+
+      // Combine selected job roles and new job role name (if provided)
+      let allRoles = [...selectedJobRoleIds];
+      if (newJobRoleName.trim() !== "") {
+        allRoles.push(newJobRoleName.trim());
+      }
+
+      // Remove duplicates and trim whitespace
+      const uniqueRoles = Array.from(
+        new Set(allRoles.map((role) => role.trim()))
+      );
+
+      // Create a comma-separated string of job roles
+      const jobRoleString = uniqueRoles.join(", ");
+
+      // Patch the updated JobRole list to the job
+      await axios.patch(
+        `${baseUrl}/api/jobs.php?jobtype=${selectedJobTypeId}`,
+        {
+          JobRole: jobRoleString,
+        }
+      );
+
+      // Update the job in state if necessary
+      fetchTicketTypes();
+      fetchJobRoles(); // Refresh job roles list if a new role was added
+
+      // Close the modal and reset state
+      setIsJobRoleModalOpen(false);
+      setSelectedJobRoleIds([]);
+      setNewJobRoleName("");
+    } catch (error) {
+      console.error("Error updating JobRoles:", error);
+    }
+  };
+  const handleJobRoleSelection = (e) => {
+    const value = e.target.value;
+    const checked = e.target.checked;
+    setSelectedJobRoleIds((prev) => {
+      if (checked) {
+        return [...prev, value];
+      } else {
+        return prev.filter((role) => role !== value);
+      }
+    });
+  };
+
   return (
     <>
       <div
@@ -481,6 +599,15 @@ const JobListPage = () => {
                         );
                       }}
                     />
+                    {/* New Icon for JobRole */}
+                    <FontAwesomeIcon
+                      icon={faUserTag}
+                      className="cursor-pointer mr-4"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleJobRoleClick(job.JobTypeID);
+                      }}
+                    />
                     <FontAwesomeIcon
                       icon={faTrash}
                       className={`cursor-pointer ${
@@ -501,6 +628,13 @@ const JobListPage = () => {
                     />
                   </div>
                 </div>
+                {/* Display associated JobRoles */}
+                {job.JobRoles && job.JobRoles.length > 0 && (
+                  <div className="mt-2">
+                    <strong>Job Roles:</strong>{" "}
+                    {job.JobRoles.map((role) => role.Name).join(", ")}
+                  </div>
+                )}
 
                 {visibleNoteJobId === job.JobTypeID && (
                   <animated.div
@@ -569,10 +703,129 @@ const JobListPage = () => {
           ))}
         </div>
       </div>
+      {/* Job Role Modal */}
+      {isJobRoleModalOpen && (
+        <Modal
+          isOpen={isJobRoleModalOpen}
+          onRequestClose={() => setIsJobRoleModalOpen(false)}
+          contentLabel="Select Job Roles"
+          className={`modal ${theme === "dark" ? "dark" : ""}`}
+          overlayClassName="modal-overlay"
+        >
+          {/* Modal content */}
+          <div
+            className={`relative rounded-lg shadow-xl p-8 ${
+              theme === "dark"
+                ? "bg-gray-800 text-white"
+                : "bg-white text-gray-800"
+            }`}
+          >
+            <button
+              onClick={() => setIsJobRoleModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors duration-200"
+            >
+              <i className="material-icons text-2xl">close</i>
+            </button>
+            <h2 className="text-3xl font-bold mb-8">Select Job Roles</h2>
+            {/* Multi-select checkboxes for JobRoles */}
+            <form onSubmit={handleJobRoleSubmit}>
+              <div className="mb-8">
+                <label className="block mb-2 font-semibold">Job Roles:</label>
+                <div className="max-h-60 overflow-y-auto border p-2 rounded">
+                  {jobRoles.map((role) => (
+                    <div key={role} className="flex items-center mb-2">
+                      <input
+                        type="checkbox"
+                        value={role}
+                        checked={selectedJobRoleIds.includes(role)}
+                        onChange={handleJobRoleSelection}
+                        className="form-checkbox"
+                      />
+                      <span className="ml-2">{role}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Option to create a new JobRole */}
+              <div className="mb-8">
+                <label
+                  htmlFor="newJobRole"
+                  className="block mb-2 font-semibold"
+                >
+                  Or Create New Job Role:
+                </label>
+                <input
+                  type="text"
+                  id="newJobRole"
+                  name="newJobRole"
+                  value={newJobRoleName}
+                  onChange={(e) => setNewJobRoleName(e.target.value)}
+                  className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
+                    theme === "dark"
+                      ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
+                      : "bg-gray-100 border-gray-300 focus:ring-blue-500"
+                  }`}
+                />
+              </div>
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsJobRoleModalOpen(false)}
+                  className={`px-6 py-2 rounded-lg focus:outline-none transition-colors duration-200 ${
+                    theme === "dark"
+                      ? "bg-gray-700 hover:bg-gray-600 focus:ring-2 focus:ring-gray-400"
+                      : "bg-gray-200 hover:bg-gray-300 focus:ring-2 focus:ring-gray-400"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`px-6 py-2 text-white rounded-lg focus:outline-none transition-colors duration-200 ${
+                    theme === "dark"
+                      ? "bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-400"
+                      : "bg-blue-500 hover:bg-blue-600 focus:ring-2 focus:ring-blue-400"
+                  }`}
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </Modal>
+      )}
       <style jsx>
         {`
           .rotate-45 {
             transform: rotate(45deg);
+          }
+          .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+          }
+
+          .modal {
+            position: relative;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border-radius: 0.5rem;
+            outline: none;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          }
+
+          .modal.dark {
+            background-color: #1a202c;
+            color: white;
           }
         `}
       </style>
