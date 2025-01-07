@@ -153,8 +153,8 @@ const TicketGrid = () => {
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://test.ogfieldticket.ogpumper.net";
       let nextTicketID = null;
 
       const response = await fetch(`${baseUrl}/api/tickets.php`);

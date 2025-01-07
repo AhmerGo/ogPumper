@@ -68,9 +68,9 @@ const ControlUsers = () => {
       // Determine the base API URL based on the hostname
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseApiUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseApiUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseApiUrl = "https://test.ogfieldticket.com";
+        baseApiUrl = "https://test.ogfieldticket.ogpumper.net";
       }
 
       const response = await axios.get(`${baseApiUrl}/api/jobs.php`);

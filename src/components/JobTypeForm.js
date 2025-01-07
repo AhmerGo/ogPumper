@@ -66,10 +66,10 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -90,9 +90,9 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
       }
 
       const response = await fetch(`${baseUrl}/api/jobs.php`);
@@ -200,10 +200,10 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
@@ -231,10 +231,10 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
@@ -263,10 +263,10 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -292,10 +292,10 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -318,10 +318,10 @@ const JobListPage = () => {
 
         if (parts.length > 2) {
           const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+          baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
           console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
-          baseUrl = "https://test.ogfieldticket.com";
+          baseUrl = "https://test.ogfieldticket.ogpumper.net";
           console.log(`Using default URL: ${baseUrl}`);
         }
 
@@ -361,10 +361,10 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -408,9 +408,9 @@ const JobListPage = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
       }
 
       // Combine selected job roles and new job role name (if provided)
@@ -874,10 +874,10 @@ const ItemsAnimation = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -926,9 +926,9 @@ const ItemsAnimation = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
       }
 
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -958,8 +958,8 @@ const ItemsAnimation = ({
   const handleDeleteItem = (itemId) => {
     console.log(itemId);
     const baseUrl = subdomain
-      ? `https://${subdomain}.ogfieldticket.com`
-      : "https://test.ogfieldticket.com";
+      ? `https://${subdomain}.ogfieldticket.ogpumper.net`
+      : "https://test.ogfieldticket.ogpumper.net";
 
     const data = {
       JobItemID: itemId.JobItemID,
@@ -996,10 +996,10 @@ const ItemsAnimation = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -1078,8 +1078,8 @@ const ItemsAnimation = ({
       const newPosition = index;
       const jobTypeID = movedItem.JobTypeID;
       const baseUrl = subdomain
-        ? `https://${subdomain}.ogfieldticket.com`
-        : "https://test.ogfieldticket.com";
+        ? `https://${subdomain}.ogfieldticket.ogpumper.net`
+        : "https://test.ogfieldticket.ogpumper.net";
 
       const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemID}`, {
         method: "PATCH",

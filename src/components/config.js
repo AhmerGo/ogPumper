@@ -4,10 +4,10 @@ const getBaseUrl = () => {
   const parts = hostname.split(".");
 
   if (parts.length > 2 && parts[1] === "ogfieldticket") {
-    return `https://${parts[0]}.ogfieldticket.com`;
+    return `https://${parts[0]}.ogfieldticket.ogpumper.net`;
   }
 
-  return "https://test.ogfieldticket.com"; // Fallback base URL
+  return "https://test.ogfieldticket.ogpumper.net"; // Fallback base URL
 };
 
 export const baseUrl = getBaseUrl();

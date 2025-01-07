@@ -54,9 +54,9 @@ const Leases = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
       }
 
       const response = await axios.get(`${baseUrl}/api/leases.php`);
@@ -168,9 +168,9 @@ const Leases = () => {
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
       }
 
       const response = await axios.patch(
@@ -423,9 +423,9 @@ const EditLeaseModal = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
       }
 
       const response = await axios.delete(`${baseUrl}/api/leases.php`, {
@@ -454,9 +454,9 @@ const EditLeaseModal = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
       }
 
       const response = await axios.get(`${baseUrl}/api/usertags.php`);
@@ -505,9 +505,9 @@ const EditLeaseModal = ({
 
       if (parts.length > 2) {
         const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.com`;
+        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.com";
+        baseUrl = "https://test.ogfieldticket.ogpumper.net";
       }
 
       const response = await axios.delete(`${baseUrl}/api/leases.php`, {

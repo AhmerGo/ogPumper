@@ -6,7 +6,7 @@ import React, {
   lazy,
   Suspense,
 } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import { useTheme, useUser } from "ogcommon";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -112,6 +112,9 @@ const ViewFieldTicket = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
   const MAX_FILE_SIZE = 6 * 1024 * 1024; // 5MB
+  const [ticketNumber, setTicketNumber] = useState(null);
+  const [ticketData, setTicketData] = useState(null);
+  const [loading, setLoading] = useState(true); // New loading state
 
   const [retrievedImages, setRetrievedImages] = useState([]);
 
@@ -198,6 +201,38 @@ const ViewFieldTicket = () => {
     setFieldNote(ticketData.Note || "");
     console.log(ticket);
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const ticketNum = params.get("ticket");
+    setTicketNumber(ticketNum);
+  }, [location]);
+
+  useEffect(() => {
+    if (ticketNumber) {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+
+      // Build baseUrl dynamically if needed
+      const baseUrl = "https://test.ogfieldticket.ogpumper.net";
+
+      // parts.length > 2
+      //   ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+      //   : "https://test.ogfieldticket.ogpumper.net";
+
+      fetch(`${baseUrl}/api/tickets.php?ticket=${ticketNumber}`)
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Data from API:", data);
+          setTicket(data);
+          setLoading(false); // Data has been loaded
+        })
+        .catch((error) => {
+          console.error("Error fetching ticket data:", error);
+          setLoading(false); // Stop loading even if there was an error
+        });
+    }
+  }, [ticketNumber]);
 
   useEffect(() => {
     if (location.state) {
@@ -347,8 +382,8 @@ const ViewFieldTicket = () => {
 
           const baseUrl =
             parts.length > 2
-              ? `https://${parts.shift()}.ogfieldticket.com`
-              : "https://test.ogfieldticket.com";
+              ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+              : "https://test.ogfieldticket.ogpumper.net";
 
           const response = await fetch(
             `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
@@ -458,8 +493,8 @@ const ViewFieldTicket = () => {
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://test.ogfieldticket.ogpumper.net";
 
       localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
       const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
@@ -569,8 +604,8 @@ const ViewFieldTicket = () => {
 
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://test.ogfieldticket.ogpumper.net";
 
       if (navigator.onLine) {
         const response = await fetch(
@@ -638,8 +673,8 @@ const ViewFieldTicket = () => {
 
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://test.ogfieldticket.ogpumper.net";
 
       const encodedImageDirectory = encodeURIComponent(
         imageDirectory.replace(/^\.\.\//, "")
@@ -730,8 +765,8 @@ const ViewFieldTicket = () => {
 
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://test.ogfieldticket.ogpumper.net";
 
       const updatedTicket = { ...ticket, Billed: "N" };
 
@@ -764,8 +799,8 @@ const ViewFieldTicket = () => {
 
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://test.ogfieldticket.ogpumper.net";
 
       const response = await fetch(
         `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,

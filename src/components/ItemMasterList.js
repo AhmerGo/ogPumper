@@ -42,8 +42,8 @@ const MasterList = () => {
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://test.ogfieldticket.ogpumper.net";
 
       const response = await axios.get(
         `${baseUrl}/api/jobitem.php?item_types=true`
@@ -94,8 +94,8 @@ const MasterList = () => {
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://test.ogfieldticket.ogpumper.net";
 
       const response = await axios.patch(`${baseUrl}/api/jobitem.php`, {
         item_id: selectedItem.ItemID,
@@ -174,8 +174,8 @@ const MasterList = () => {
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.com`
-          : "https://test.ogfieldticket.com";
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://test.ogfieldticket.ogpumper.net";
 
       await axios.patch(`${baseUrl}/api/jobitem.php`, updatedData);
       fetchData();

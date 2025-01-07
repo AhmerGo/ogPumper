@@ -84,9 +84,9 @@ function FieldTicketEntry() {
         let baseUrl;
 
         if (parts.length > 2) {
-          baseUrl = `https://${parts[0]}.ogfieldticket.com`;
+          baseUrl = `https://${parts[0]}.ogfieldticket.ogpumper.net`;
         } else {
-          baseUrl = "https://test.ogfieldticket.com";
+          baseUrl = "https://test.ogfieldticket.ogpumper.net";
         }
 
         const response = await fetch(`${baseUrl}/api/jobs.php`);
@@ -108,9 +108,9 @@ function FieldTicketEntry() {
         let baseUrl;
 
         if (parts.length > 2) {
-          baseUrl = `https://${parts[0]}.ogfieldticket.com`;
+          baseUrl = `https://${parts[0]}.ogfieldticket.ogpumper.net`;
         } else {
-          baseUrl = "https://test.ogfieldticket.com";
+          baseUrl = "https://test.ogfieldticket.ogpumper.net";
         }
 
         const response = await fetch(`${baseUrl}/api/jobitem.php?item_types=1`);
@@ -268,8 +268,8 @@ function FieldTicketEntry() {
       })();
 
       const baseUrl = subdomain
-        ? `https://${subdomain}.ogfieldticket.com`
-        : "https://test.ogfieldticket.com";
+        ? `https://${subdomain}.ogfieldticket.ogpumper.net`
+        : "https://test.ogfieldticket.ogpumper.net";
 
       const ticketData = {
         leaseID: formFields.leaseID,
