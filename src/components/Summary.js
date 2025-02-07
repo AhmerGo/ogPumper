@@ -586,7 +586,7 @@ const ViewFieldTicket = () => {
         console.log("Ticket updated successfully");
       } else {
         console.error("Error updating ticket:", response.statusText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`https error! status: ${response.status}`);
       }
     } catch (error) {
       console.error("Error updating ticket:", error);
@@ -848,7 +848,7 @@ const ViewFieldTicket = () => {
             }`}
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
+              xmlns="https://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -1345,7 +1345,7 @@ const ViewFieldTicket = () => {
                   ></textarea>
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg
-                      xmlns="http://www.w3.org/2000/svg"
+                      xmlns="https://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                       className={`h-6 w-6 ${
@@ -1501,7 +1501,7 @@ const ViewFieldTicket = () => {
                             className="text-gray-800 hover:text-gray-600 focus:outline-none"
                           >
                             <svg
-                              xmlns="http://www.w3.org/2000/svg"
+                              xmlns="https://www.w3.org/2000/svg"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="grey"

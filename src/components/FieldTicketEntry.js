@@ -476,7 +476,7 @@ function FieldTicketEntry() {
               }`}
             >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
+                xmlns="https://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -918,7 +918,7 @@ function FieldTicketEntry() {
                                 className="text-gray-800 hover:text-gray-600 focus:outline-none"
                               >
                                 <svg
-                                  xmlns="http://www.w3.org/2000/svg"
+                                  xmlns="https://www.w3.org/2000/svg"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   stroke="grey"
