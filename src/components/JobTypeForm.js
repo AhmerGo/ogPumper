@@ -38,7 +38,7 @@ const JobListPage = () => {
   const [isJobRoleModalOpen, setIsJobRoleModalOpen] = useState(false);
   const [selectedJobTypeId, setSelectedJobTypeId] = useState(null);
   const [jobRoles, setJobRoles] = useState([]);
-  const [selectedJobRoleIds, setSelectedJobRoleIds] = useState([]); // Updated state for multiple selections
+  const [selectedJobRoleIds, setSelectedJobRoleIds] = useState([]);
   const [newJobRoleName, setNewJobRoleName] = useState("");
 
   useEffect(() => {
@@ -69,7 +69,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -92,7 +92,7 @@ const JobListPage = () => {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
       }
 
       const response = await fetch(`${baseUrl}/api/jobs.php`);
@@ -112,7 +112,6 @@ const JobListPage = () => {
       // Remove duplicates
       const uniqueJobRoles = Array.from(new Set(allJobRoles));
 
-      // Set the jobRoles state
       setJobRoles(uniqueJobRoles);
     } catch (error) {
       console.error("Error fetching job roles:", error);
@@ -203,7 +202,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
@@ -234,7 +233,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(
@@ -266,7 +265,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -295,7 +294,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       await axios.patch(`${baseUrl}/api/jobs.php?jobtype=${jobId}`, {
@@ -321,7 +320,7 @@ const JobListPage = () => {
           baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
           console.log(`Using subdomain URL: ${baseUrl}`);
         } else {
-          baseUrl = "https://test.ogfieldticket.ogpumper.net";
+          baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
           console.log(`Using default URL: ${baseUrl}`);
         }
 
@@ -348,6 +347,7 @@ const JobListPage = () => {
       setShowNoteBox(false);
     }
   };
+
   const handleEditJobNote = (jobId, currentNote) => {
     setEditingJobNote({ jobId, note: currentNote });
   };
@@ -364,7 +364,7 @@ const JobListPage = () => {
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -410,7 +410,7 @@ const JobListPage = () => {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
       }
 
       // Combine selected job roles and new job role name (if provided)
@@ -435,11 +435,9 @@ const JobListPage = () => {
         }
       );
 
-      // Update the job in state if necessary
       fetchTicketTypes();
-      fetchJobRoles(); // Refresh job roles list if a new role was added
+      fetchJobRoles();
 
-      // Close the modal and reset state
       setIsJobRoleModalOpen(false);
       setSelectedJobRoleIds([]);
       setNewJobRoleName("");
@@ -447,6 +445,7 @@ const JobListPage = () => {
       console.error("Error updating JobRoles:", error);
     }
   };
+
   const handleJobRoleSelection = (e) => {
     const value = e.target.value;
     const checked = e.target.checked;
@@ -727,7 +726,6 @@ const JobListPage = () => {
               <i className="material-icons text-2xl">close</i>
             </button>
             <h2 className="text-3xl font-bold mb-8">Select Job Roles</h2>
-            {/* Multi-select checkboxes for JobRoles */}
             <form onSubmit={handleJobRoleSubmit}>
               <div className="mb-8">
                 <label className="block mb-2 font-semibold">Job Roles:</label>
@@ -850,6 +848,8 @@ const ItemsAnimation = ({
   const [selection, setSelection] = useState("quantity");
   const [availableItems, setAvailableItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("new");
+
+  // NEW: include "use_start_shop" in default newItem
   const [newItem, setNewItem] = useState({
     item_id: "",
     uom: "",
@@ -858,6 +858,7 @@ const ItemsAnimation = ({
     item_cost: null,
     use_quantity: "N",
     use_cost: "Y",
+    use_start_shop: "N", // <-- The new field
   });
 
   const [stateItems, setStateItems] = useState(items);
@@ -877,7 +878,7 @@ const ItemsAnimation = ({
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -928,7 +929,7 @@ const ItemsAnimation = ({
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
       }
 
       const response = await fetch(`${baseUrl}/api/jobitem.php`, {
@@ -959,7 +960,7 @@ const ItemsAnimation = ({
     console.log(itemId);
     const baseUrl = subdomain
       ? `https://${subdomain}.ogfieldticket.ogpumper.net`
-      : "https://test.ogfieldticket.ogpumper.net";
+      : "https://stasney.ogfieldticket.ogpumper.net";
 
     const data = {
       JobItemID: itemId.JobItemID,
@@ -999,7 +1000,7 @@ const ItemsAnimation = ({
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
         console.log(`Using subdomain URL: ${baseUrl}`);
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         console.log(`Using default URL: ${baseUrl}`);
       }
 
@@ -1056,6 +1057,7 @@ const ItemsAnimation = ({
 
   let requestInProgress = false;
 
+  // Updated reorder logic: we ignore any "oldOrder" mismatch on server
   const handleDrop = (index) => async (event) => {
     event.preventDefault();
 
@@ -1075,33 +1077,31 @@ const ItemsAnimation = ({
     try {
       console.log(movedItem);
       const itemID = movedItem.ItemID;
-      const newPosition = index;
+      const newPosition = index; // We'll use 'index' as the new ItemOrder
       const jobTypeID = movedItem.JobTypeID;
+
       const baseUrl = subdomain
         ? `https://${subdomain}.ogfieldticket.ogpumper.net`
-        : "https://test.ogfieldticket.ogpumper.net";
+        : "https://stasney.ogfieldticket.ogpumper.net";
 
+      // We only send the new order + jobTypeID
       const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemID}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ItemOrder: newPosition,
+          ItemOrder: newPosition, // no oldOrder
           JobTypeID: jobTypeID,
-          oldOrder: movedItem.ItemOrder,
         }),
       });
 
       const data = await response.json();
       if (data.success) {
+        // Re-sync stateItems
         const updatedStateItems = updatedItems.map((item, idx) => {
-          if (item.ItemOrder !== idx) {
-            return { ...item, ItemOrder: idx };
-          }
-          return item;
+          return { ...item, ItemOrder: idx };
         });
-
         setStateItems(updatedStateItems);
       } else {
         console.error("Failed to update item position:", data.message);
@@ -1140,6 +1140,7 @@ const ItemsAnimation = ({
       item_cost: null,
       use_quantity: "N",
       use_cost: "Y",
+      use_start_shop: "N",
     });
   };
 
@@ -1151,7 +1152,7 @@ const ItemsAnimation = ({
 
       if (name === "item_id") {
         if (value !== "new") {
-          const item = availableItems.find((item) => item.ItemID === value);
+          const item = availableItems.find((i) => i.ItemID === value);
           updatedItem = {
             ...prevItem,
             item_id: item.ItemID,
@@ -1161,6 +1162,7 @@ const ItemsAnimation = ({
             item_cost: item.UseCost === "Y" ? 0.0 : null,
             use_quantity: item.UseQuantity,
             use_cost: item.UseCost,
+            use_start_shop: item.UseStartShop ? item.UseStartShop : "N",
           };
         } else {
           updatedItem = {
@@ -1172,6 +1174,7 @@ const ItemsAnimation = ({
             item_cost: null,
             use_quantity: "Y",
             use_cost: "Y",
+            use_start_shop: "N",
           };
         }
       } else if (name === "new_item_id") {
@@ -1179,6 +1182,10 @@ const ItemsAnimation = ({
       } else if (name === "use_quantity") {
         updatedItem.use_quantity = checked ? "N" : "Y";
         updatedItem.item_quantity = checked ? 1 : null;
+      } else if (name === "use_start_shop") {
+        updatedItem.use_start_shop = checked ? "Y" : "N";
+      } else if (name === "use_cost") {
+        updatedItem.use_cost = checked ? "Y" : "N";
       } else if (type === "checkbox") {
         updatedItem[name] = checked ? "Y" : "N";
       } else {
@@ -1188,6 +1195,7 @@ const ItemsAnimation = ({
       return updatedItem;
     });
   };
+
   const handleAddItem = () => {
     let itemId;
     if (selectedItem === "new") {
@@ -1199,15 +1207,12 @@ const ItemsAnimation = ({
     const updatedNewItem = {
       ...newItem,
       item_id: itemId,
-      use_quantity: newItem.use_quantity,
-      use_cost: newItem.use_cost,
       item_quantity:
         newItem.use_quantity === "N" ? newItem.item_quantity || 1 : null,
     };
 
     onAddItem(updatedNewItem);
     setStateItems([...stateItems, updatedNewItem]);
-
     closeModal();
   };
 
@@ -1508,6 +1513,29 @@ const ItemsAnimation = ({
                     <Tooltip id="use-cost-tooltip" place="top" effect="solid">
                       If Use Cost is set, the item has a cost associated with
                       it.
+                    </Tooltip>
+                  </div>
+                  {/* NEW CHECKBOX FOR USE START SHOP */}
+                  <div>
+                    <label
+                      className="inline-flex items-center"
+                      data-tooltip-id="use-start-shop-tooltip"
+                    >
+                      <input
+                        type="checkbox"
+                        name="use_start_shop"
+                        checked={newItem.use_start_shop === "Y"}
+                        onChange={handleInputChange}
+                        className="form-checkbox"
+                      />
+                      <span className="ml-2">Use Start Shop</span>
+                    </label>
+                    <Tooltip
+                      id="use-start-shop-tooltip"
+                      place="top"
+                      effect="solid"
+                    >
+                      If Use Start Shop is set, worker hours can be logged.
                     </Tooltip>
                   </div>
                 </div>

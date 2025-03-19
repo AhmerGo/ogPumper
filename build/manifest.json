@@ -28,5 +28,5 @@
       "sizes": "100x100"
     }
   ],
-  "permissions": ["camera"]
+  "permissions": ["camera", "geolocation"]
 }

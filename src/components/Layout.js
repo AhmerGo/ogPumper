@@ -129,6 +129,12 @@ const Logo = styled.div`
   }
 `;
 
+const VersionText = styled.span`
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  opacity: 0.7;
+`;
+
 const NavItems = styled.div`
   display: flex;
   align-items: center;
@@ -239,7 +245,7 @@ const UserName = styled.div`
 const UserRole = styled.div`
   font-family: "Inter", sans-serif;
   font-size: 16px;
-  color: ${({ theme }) => (theme === "dark" ? "#AAAAAA" : "55555")};
+  color: ${({ theme }) => (theme === "dark" ? "#AAAAAA" : "#55555")};
   margin-bottom: 20px;
 `;
 
@@ -276,9 +282,13 @@ function Layout({ children }) {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { userRole, userID, setUser, companyName } = useUser();
+
+  // STEP: read version from meta tag in index.html
+  const appVersion =
+    document?.querySelector('meta[name="app-version"]')?.content || "???";
+
   const [spinning, setSpinning] = useState(false);
   const [profileCardVisible, setProfileCardVisible] = useState(false);
-  const [subdomain, setSubdomain] = useState("");
 
   const profileCardAnimation = useSpring({
     opacity: profileCardVisible ? 1 : 0,
@@ -331,16 +341,21 @@ function Layout({ children }) {
           : "bg-gray-50 text-gray-900"
       }
     >
+      <GlobalStyle theme={theme} />
+
       <NavBarContainer style={navBarAnimation} theme={theme}>
+        {/* Logo / Brand Name / Version */}
         <Logo onClick={() => navigate("/home")} theme={theme}>
           <HomeIcon className="material-icon" />
           <span>
-            {" "}
             {companyName && companyName.length > 3
               ? companyName
               : "ogFieldTicket"}
           </span>
+          {/* Display the version here */}
+          <VersionText>v{appVersion}</VersionText>
         </Logo>
+
         <NavItems>
           {userRole !== "P" && (
             <AdminButton theme={theme} onClick={() => navigate("/admin-panel")}>
@@ -349,17 +364,21 @@ function Layout({ children }) {
               </span>
             </AdminButton>
           )}
+
           <NavItem onClick={toggleProfileCard} theme={theme}>
             <span className="material-symbols-outlined">account_circle</span>
           </NavItem>
+
           <ThemeToggleButton onClick={handleThemeToggle} spinning={spinning}>
             <span className="material-symbols-outlined">
               {theme === "dark" ? "dark_mode" : "light_mode"}
             </span>
           </ThemeToggleButton>
+
           <NavItem onClick={handleSignOut} theme={theme}>
             <span className="material-symbols-outlined">logout</span>
           </NavItem>
+
           {profileCardVisible && (
             <OutsideClickHandler
               onOutsideClick={() => setProfileCardVisible(false)}
@@ -373,7 +392,7 @@ function Layout({ children }) {
                 </UserAvatar>
                 <UserName>{userID ? userID : "Signed in"}</UserName>
                 <UserRole>Hello {capitalizeFirstLetter(userID)}!</UserRole>
-                <DetailsButton onClick={handleDetailsClick}>
+                <DetailsButton onClick={handleDetailsClick} theme={theme}>
                   Profile Details
                 </DetailsButton>
               </ProfileCard>
@@ -381,6 +400,7 @@ function Layout({ children }) {
           )}
         </NavItems>
       </NavBarContainer>
+
       <main style={{ paddingTop: "4rem" }}>{children}</main>
     </div>
   );

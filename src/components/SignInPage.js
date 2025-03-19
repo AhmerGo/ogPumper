@@ -67,7 +67,7 @@ function SignInPage() {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
       }
 
       const response = await fetch(`${baseUrl}/api/passwordreset.php`, {
@@ -115,7 +115,7 @@ function SignInPage() {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
       }
       if (!navigator.onLine) {
         handleOfflineSignIn(e);
@@ -206,7 +206,7 @@ function SignInPage() {
       const subdomainPart = parts.shift();
       baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
     } else {
-      baseUrl = "https://test.ogfieldticket.ogpumper.net";
+      baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
     }
 
     fetch(`${baseUrl}/api/google_login.php`, {
@@ -255,7 +255,7 @@ function SignInPage() {
       const subdomainPart = parts.shift();
       baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
     } else {
-      baseUrl = "https://test.ogfieldticket.ogpumper.net";
+      baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
     }
 
     fetch(`${baseUrl}/api/google_login.php`, {
@@ -297,7 +297,7 @@ function SignInPage() {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
       }
 
       const response = await fetch(`${baseUrl}/api/google_login.php`, {

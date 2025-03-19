@@ -6,7 +6,7 @@ import React, {
   lazy,
   Suspense,
 } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import { useTheme, useUser } from "ogcommon";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -21,6 +21,8 @@ import {
 import PrintSection from "./PrintSection";
 import { parseISO, format } from "date-fns";
 import * as XLSX from "xlsx";
+
+// Confirmation Modal
 const ConfirmationModal = ({
   isOpen,
   onConfirm,
@@ -97,41 +99,46 @@ const ViewFieldTicket = () => {
   const { theme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const { userRole, userID } = useUser(); // userID => "lastUser"
+
+  // Ticket and date
   const [ticket, setTicket] = useState(null);
+  const [ticketNumber, setTicketNumber] = useState(null);
   const [formattedDate, setFormattedDate] = useState("");
+
+  // Editing states
   const [isEditing, setIsEditing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showBillingConfirmation, setShowBillingConfirmation] = useState(false);
   const [fieldNote, setFieldNote] = useState("");
-  const { userRole, userID } = useUser();
-  const [itemCosts, setItemCosts] = useState({});
+
+  // Items logic
   const [itemsMap, setItemsMap] = useState(new Map());
+  const [itemTypes, setItemTypes] = useState([]);
+  const [selectedItem, setSelectedItem] = useState("");
+
+  // Subdomain logic
   const [subdomain, setSubdomain] = useState("");
+
+  // Images
   const [uploadedImages, setUploadedImages] = useState([]);
+  const [retrievedImages, setRetrievedImages] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
-  const MAX_FILE_SIZE = 6 * 1024 * 1024; // 5MB
-  const [ticketNumber, setTicketNumber] = useState(null);
-  const [ticketData, setTicketData] = useState(null);
-  const [loading, setLoading] = useState(true); // New loading state
 
-  const [retrievedImages, setRetrievedImages] = useState([]);
+  const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const extractSubdomain = () => {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      if (parts.length > 2) {
-        setSubdomain(parts.shift());
-      } else {
-        setSubdomain("");
-      }
-    };
+  // GPS location
+  const [gpsLocation, setGpsLocation] = useState(null); // Creation
+  const [lastUpdatedGPSValue, setLastUpdatedGPSValue] = useState(null);
+  const [parsedLastUpdatedGPSValue, setParsedLastUpdatedGPSValue] =
+    useState(null);
+  const [createdGPSLocation, setCreatedGPSLocation] = useState(null);
 
-    extractSubdomain();
-  }, []);
-
+  // Animations
   const fadeAnimation = useSpring({
     from: { opacity: 0 },
     to: { opacity: 1 },
@@ -164,97 +171,493 @@ const ViewFieldTicket = () => {
     delay: 600,
   });
 
-  const initializeTicketState = (ticketData) => {
-    if (!ticketData.Items) {
-      setTicket({ ...ticketData, Items: [] });
-      return;
-    }
-
-    const itemsMap = new Map(
-      ticketData.Items.map((item) => [
-        item.JobItemID,
-        {
-          ItemCost: parseFloat(item.ItemCost),
-          UseQuantity: item.UseQuantity,
+  // Try capturing user geolocation for lastUpdatedGPSValue
+  useEffect(() => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const coords = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setLastUpdatedGPSValue(coords);
         },
-      ])
-    );
-    setItemsMap(itemsMap);
+        (err) => {
+          console.error("Error getting geolocation:", err);
+        }
+      );
+    }
+  }, []);
 
-    const updatedItems = ticketData.Items.map((item) => {
-      const itemData = itemsMap.get(item.JobItemID) || {
-        ItemCost: 0,
-        UseQuantity: false,
-      };
-      const quantity = itemData.UseQuantity ? parseFloat(item.Quantity) : 1;
-      const totalCost = (itemData.ItemCost * quantity).toFixed(2);
-      return { ...item, totalCost, UseQuantity: itemData.UseQuantity };
-    });
+  // Subdomain extraction
+  useEffect(() => {
+    const extractSubdomain = () => {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      if (parts.length > 2) {
+        setSubdomain(parts.shift());
+      } else {
+        setSubdomain("");
+      }
+    };
+    extractSubdomain();
+  }, []);
 
-    setTicket({ ...ticketData, Items: updatedItems });
-    const correctDate = new Date(ticketData.TicketDate);
-    correctDate.setMinutes(
-      correctDate.getMinutes() + correctDate.getTimezoneOffset()
-    );
-
-    setFormattedDate(format(parseISO(ticketData.TicketDate), "MMMM dd, yyyy"));
-    setFieldNote(ticketData.Note || "");
-    console.log(ticket);
-  };
-
+  // Get ticketNumber from URL query param
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const ticketNum = params.get("ticket");
     setTicketNumber(ticketNum);
   }, [location]);
 
+  // Fetch ticket from server (if ticketNumber is known)
   useEffect(() => {
     if (ticketNumber) {
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
-
-      // Build baseUrl dynamically if needed
-      const baseUrl = "https://test.ogfieldticket.ogpumper.net";
-
-      // parts.length > 2
-      //   ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-      //   : "https://test.ogfieldticket.ogpumper.net";
+      const baseUrl =
+        parts.length > 2
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://stasney.ogfieldticket.ogpumper.net";
 
       fetch(`${baseUrl}/api/tickets.php?ticket=${ticketNumber}`)
         .then((response) => response.json())
         .then((data) => {
-          console.log("Data from API:", data);
           setTicket(data);
-          setLoading(false); // Data has been loaded
+          setLoading(false);
         })
         .catch((error) => {
           console.error("Error fetching ticket data:", error);
-          setLoading(false); // Stop loading even if there was an error
+          setLoading(false);
         });
     }
   }, [ticketNumber]);
 
+  // Once we get the ticket, either from location.state or localStorage, set it
   useEffect(() => {
-    if (location.state) {
-      console.log(location.state.ticket);
+    if (location.state && location.state.ticket) {
       initializeTicketState(location.state.ticket);
-      location.state.ticket.ImageDirectory &&
-      location.state.ticket.ImageDirectory.length > 1
-        ? fetchTicketImages(location.state.ticket.ImageDirectory)
-        : console.log("No images");
+      const dir = location.state.ticket.ImageDirectory;
+      if (dir && dir.length > 1) fetchTicketImages(dir);
     } else {
       const cachedTicket = JSON.parse(localStorage.getItem("currentTicket"));
       if (cachedTicket) {
         initializeTicketState(cachedTicket);
-        cachedTicket.ImageDirectory && cachedTicket.ImageDirectory.length > 1
-          ? fetchTicketImages(cachedTicket.ImageDirectory)
-          : console.log("No images");
+        const dir = cachedTicket.ImageDirectory;
+        if (dir && dir.length > 1) fetchTicketImages(dir);
       }
     }
   }, [location.state]);
 
+  // Fetch itemTypes
+  useEffect(() => {
+    const hostname = window.location.hostname;
+    const parts = hostname.split(".");
+    const baseUrl =
+      parts.length > 2
+        ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+        : "https://stasney.ogfieldticket.ogpumper.net";
+
+    const fetchItemTypes = async () => {
+      try {
+        const resp = await fetch(`${baseUrl}/api/jobitem.php?item_types=1`);
+        const data = await resp.json();
+        // Filter out item IDs that end with _1, _2, ...
+        const filtered = (data.itemTypes || []).filter(
+          (item) => !item.ItemID.match(/_[0-9]$/)
+        );
+        setItemTypes(filtered);
+      } catch (err) {
+        console.error("Error fetching item types:", err);
+      }
+    };
+
+    fetchItemTypes();
+  }, []);
+
+  // Initialize local state from a given ticket object
+  const initializeTicketState = (ticketData) => {
+    if (!ticketData.Items) {
+      setTicket({ ...ticketData, Items: [] });
+    } else {
+      const itemsMapData = new Map(
+        ticketData.Items.map((item) => [
+          item.JobItemID,
+          {
+            ItemCost: parseFloat(item.ItemCost || item.Cost || 0),
+            UseQuantity: item.UseQuantity,
+          },
+        ])
+      );
+      setItemsMap(itemsMapData);
+
+      // Update each item with totalCost
+      const updatedItems = ticketData.Items.map((item) => {
+        const itemData = itemsMapData.get(item.JobItemID) || {
+          ItemCost: 0,
+          UseQuantity: false,
+        };
+        const quantity = itemData.UseQuantity ? parseFloat(item.Quantity) : 1;
+        const totalCost = (itemData.ItemCost * quantity).toFixed(2);
+        return { ...item, totalCost, UseQuantity: itemData.UseQuantity };
+      });
+      setTicket({ ...ticketData, Items: updatedItems });
+    }
+
+    // Format the date
+    if (ticketData.TicketDate) {
+      try {
+        const correctDate = new Date(ticketData.TicketDate);
+        correctDate.setMinutes(
+          correctDate.getMinutes() + correctDate.getTimezoneOffset()
+        );
+        setFormattedDate(
+          format(parseISO(ticketData.TicketDate), "MMMM dd, yyyy")
+        );
+      } catch (err) {
+        console.error("Error formatting ticket date:", err);
+        setFormattedDate(ticketData.TicketDate);
+      }
+    }
+
+    // Field note
+    setFieldNote(ticketData.Note || "");
+
+    // Created GPS
+    if (ticketData.gps) {
+      try {
+        const parsedGPS = JSON.parse(ticketData.gps);
+        setGpsLocation(parsedGPS);
+        setCreatedGPSLocation(parsedGPS);
+      } catch (e) {
+        console.error("Error parsing GPS:", e);
+      }
+    }
+
+    // lastUpdatedGPS
+    if (ticketData.lastUpdatedGPSValue) {
+      try {
+        setParsedLastUpdatedGPSValue(
+          JSON.parse(ticketData.lastUpdatedGPSValue)
+        );
+      } catch (e) {
+        console.error("Error parsing lastUpdatedGPSValue:", e);
+      }
+    }
+
+    setTicket((old) => ({ ...old, ...ticketData }));
+  };
+
+  // Field note
+  const handleFieldNoteChange = (e) => {
+    setFieldNote(e.target.value);
+  };
+
+  // ============================
+  //   ADD NEW ITEM
+  // ============================
+  const addItem = (itemID) => {
+    if (!itemID) return;
+    const itemToAdd = itemTypes.find((it) => it.ItemID === itemID);
+    if (!itemToAdd) return;
+
+    // Generate a new TicketLine
+    const existingLines = ticket.Items.map(
+      (it) => parseInt(it.TicketLine) || 0
+    );
+    const maxLine = existingLines.length > 0 ? Math.max(...existingLines) : 0;
+    const newTicketLine = (maxLine + 1).toString();
+
+    const newItem = {
+      ...itemToAdd,
+      ItemDescription: itemToAdd.ItemDescription || "",
+      ItemID: itemToAdd.ItemID,
+      JobItemID: itemToAdd.JobItemID || "",
+      UOM: itemToAdd.UOM || "",
+      UseCost: itemToAdd.UseCost || "Y",
+      UseQuantity: itemToAdd.UseQuantity || "Y",
+      /** THIS is your new field, matching the DB if it exists: **/
+      UseStartStop: itemToAdd.UseStartStop || "N",
+
+      ItemCost: itemToAdd.ItemCost || "0.00",
+      TicketLine: newTicketLine,
+      Active: "Y",
+      Cost: itemToAdd.ItemCost || "0.00",
+      Quantity: 0,
+      totalCost: "0.00",
+      Start: null,
+      Stop: null,
+    };
+
+    setTicket((prev) => ({
+      ...prev,
+      Items: [...(prev.Items || []), newItem],
+    }));
+    setSelectedItem("");
+  };
+
+  // ============================
+  //   ITEM EDITS (COST/QTY)
+  // ============================
+  const handleCostChange = (e, ticketLine) => {
+    const newCost = parseFloat(e.target.value);
+    setTicket((prevTicket) => ({
+      ...prevTicket,
+      Items: prevTicket.Items.map((item) =>
+        item.TicketLine === ticketLine ? { ...item, Cost: newCost } : item
+      ),
+    }));
+  };
+
+  const handleChange = useCallback(
+    (e, itemId) => {
+      const { name, value } = e.target;
+      const parsedValue = parseFloat(value);
+
+      setTicket((prevTicket) => {
+        // If editing top-level field
+        if (
+          name === "TicketDate" ||
+          name === "LeaseName" ||
+          name === "WellID"
+        ) {
+          return { ...prevTicket, [name]: value };
+        }
+        // Otherwise, editing an item field
+        const updatedItems = prevTicket.Items.map((item) => {
+          if (item.TicketLine === itemId) {
+            const updatedItem = { ...item, [name]: value };
+            if (name === "Quantity" && item.UseQuantity) {
+              const itemData = itemsMap.get(item.JobItemID) || {
+                ItemCost: parseFloat(item.Cost || 0),
+                UseQuantity: item.UseQuantity,
+              };
+              const totalCost = (itemData.ItemCost * parsedValue).toFixed(2);
+              updatedItem.totalCost = totalCost;
+            }
+            return updatedItem;
+          }
+          return item;
+        });
+        return { ...prevTicket, Items: updatedItems };
+      });
+    },
+    [itemsMap]
+  );
+
+  // ============================
+  //  START/STOP CLICK HANDLING
+  // ============================
+  const handleStartStopClick = async (item, action) => {
+    // Suppose you have an endpoint: e.g. `ticketsapi` or `tickets.php`
+    // This function sets either item.Start or item.Stop to the current ISO string
+    // Then does a PATCH to your server for that item.
+    try {
+      const nowISO = new Date().toISOString();
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      const baseUrl =
+        parts.length > 2
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://stasney.ogfieldticket.ogpumper.net";
+
+      // Construct data to patch
+      const patchPayload = {
+        ticket: ticket.Ticket,
+        itemTicketLine: item.TicketLine,
+        // If action is 'start', we set item.Start = now
+        // If action is 'stop', we set item.Stop = now
+        Start: action === "start" ? nowISO : item.Start,
+        Stop: action === "stop" ? nowISO : item.Stop,
+      };
+
+      // Make the request
+      const response = await fetch(
+        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(patchPayload),
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      // On success, update local state
+      setTicket((prev) => {
+        const updatedItems = prev.Items.map((i) => {
+          if (i.TicketLine === item.TicketLine) {
+            return {
+              ...i,
+              Start: action === "start" ? nowISO : i.Start,
+              Stop: action === "stop" ? nowISO : i.Stop,
+            };
+          }
+          return i;
+        });
+        return { ...prev, Items: updatedItems };
+      });
+    } catch (error) {
+      console.error("Error handling start/stop:", error);
+    }
+  };
+
+  // ============================
+  //  IMAGE UPLOAD + DELETE
+  // ============================
+  const handleImageChange = (event) => {
+    const files = Array.from(event.target.files);
+    const imageUrls = files.map((file) => URL.createObjectURL(file));
+    setUploadedImages((prevImages) => {
+      if (Array.isArray(prevImages)) {
+        return [...prevImages, ...imageUrls];
+      } else {
+        return imageUrls;
+      }
+    });
+    onImageChange(event);
+  };
+
+  const onImageChange = (event) => {
+    const files = event.target.files;
+    if (!files) return;
+    const validFiles = Array.from(files).filter(
+      (file) => file.size <= MAX_FILE_SIZE
+    );
+    if (validFiles.length !== files.length) {
+      alert("Some files are too large. Maximum file size is 6MB.");
+    }
+    if (validFiles.length > 0) {
+      handleImageUpload({ target: { files: validFiles } });
+    } else {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleImageUpload = (e) => {
+    const files = e.target.files;
+    const newImages = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith("image/")) {
+        newImages.push(URL.createObjectURL(file));
+      }
+    }
+    if (Array.isArray(uploadedImages)) {
+      setUploadedImages([...uploadedImages, ...newImages]);
+    } else {
+      setUploadedImages(newImages);
+    }
+  };
+
+  const triggerFileInput = (useCamera) => {
+    if (fileInputRef.current) {
+      if (useCamera) {
+        fileInputRef.current.setAttribute("capture", "environment");
+      } else {
+        fileInputRef.current.removeAttribute("capture");
+      }
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleDeleteImage = useCallback(
+    async (index) => {
+      const imageToDelete = uploadedImages[index];
+      if (!imageToDelete) return;
+      const updatedImages = uploadedImages.filter((_, i) => i !== index);
+      setUploadedImages(updatedImages);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      // Attempt server-side delete (if online)
+      try {
+        if (navigator.onLine) {
+          const patchData = {
+            Ticket: ticket.Ticket,
+            removedImages: [imageToDelete.split("/").pop()],
+          };
+          const hostname = window.location.hostname;
+          const parts = hostname.split(".");
+          const baseUrl =
+            parts.length > 2
+              ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+              : "https://stasney.ogfieldticket.ogpumper.net";
+
+          const response = await fetch(
+            `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(patchData),
+            }
+          );
+          if (response.ok) {
+            // Update local storage
+            const storedTickets =
+              JSON.parse(localStorage.getItem("tickets")) || [];
+            const updatedStoredTickets = storedTickets.map((t) =>
+              t.Ticket === ticket.Ticket
+                ? { ...ticket, ImageDirectory: updatedImages.join(",") }
+                : t
+            );
+            localStorage.setItem(
+              "tickets",
+              JSON.stringify(updatedStoredTickets)
+            );
+          } else {
+            console.error("Error deleting image:", response.statusText);
+          }
+        } else {
+          console.warn("User is offline. Changes will sync when online.");
+        }
+      } catch (error) {
+        console.error("Error deleting image:", error);
+      }
+    },
+    [uploadedImages, ticket]
+  );
+
+  // ============================
+  //   FETCH TICKET IMAGES
+  // ============================
+  const fetchTicketImages = async (imageDirectory) => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      const baseUrl =
+        parts.length > 2
+          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
+          : "https://stasney.ogfieldticket.ogpumper.net";
+
+      const encodedImageDirectory = encodeURIComponent(
+        imageDirectory.replace(/^\.\.\//, "")
+      );
+      const response = await fetch(
+        `${baseUrl}/api/tickets.php?imageDirectory=${encodedImageDirectory}`
+      );
+      const data = await response.json();
+      const finalImages = data.images.map((fullUrl) => {
+        const idx = fullUrl.indexOf("/uploads/");
+        return idx !== -1 ? baseUrl + fullUrl.substring(idx) : fullUrl;
+      });
+      setRetrievedImages(finalImages);
+      setUploadedImages(finalImages);
+    } catch (error) {
+      console.error("Error fetching ticket images:", error);
+    }
+  };
+
+  // ============================
+  //      EXPORT BUTTON
+  // ============================
   const handleExport = () => {
-    // Define the headers
+    if (!ticket || !ticket.Items) return;
     const headers = [
       "Ticket",
       "TicketLine",
@@ -279,10 +682,8 @@ const ViewFieldTicket = () => {
       "Note",
     ];
 
-    // Initialize the data array with headers
     const data = [headers];
 
-    // Loop through ticket items and format the data
     ticket.Items.forEach((item) => {
       const row = [
         ticket.Ticket || "",
@@ -307,199 +708,46 @@ const ViewFieldTicket = () => {
         ticket.Billed || "",
         ticket.Note || "",
       ];
-
       data.push(row);
     });
 
-    // Create a new workbook and worksheet
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.aoa_to_sheet(data);
-
-    // Apply formatting to the worksheet
-    const range = XLSX.utils.decode_range(worksheet["!ref"]);
-
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const column = XLSX.utils.encode_col(C);
-      for (let R = range.s.r; R <= range.e.r; ++R) {
-        const cell_address = { c: C, r: R };
-        const cell_ref = XLSX.utils.encode_cell(cell_address);
-        if (!worksheet[cell_ref]) continue;
-
-        // Apply left alignment and text wrapping
-        worksheet[cell_ref].s = {
-          alignment: {
-            vertical: "top",
-            horizontal: "left",
-            wrapText: true,
-          },
-        };
-      }
-
-      // Auto-fit columns
-      const max_length = data.reduce((max, row) => {
-        const cell_value = row[C] ? row[C].toString() : "";
-        return Math.max(max, cell_value.length);
-      }, 10); // Minimum column width
-      worksheet["!cols"] = worksheet["!cols"] || [];
-      worksheet["!cols"][C] = { width: max_length };
-    }
-
-    // Add the worksheet to the workbook
     XLSX.utils.book_append_sheet(workbook, worksheet, "Ticket Data");
-
-    // Generate a filename
     const filename = `Ticket_${ticket.Ticket || "export"}.xlsx`;
-
-    // Export the workbook
     XLSX.writeFile(workbook, filename);
   };
 
-  const handleDeleteImage = useCallback(
-    async (index) => {
-      const imageToDelete = uploadedImages[index];
-
-      if (!imageToDelete) {
-        console.error("Image to delete is undefined");
-        return;
-      }
-
-      const updatedImages = uploadedImages.filter((_, i) => i !== index);
-      setUploadedImages(updatedImages);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""; // Clear the file input field
-      }
-
-      try {
-        if (navigator.onLine) {
-          const patchData = {
-            Ticket: ticket.Ticket,
-            removedImages: [imageToDelete.split("/").pop()],
-          };
-
-          const hostname = window.location.hostname;
-          const parts = hostname.split(".");
-
-          const baseUrl =
-            parts.length > 2
-              ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-              : "https://test.ogfieldticket.ogpumper.net";
-
-          const response = await fetch(
-            `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
-            {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(patchData),
-            }
-          );
-
-          if (response.ok) {
-            const storedTickets =
-              JSON.parse(localStorage.getItem("tickets")) || [];
-            const updatedStoredTickets = storedTickets.map((t) =>
-              t.Ticket === ticket.Ticket
-                ? { ...ticket, ImageDirectory: updatedImages.join(",") }
-                : t
-            );
-            localStorage.setItem(
-              "tickets",
-              JSON.stringify(updatedStoredTickets)
-            );
-          } else {
-            console.error("Error deleting image:", response.statusText);
-          }
-        } else {
-          console.warn("User is offline. Changes will be synced when online.");
-        }
-      } catch (error) {
-        console.error("Error deleting image:", error);
-      }
-    },
-    [uploadedImages, ticket]
-  );
-
-  const handleCostChange = (e, ticketLine) => {
-    const newCost = parseFloat(e.target.value);
-    setTicket((prevTicket) => ({
-      ...prevTicket,
-      Items: prevTicket.Items.map((item) =>
-        item.TicketLine === ticketLine ? { ...item, Cost: newCost } : item
-      ),
-    }));
-  };
-
-  const handleChange = useCallback(
-    (e, itemId) => {
-      const { name, value } = e.target;
-      const parsedValue = parseFloat(value);
-
-      setTicket((prevTicket) => {
-        if (
-          name === "TicketDate" ||
-          name === "LeaseName" ||
-          name === "WellID"
-        ) {
-          return { ...prevTicket, [name]: value };
-        }
-
-        const updatedItems = prevTicket.Items.map((item) => {
-          if (item.TicketLine === itemId) {
-            const updatedItem = { ...item, [name]: value };
-            if (name === "Quantity" && item.UseQuantity) {
-              const itemData = itemsMap.get(item.JobItemID) || {
-                ItemCost: 0,
-                UseQuantity: false,
-              };
-              const totalCost = (itemData.ItemCost * parsedValue).toFixed(2);
-              updatedItem.totalCost = totalCost;
-            }
-            return updatedItem;
-          }
-          return item;
-        });
-        return { ...prevTicket, Items: updatedItems };
-      });
-    },
-    [itemsMap]
-  );
-
-  const handleFieldNoteChange = (e) => {
-    setFieldNote(e.target.value);
-  };
-
+  // ============================
+  //    EDIT / DELETE / BILL
+  // ============================
   const handleEditClick = () => {
     setIsEditing(true);
   };
 
   const handleCancelClick = () => {
     setIsEditing(false);
-    if (location.state) {
+    if (location.state && location.state.ticket) {
       initializeTicketState(location.state.ticket);
     } else {
       const cachedTicket = JSON.parse(localStorage.getItem("currentTicket"));
-      if (cachedTicket) {
-        initializeTicketState(cachedTicket);
-      }
+      if (cachedTicket) initializeTicketState(cachedTicket);
     }
   };
 
   const handleSaveClick = async () => {
     try {
+      const nowISO = new Date().toISOString();
       const updatedTicket = { ...ticket, Note: fieldNote };
+
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
       const baseUrl =
         parts.length > 2
           ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://test.ogfieldticket.ogpumper.net";
+          : "https://stasney.ogfieldticket.ogpumper.net";
 
-      localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
-      const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
-
-      // Update patchData to include modified costs for items without JobItemID
+      // Prepare patch data
       const patchData = {
         ...updatedTicket,
         TicketDate: ticket.TicketDate,
@@ -514,24 +762,31 @@ const ViewFieldTicket = () => {
           return {
             ...item,
             Cost: cost,
-            ItemCost: cost, // Set ItemCost to be the same as Cost
+            ItemCost: cost,
             totalCost: (parseFloat(cost) * quantity).toFixed(2),
           };
         }),
+        lastUser: userID,
+        lastUpdatedTimestamp: nowISO,
+        lastUpdatedGPSValue: lastUpdatedGPSValue
+          ? JSON.stringify(lastUpdatedGPSValue)
+          : "",
       };
+
+      // Identify new images
       const existingImageNames = Array.isArray(retrievedImages)
-        ? retrievedImages.map((image) => image.split("/").pop())
+        ? retrievedImages.map((img) => img.split("/").pop())
         : [];
       const addedImages = Array.isArray(uploadedImages)
         ? uploadedImages.filter(
-            (image) => !existingImageNames.includes(image.split("/").pop())
+            (img) => !existingImageNames.includes(img.split("/").pop())
           )
         : [];
 
+      // Convert newly added images to base64
       for (const addedImage of addedImages) {
         const imageName = addedImage.split("/").pop();
         if (existingImageNames.includes(imageName)) continue;
-
         const response = await fetch(addedImage);
         const blob = await response.blob();
         const reader = new FileReader();
@@ -539,7 +794,6 @@ const ViewFieldTicket = () => {
           reader.onloadend = () => resolve(reader.result.split(",")[1]);
           reader.readAsDataURL(blob);
         });
-
         const fileExtension = (addedImage.match(/\.\w+$/) || [".jpg"])[0];
         patchData.addedImages.push({
           name: `${Date.now()}_${patchData.addedImages.length}${fileExtension}`,
@@ -547,13 +801,19 @@ const ViewFieldTicket = () => {
         });
       }
 
+      // Identify removed images
       const removedImages = existingImageNames.filter(
-        (image) =>
+        (img) =>
           !Array.isArray(uploadedImages) ||
-          !uploadedImages.map((img) => img.split("/").pop()).includes(image)
+          !uploadedImages.map((up) => up.split("/").pop()).includes(img)
       );
       patchData.removedImages = removedImages;
 
+      // Save to localStorage (optimistic)
+      localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
+      const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
+
+      // Make PATCH
       const response = await fetch(
         `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
         {
@@ -567,12 +827,15 @@ const ViewFieldTicket = () => {
 
       if (response.ok) {
         setIsEditing(false);
+        // Update local store
         const updatedStoredTickets = storedTickets.map((t) =>
           t.Ticket === ticket.Ticket
             ? { ...patchData, ImageDirectory: uploadedImages.join(",") }
             : t
         );
         localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
+
+        // Update local state
         setTicket((prevTicket) => ({
           ...prevTicket,
           TicketDate: patchData.TicketDate,
@@ -580,32 +843,48 @@ const ViewFieldTicket = () => {
           WellID: patchData.WellID,
           Note: fieldNote,
           Items: patchData.Items,
+          lastUser: userID,
+          lastUpdatedTimestamp: nowISO,
+          lastUpdatedGPSValue: patchData.lastUpdatedGPSValue,
         }));
 
-        setFormattedDate(format(parseISO(ticket.TicketDate), "MMMM dd, yyyy"));
-        console.log("Ticket updated successfully");
+        // Reformat date
+        setFormattedDate(
+          ticket.TicketDate
+            ? format(parseISO(ticket.TicketDate), "MMMM dd, yyyy")
+            : ticket.TicketDate
+        );
+
+        // Parse new lastUpdatedGPSValue
+        if (patchData.lastUpdatedGPSValue) {
+          try {
+            setParsedLastUpdatedGPSValue(
+              JSON.parse(patchData.lastUpdatedGPSValue)
+            );
+          } catch (err) {
+            console.error("Error re-parsing lastUpdatedGPSValue:", err);
+          }
+        }
       } else {
         console.error("Error updating ticket:", response.statusText);
-        throw new Error(`https error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
     } catch (error) {
       console.error("Error updating ticket:", error);
-      // You might want to show an error message to the user here
     }
   };
+
   const handleDeleteClick = () => {
     setShowConfirmation(true);
   };
-
   const handleDeleteConfirm = async () => {
     try {
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
-
       const baseUrl =
         parts.length > 2
           ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://test.ogfieldticket.ogpumper.net";
+          : "https://stasney.ogfieldticket.ogpumper.net";
 
       if (navigator.onLine) {
         const response = await fetch(
@@ -614,7 +893,6 @@ const ViewFieldTicket = () => {
             method: "DELETE",
           }
         );
-
         if (response.ok) {
           const storedTickets =
             JSON.parse(localStorage.getItem("tickets")) || [];
@@ -629,12 +907,12 @@ const ViewFieldTicket = () => {
           if (currentTicket && currentTicket.Ticket === ticket.Ticket) {
             localStorage.removeItem("currentTicket");
           }
-
           navigate("/home");
         } else {
           console.error("Error deleting ticket:", response.statusText);
         }
       } else {
+        // Offline => remove from local storage only
         const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
         const updatedStoredTickets = storedTickets.filter(
           (t) => t.Ticket !== ticket.Ticket
@@ -645,129 +923,61 @@ const ViewFieldTicket = () => {
         if (currentTicket && currentTicket.Ticket === ticket.Ticket) {
           localStorage.removeItem("currentTicket");
         }
-
         navigate("/home");
       }
     } catch (error) {
       console.error("Error deleting ticket:", error);
     }
   };
-
-  const handleImageChange = (event) => {
-    const files = Array.from(event.target.files);
-    const imageUrls = files.map((file) => URL.createObjectURL(file));
-    setUploadedImages((prevImages) => {
-      if (Array.isArray(prevImages)) {
-        return [...prevImages, ...imageUrls];
-      } else {
-        return imageUrls;
-      }
-    });
-    onImageChange(event);
-  };
-
-  const fetchTicketImages = async (imageDirectory) => {
-    try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://test.ogfieldticket.ogpumper.net";
-
-      const encodedImageDirectory = encodeURIComponent(
-        imageDirectory.replace(/^\.\.\//, "")
-      );
-      const response = await fetch(
-        `${baseUrl}/api/tickets.php?imageDirectory=${encodedImageDirectory}`
-      );
-      const data = await response.json();
-      setRetrievedImages(data.images);
-      setUploadedImages(data.images);
-    } catch (error) {
-      console.error("Error fetching ticket images:", error);
-    }
-  };
-
-  const onImageChange = (event) => {
-    const files = event.target.files;
-    if (!files) {
-      return;
-    }
-
-    const validFiles = Array.from(files).filter(
-      (file) => file.size <= MAX_FILE_SIZE
-    );
-
-    if (validFiles.length !== files.length) {
-      alert("Some files are too large. Maximum file size is 6MB.");
-    }
-
-    if (validFiles.length > 0) {
-      handleImageUpload({ target: { files: validFiles } });
-    } else {
-      fileInputRef.current.value = "";
-    }
-  };
-
-  const handleImageUpload = (e) => {
-    const files = e.target.files;
-    const newImages = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.type.startsWith("image/")) {
-        newImages.push(URL.createObjectURL(file));
-      }
-    }
-
-    if (Array.isArray(uploadedImages)) {
-      setUploadedImages([...uploadedImages, ...newImages]);
-    } else {
-      setUploadedImages(newImages);
-    }
-  };
-
-  const triggerFileInput = (useCamera) => {
-    if (fileInputRef.current) {
-      if (useCamera) {
-        fileInputRef.current.setAttribute("capture", "environment");
-      } else {
-        fileInputRef.current.removeAttribute("capture");
-      }
-      fileInputRef.current.click();
-    }
-  };
-
-  const openModal = (image) => {
-    setSelectedImage(image);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setSelectedImage(null);
-  };
-
   const handleDeleteCancel = () => {
     setShowConfirmation(false);
   };
 
+  // Billed
   const handleBillClick = () => {
     setShowBillingConfirmation(true);
   };
+  const handleBillConfirm = async () => {
+    try {
+      const hostname = window.location.hostname;
+      const parts = hostname.split(".");
+      const baseUrl =
+        parts.length > 2
+          ? `https://${parts.shift()}.ogpumper.net`
+          : "https://stasney.ogfieldticket.ogpumper.net";
+      const updatedTicket = { ...ticket, Billed: "Y" };
 
+      const response = await fetch(
+        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(updatedTicket),
+        }
+      );
+
+      if (response.ok) {
+        navigate("/home");
+      } else {
+        console.error("Error updating ticket:", response.statusText);
+      }
+    } catch (error) {
+      console.error("Error updating ticket:", error);
+    }
+  };
+  const handleBillCancel = () => {
+    setShowBillingConfirmation(false);
+  };
   const handleUnbillClick = async () => {
     try {
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
-
       const baseUrl =
         parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://test.ogfieldticket.ogpumper.net";
-
+          ? `https://${parts.shift()}.ogpumper.net`
+          : "https://stasney.ogfieldticket.ogpumper.net";
       const updatedTicket = { ...ticket, Billed: "N" };
 
       const response = await fetch(
@@ -791,44 +1001,41 @@ const ViewFieldTicket = () => {
     }
   };
 
-  const handleBillConfirm = async () => {
-    try {
-      const updatedTicket = { ...ticket, Billed: "Y" };
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://test.ogfieldticket.ogpumper.net";
-
-      const response = await fetch(
-        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updatedTicket),
-        }
-      );
-
-      if (response.ok) {
-        navigate("/home");
-      } else {
-        console.error("Error updating ticket:", response.statusText);
-      }
-    } catch (error) {
-      console.error("Error updating ticket:", error);
-    }
+  // Modal
+  const openModal = (image) => {
+    setSelectedImage(image);
+    setIsModalOpen(true);
   };
-
-  const handleBillCancel = () => {
-    setShowBillingConfirmation(false);
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedImage(null);
   };
 
   if (!ticket) {
     return <div>Loading...</div>;
+  }
+
+  let formattedLastUpdatedDate = "";
+  if (ticket.lastUpdatedTimestamp) {
+    try {
+      formattedLastUpdatedDate = format(
+        parseISO(ticket.lastUpdatedTimestamp),
+        "PPpp"
+      );
+    } catch (err) {
+      console.error("Error formatting lastUpdatedTimestamp:", err);
+      formattedLastUpdatedDate = ticket.lastUpdatedTimestamp;
+    }
+  }
+
+  let formattedCreatedDate = "";
+  if (ticket.createdTimestamp) {
+    try {
+      formattedCreatedDate = format(parseISO(ticket.createdTimestamp), "PPpp");
+    } catch (err) {
+      console.error("Error formatting createdTimestamp:", err);
+      formattedCreatedDate = ticket.createdTimestamp;
+    }
   }
 
   return (
@@ -839,8 +1046,9 @@ const ViewFieldTicket = () => {
       >
         <animated.div
           style={ticketSummaryAnimation}
-          className="w-full max-w-6xl mx-auto backdrop-blur-md rounded-xl shadow-2xl overflow-hidden transition-colors duration-500"
+          className="w-full max-w-6xl mx-auto backdrop-blur-md rounded-xl shadow-2xl overflow-hidden transition-colors duration-500 relative"
         >
+          {/* Go Home button */}
           <button
             onClick={() => navigate("/home")}
             className={`absolute top-5 right-5 p-2 rounded-full hover:bg-opacity-30 transition-all ${
@@ -848,7 +1056,7 @@ const ViewFieldTicket = () => {
             }`}
           >
             <svg
-              xmlns="https://www.w3.org/2000/svg"
+              xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -873,8 +1081,10 @@ const ViewFieldTicket = () => {
             >
               Field Ticket
             </h2>
+
+            {/* Ticket Header */}
             <div className="px-4 mb-8">
-              {/* Desktop layout */}
+              {/* Desktop View */}
               <div className="hidden sm:grid grid-cols-3 gap-8 mb-8 items-center text-center">
                 <div>
                   <p
@@ -894,7 +1104,6 @@ const ViewFieldTicket = () => {
                     </span>
                   </p>
                 </div>
-
                 <div>
                   <p
                     className={`text-lg font-bold ${
@@ -930,7 +1139,6 @@ const ViewFieldTicket = () => {
                     )}
                   </p>
                 </div>
-
                 <div>
                   <p
                     className={`text-lg font-bold ${
@@ -955,7 +1163,6 @@ const ViewFieldTicket = () => {
                     </span>
                   </p>
                 </div>
-
                 <div>
                   <p
                     className={`text-lg font-bold ${
@@ -974,7 +1181,6 @@ const ViewFieldTicket = () => {
                     </span>
                   </p>
                 </div>
-
                 {userRole !== "P" && (
                   <div>
                     <p
@@ -995,7 +1201,6 @@ const ViewFieldTicket = () => {
                     </p>
                   </div>
                 )}
-
                 {userRole !== "P" && (
                   <div>
                     <p
@@ -1013,8 +1218,7 @@ const ViewFieldTicket = () => {
                       >
                         {ticket.Items && Array.isArray(ticket.Items)
                           ? `$${ticket.Items.reduce(
-                              (sum, item) =>
-                                sum + (Number(item.totalCost) || 0),
+                              (sum, it) => sum + (Number(it.totalCost) || 0),
                               0
                             ).toFixed(2)}`
                           : "$0.00"}
@@ -1023,7 +1227,8 @@ const ViewFieldTicket = () => {
                   </div>
                 )}
               </div>
-              {/* Mobile layout */}
+
+              {/* Mobile View */}
               <div className="sm:hidden">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col items-center">
@@ -1161,8 +1366,7 @@ const ViewFieldTicket = () => {
                       >
                         {ticket.Items && Array.isArray(ticket.Items)
                           ? `$${ticket.Items.reduce(
-                              (sum, item) =>
-                                sum + (Number(item.totalCost) || 0),
+                              (sum, it) => sum + (Number(it.totalCost) || 0),
                               0
                             ).toFixed(2)}`
                           : "$0.00"}
@@ -1172,6 +1376,41 @@ const ViewFieldTicket = () => {
                 </div>
               </div>
             </div>
+
+            {/* "Add Item" UI (only if isEditing) */}
+            {isEditing && (
+              <div className="mb-8">
+                <label className="block font-medium mb-2">Add Item:</label>
+                <select
+                  value={selectedItem}
+                  onChange={(e) => setSelectedItem(e.target.value)}
+                  className={`form-select w-full px-4 py-2 rounded-md ${
+                    theme === "dark"
+                      ? "bg-gray-800 border border-gray-700 text-white"
+                      : "border border-gray-300"
+                  }`}
+                >
+                  <option value="" disabled>
+                    Select an item...
+                  </option>
+                  {itemTypes.map((it) => (
+                    <option key={it.ItemID} value={it.ItemID}>
+                      {`${it.ItemID} / ${it.ItemDescription} ${
+                        it.UOM ? `/ ${it.UOM}` : ""
+                      }`}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => addItem(selectedItem)}
+                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+                >
+                  Add Item
+                </button>
+              </div>
+            )}
+
+            {/* Item List */}
             {ticket?.Items?.length > 0 &&
               ticket.Items.map((item) => (
                 <animated.div
@@ -1201,10 +1440,104 @@ const ViewFieldTicket = () => {
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-12">
-                    {userRole !== "P" && item.UseCost !== "N" && (
-                      <div className="flex-1 text-center md:text-center">
-                        {isEditing && !item.JobItemID ? (
+
+                  {/* If UseStartStop === "Y", show Start/Stop controls instead of a quantity */}
+                  {item.UseStartStop === "Y" ? (
+                    <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-12">
+                      <div className="text-center md:text-left">
+                        <p
+                          className={`text-sm mb-1 ${
+                            theme === "dark" ? "text-gray-300" : "text-gray-800"
+                          }`}
+                        >
+                          <span className="font-medium">Start:</span>{" "}
+                          {item.Start
+                            ? format(parseISO(item.Start), "PPpp")
+                            : "Not started"}
+                        </p>
+                        <p
+                          className={`text-sm ${
+                            theme === "dark" ? "text-gray-300" : "text-gray-800"
+                          }`}
+                        >
+                          <span className="font-medium">Stop:</span>{" "}
+                          {item.Stop
+                            ? format(parseISO(item.Stop), "PPpp")
+                            : "Not stopped"}
+                        </p>
+                      </div>
+                      {isEditing && (
+                        <div className="flex items-center gap-3">
+                          {/* If not started, show start button; if started but not stopped, show stop button */}
+                          {!item.Start && (
+                            <button
+                              className={`px-3 py-1.5 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition`}
+                              onClick={() =>
+                                handleStartStopClick(item, "start")
+                              }
+                            >
+                              Start
+                            </button>
+                          )}
+                          {item.Start && !item.Stop && (
+                            <button
+                              className={`px-3 py-1.5 rounded-md text-white bg-red-600 hover:bg-red-700 transition`}
+                              onClick={() => handleStartStopClick(item, "stop")}
+                            >
+                              Stop
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    // Otherwise, if UseStartStop != "Y", fallback to normal cost/quantity
+                    <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-12">
+                      {userRole !== "P" && item.UseCost !== "N" && (
+                        <div className="flex-1 text-center md:text-center">
+                          {isEditing && !item.JobItemID ? (
+                            <div className="flex items-center justify-center md:justify-end">
+                              <label
+                                className={`mr-2 ${
+                                  theme === "dark"
+                                    ? "text-gray-400"
+                                    : "text-gray-600"
+                                } font-medium text-lg`}
+                              >
+                                Cost:
+                              </label>
+                              <input
+                                type="number"
+                                name="Cost"
+                                value={item.Cost}
+                                onChange={(e) =>
+                                  handleCostChange(e, item.TicketLine)
+                                }
+                                onClick={(e) => e.target.select()}
+                                className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
+                                  theme === "dark"
+                                    ? "border-gray-600 bg-gray-800 text-gray-300"
+                                    : "border-gray-400 bg-white text-gray-700"
+                                } focus:ring-indigo-400 focus:border-indigo-400 transition`}
+                                placeholder="0.00"
+                              />
+                            </div>
+                          ) : (
+                            <p
+                              className={`text-base ${
+                                theme === "dark"
+                                  ? "text-gray-400"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              <span className="font-medium">Cost:</span> $
+                              {item.totalCost}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                      <div className="w-full md:w-auto text-center md:text-right">
+                        {isEditing ? (
                           <div className="flex items-center justify-center md:justify-end">
                             <label
                               className={`mr-2 ${
@@ -1213,23 +1546,35 @@ const ViewFieldTicket = () => {
                                   : "text-gray-600"
                               } font-medium text-lg`}
                             >
-                              Cost:
+                              Qty:
                             </label>
-                            <input
-                              type="number"
-                              name="Cost"
-                              value={item.Cost}
-                              onChange={(e) =>
-                                handleCostChange(e, item.TicketLine)
-                              }
-                              onClick={(e) => e.target.select()}
-                              className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
-                                theme === "dark"
-                                  ? "border-gray-600 bg-gray-800 text-gray-300"
-                                  : "border-gray-400 bg-white text-gray-700"
-                              } focus:ring-indigo-400 focus:border-indigo-400 transition`}
-                              placeholder="0.00"
-                            />
+                            {item.UseQuantity === "Y" ? (
+                              <input
+                                type="number"
+                                name="Quantity"
+                                value={item.Quantity}
+                                onChange={(e) =>
+                                  handleChange(e, item.TicketLine)
+                                }
+                                onClick={(e) => e.target.select()}
+                                className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
+                                  theme === "dark"
+                                    ? "border-gray-600 bg-gray-800 text-gray-300"
+                                    : "border-gray-400 bg-white text-gray-700"
+                                } focus:ring-indigo-400 focus:border-indigo-400 transition`}
+                                placeholder="0"
+                              />
+                            ) : (
+                              <p
+                                className={`text-base ${
+                                  theme === "dark"
+                                    ? "text-gray-400"
+                                    : "text-gray-600"
+                                }`}
+                              >
+                                {item.Quantity}
+                              </p>
+                            )}
                           </div>
                         ) : (
                           <p
@@ -1239,64 +1584,17 @@ const ViewFieldTicket = () => {
                                 : "text-gray-600"
                             }`}
                           >
-                            <span className="font-medium">Cost:</span> $
-                            {item.totalCost}
+                            <span className="font-medium">Qty:</span>{" "}
+                            {item.Quantity}
                           </p>
                         )}
                       </div>
-                    )}
-                    <div className="w-full md:w-auto text-center md:text-right">
-                      {isEditing ? (
-                        <div className="flex items-center justify-center md:justify-end">
-                          <label
-                            className={`mr-2 ${
-                              theme === "dark"
-                                ? "text-gray-400"
-                                : "text-gray-600"
-                            } font-medium text-lg`}
-                          >
-                            Qty:
-                          </label>
-                          {item.UseQuantity === "Y" ? (
-                            <input
-                              type="number"
-                              name="Quantity"
-                              value={item.Quantity}
-                              onChange={(e) => handleChange(e, item.TicketLine)}
-                              onClick={(e) => e.target.select()}
-                              className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
-                                theme === "dark"
-                                  ? "border-gray-600 bg-gray-800 text-gray-300"
-                                  : "border-gray-400 bg-white text-gray-700"
-                              } focus:ring-indigo-400 focus:border-indigo-400 transition`}
-                              placeholder="0"
-                            />
-                          ) : (
-                            <p
-                              className={`text-base ${
-                                theme === "dark"
-                                  ? "text-gray-400"
-                                  : "text-gray-600"
-                              }`}
-                            >
-                              {item.Quantity}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <p
-                          className={`text-base ${
-                            theme === "dark" ? "text-gray-400" : "text-gray-600"
-                          }`}
-                        >
-                          <span className="font-medium">Qty:</span>{" "}
-                          {item.Quantity}
-                        </p>
-                      )}
                     </div>
-                  </div>
+                  )}
                 </animated.div>
               ))}
+
+            {/* Field Note */}
             {!isEditing && fieldNote && (
               <animated.div
                 style={itemAnimation}
@@ -1322,6 +1620,7 @@ const ViewFieldTicket = () => {
                 </p>
               </animated.div>
             )}
+
             {isEditing && (
               <animated.div style={itemAnimation} className="mb-8">
                 <h4
@@ -1345,7 +1644,7 @@ const ViewFieldTicket = () => {
                   ></textarea>
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                     <svg
-                      xmlns="https://www.w3.org/2000/svg"
+                      xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                       className={`h-6 w-6 ${
@@ -1361,7 +1660,9 @@ const ViewFieldTicket = () => {
                   </div>
                 </div>
               </animated.div>
-            )}{" "}
+            )}
+
+            {/* Ticket Images */}
             <div className="flex flex-col items-center justify-center w-full px-4">
               <div className="mb-4 w-full max-w-5xl">
                 <label
@@ -1386,7 +1687,6 @@ const ViewFieldTicket = () => {
                       } else {
                         zIndex = 0;
                       }
-
                       return (
                         <div
                           key={index}
@@ -1501,7 +1801,7 @@ const ViewFieldTicket = () => {
                             className="text-gray-800 hover:text-gray-600 focus:outline-none"
                           >
                             <svg
-                              xmlns="https://www.w3.org/2000/svg"
+                              xmlns="http://www.w3.org/2000/svg"
                               fill="none"
                               viewBox="0 0 24 24"
                               stroke="grey"
@@ -1522,6 +1822,8 @@ const ViewFieldTicket = () => {
                 </Modal>
               </Suspense>
             </div>
+
+            {/* Action Buttons */}
             <animated.div style={buttonAnimation} className="text-center mt-12">
               {!isEditing ? (
                 <div className="flex flex-wrap gap-2 justify-center">
@@ -1547,6 +1849,7 @@ const ViewFieldTicket = () => {
                         buttonAnimation={buttonAnimation}
                         isEditing={isEditing}
                         uploadedImages={uploadedImages}
+                        gpsLocation={gpsLocation}
                       />
                     </div>
                   )}
@@ -1563,6 +1866,7 @@ const ViewFieldTicket = () => {
                       Unbill
                     </button>
                   )}
+
                   {ticket.Billed !== "Y" && (
                     <button
                       onClick={handleEditClick}
@@ -1622,9 +1926,87 @@ const ViewFieldTicket = () => {
                   </button>
                 </div>
               )}
+
+              {/* Timestamps */}
+              <div className="mt-8 text-center text-sm space-y-2">
+                {/* Last updated */}
+                {ticket.lastUser && ticket.lastUpdatedTimestamp && (
+                  <div style={{ opacity: 0.8 }}>
+                    Last updated by {ticket.lastUser} on{" "}
+                    {formattedLastUpdatedDate}
+                    {parsedLastUpdatedGPSValue &&
+                      parsedLastUpdatedGPSValue.lat && (
+                        <>
+                          {" "}
+                          at{" "}
+                          <a
+                            href={`https://maps.google.com/?q=${parsedLastUpdatedGPSValue.lat},${parsedLastUpdatedGPSValue.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`underline hover:opacity-80 ${
+                              theme === "dark"
+                                ? "text-blue-300"
+                                : "text-blue-700"
+                            }`}
+                          >
+                            Google Maps
+                          </a>{" "}
+                          |{" "}
+                          <a
+                            href={`https://maps.apple.com/?q=${parsedLastUpdatedGPSValue.lat},${parsedLastUpdatedGPSValue.lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`underline hover:opacity-80 ${
+                              theme === "dark"
+                                ? "text-blue-300"
+                                : "text-blue-700"
+                            }`}
+                          >
+                            Apple Maps
+                          </a>
+                        </>
+                      )}
+                  </div>
+                )}
+                {/* Created */}
+                {ticket.UserID && ticket.createdTimestamp && (
+                  <div style={{ opacity: 0.8 }}>
+                    Created by {ticket.UserID} on {formattedCreatedDate}
+                    {createdGPSLocation && createdGPSLocation.lat && (
+                      <>
+                        {" "}
+                        at{" "}
+                        <a
+                          href={`https://maps.google.com/?q=${createdGPSLocation.lat},${createdGPSLocation.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`underline hover:opacity-80 ${
+                            theme === "dark" ? "text-blue-300" : "text-blue-700"
+                          }`}
+                        >
+                          Google Maps
+                        </a>{" "}
+                        |{" "}
+                        <a
+                          href={`https://maps.apple.com/?q=${createdGPSLocation.lat},${createdGPSLocation.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`underline hover:opacity-80 ${
+                            theme === "dark" ? "text-blue-300" : "text-blue-700"
+                          }`}
+                        >
+                          Apple Maps
+                        </a>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </animated.div>
           </animated.div>
         </animated.div>
+
+        {/* Confirmation Modals */}
         <Suspense fallback={<div>Loading...</div>}>
           <ConfirmationModal
             isOpen={showConfirmation}
@@ -1645,10 +2027,10 @@ const ViewFieldTicket = () => {
 
       <style jsx>{`
         :root {
-          --btn-bg-light: #f0f0f0; /* Light theme button background */
-          --btn-text-light: #333; /* Light theme button text */
-          --btn-bg-dark: #333; /* Dark theme button background */
-          --btn-text-dark: #f0f0f0; /* Dark theme button text */
+          --btn-bg-light: #f0f0f0;
+          --btn-text-light: #333;
+          --btn-bg-dark: #333;
+          --btn-text-dark: #f0f0f0;
         }
         .dark-theme {
           --btn-bg: var(--btn-bg-dark);

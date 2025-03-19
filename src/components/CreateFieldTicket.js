@@ -61,7 +61,7 @@ function CreateFieldTicket() {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
       }
       const response = await fetch(`${baseUrl}/api/leases.php`);
       let data = await response.json();
@@ -102,7 +102,7 @@ function CreateFieldTicket() {
             const subdomainPart = parts.shift();
             baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
           } else {
-            baseUrl = "https://test.ogfieldticket.ogpumper.net";
+            baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
           }
 
           const response = await fetch(
@@ -134,7 +134,7 @@ function CreateFieldTicket() {
         const subdomainPart = parts.shift();
         baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
       } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
+        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
       }
 
       const response = await fetch(`${baseUrl}/api/jobs.php`);

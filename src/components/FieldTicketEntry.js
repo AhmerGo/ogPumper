@@ -19,6 +19,7 @@ function FieldTicketEntry() {
   const { ticketType } = state;
   const { theme } = useTheme();
   const { userID } = useUser();
+
   const [subdomain, setSubdomain] = useState("");
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,6 +27,10 @@ function FieldTicketEntry() {
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // GPS location state (will be set at submit time)
+  const [gpsLocation, setGpsLocation] = useState(null);
+
   const fileInputRef = useRef(null);
   const scrollButtonRef = useRef(null);
   const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
@@ -40,7 +45,7 @@ function FieldTicketEntry() {
     ticketType: state?.ticketType || "",
     ticketNumber: (state?.highestTicketNumber || "").toString(),
     note: state?.noteDefault || "",
-    jobTypeID: state?.jobTypeID || "", // Add this line
+    jobTypeID: state?.jobTypeID || "",
   });
 
   const [items, setItems] = useState([]);
@@ -86,12 +91,13 @@ function FieldTicketEntry() {
         if (parts.length > 2) {
           baseUrl = `https://${parts[0]}.ogfieldticket.ogpumper.net`;
         } else {
-          baseUrl = "https://test.ogfieldticket.ogpumper.net";
+          baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         }
 
         const response = await fetch(`${baseUrl}/api/jobs.php`);
         const data = await response.json();
 
+        // Find the job type that matches the passed ticketType
         const selectedType = data.find(
           (type) => type.Description === ticketType
         );
@@ -110,13 +116,13 @@ function FieldTicketEntry() {
         if (parts.length > 2) {
           baseUrl = `https://${parts[0]}.ogfieldticket.ogpumper.net`;
         } else {
-          baseUrl = "https://test.ogfieldticket.ogpumper.net";
+          baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
         }
 
         const response = await fetch(`${baseUrl}/api/jobitem.php?item_types=1`);
         const data = await response.json();
         setItemTypes(
-          (data.itemTypes || []).filter((item) => !item.ItemID.includes("_"))
+          (data.itemTypes || []).filter((item) => !item.ItemID.match(/_[0-9]$/))
         );
       } catch (error) {
         console.error("Error fetching item types:", error);
@@ -127,6 +133,7 @@ function FieldTicketEntry() {
     fetchItemTypes();
   }, [ticketType, subdomain]);
 
+  // Handle form and items
   const handleChange = (e, itemId) => {
     const { name, value } = e.target;
     if (name === "note") {
@@ -152,13 +159,13 @@ function FieldTicketEntry() {
         {
           ...itemToAdd,
           quantity: 0,
-          ItemID: `${itemToAdd.ItemID}-${Date.now()}`,
+          ItemID: `${itemToAdd.ItemID}`,
         },
       ]);
     }
     setSelectedItem("");
   };
-
+  // Image handling
   const handleImageChange = (event) => {
     const files = Array.from(event.target.files);
     const imageUrls = files.map((file) => URL.createObjectURL(file));
@@ -229,21 +236,43 @@ function FieldTicketEntry() {
     setSelectedImage(null);
   };
 
+  // Spring animation
   const pageAnimation = useSpring({
     from: { opacity: 0, y: 50 },
     to: { opacity: 1, y: 0 },
     config: { mass: 1, tension: 280, friction: 25 },
   });
+
+  // Final submission (fetch location permission & coords here)
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // 1) Attempt to get GPS location
+      let currentLocation = null;
+      if ("geolocation" in navigator) {
+        currentLocation = await new Promise((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+              });
+            },
+            () => {
+              // If permission denied or error, resolve with null
+              resolve(null);
+            }
+          );
+        });
+      }
+      setGpsLocation(currentLocation);
+
+      // 2) Continue with ticket submission
       const selectedTicketType = ticketTypes.find(
         (type) => type.Description === formFields.ticketType
       );
-      console.log(selectedTicketType);
-
       const jobTypeID = selectedTicketType ? selectedTicketType.JobTypeID : "";
 
       const updatedItems = items.map((item, index) => ({
@@ -259,8 +288,11 @@ function FieldTicketEntry() {
         UseCost: item.UseCost || "Y",
         UseQuantity: item.UseQuantity || "Y",
         quantity: item.quantity || 0,
+
+        UseStartStop: item.UseStartStop || "N",
       }));
 
+      // Format date as YYYY-MM-DD
       const formattedDate = (() => {
         const date = new Date(formFields.ticketDate);
         date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
@@ -269,8 +301,9 @@ function FieldTicketEntry() {
 
       const baseUrl = subdomain
         ? `https://${subdomain}.ogfieldticket.ogpumper.net`
-        : "https://test.ogfieldticket.ogpumper.net";
+        : "https://stasney.ogfieldticket.ogpumper.net";
 
+      // Build ticket data (IMPORTANT: include lastUser)
       const ticketData = {
         leaseID: formFields.leaseID,
         ticketDate: formattedDate,
@@ -280,10 +313,15 @@ function FieldTicketEntry() {
         ticketNumber: formFields.ticketNumber,
         userID: userID,
         note: formFields.note,
-        JobTypeID: formFields.jobTypeID, // Use jobTypeID from formFields
+        JobTypeID: formFields.jobTypeID, // from formFields
         items: updatedItems,
+        // Pass the GPS location
+        gps: currentLocation,
+        // NEW FIELD: lastUser
+        lastUser: userID,
       };
 
+      // Prepare offline data
       const updatedOfflineItems = updatedItems.map((item, index) => ({
         Active: "Y",
         ItemCost: item.ItemCost,
@@ -316,8 +354,11 @@ function FieldTicketEntry() {
         Note: formFields.note || "",
         UserID: userID,
         Ticket: formFields.ticketNumber,
+        // If you want to store it offline, you can also include lastUser here:
+        lastUser: userID,
       };
 
+      // Save a local copy for offline usage
       const storeTicket = (ticket) => {
         const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
         storedTickets.push(ticket);
@@ -326,6 +367,7 @@ function FieldTicketEntry() {
 
       storeTicket(normalizedTicket);
 
+      // Chunked image upload logic
       const chunkSize = 1024 * 1024; // 1MB
 
       const uploadChunk = async (
@@ -382,6 +424,7 @@ function FieldTicketEntry() {
 
       await Promise.all(imageUploadPromises);
 
+      // We send ticketData + a simple image list (optional)
       const payload = {
         ticketData,
         images: uploadedImages.map((image, index) => ({
@@ -389,6 +432,7 @@ function FieldTicketEntry() {
         })),
       };
 
+      // POST to API (tickets.php) with location included
       const response = await fetch(`${baseUrl}/api/tickets.php`, {
         method: "POST",
         headers: {
@@ -408,10 +452,11 @@ function FieldTicketEntry() {
       setLoading(false);
     }
   };
+
   const formattedDate = (() => {
     const date = new Date(formFields.ticketDate);
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    return date.toISOString().split("T")[0]; // Ensure the date is in "YYYY-MM-DD" format
+    return date.toISOString().split("T")[0]; // "YYYY-MM-DD"
   })();
 
   const scrollToBottom = () => {
@@ -693,6 +738,7 @@ function FieldTicketEntry() {
                 </button>
               </div>
 
+              {/* Display selected items */}
               {items.map((item, index) => (
                 <div
                   key={index}
@@ -745,6 +791,7 @@ function FieldTicketEntry() {
                 </div>
               ))}
 
+              {/* Note Field */}
               <div className="mb-8 md:mb-16">
                 <label className="block font-medium transition-colors duration-500 mb-2">
                   Note:
@@ -761,6 +808,8 @@ function FieldTicketEntry() {
                   rows={4}
                 ></textarea>
               </div>
+
+              {/* Image Upload Section (Only if online) */}
               {isOnline && (
                 <div className="flex flex-col items-center justify-center w-full px-4">
                   <label
@@ -776,11 +825,11 @@ function FieldTicketEntry() {
                         uploadedImages.map((image, index) => {
                           let zIndex;
                           if (index === uploadedImages.length - 1) {
-                            zIndex = 2; // Most recent image
+                            zIndex = 2; // Most recent
                           } else if (index === uploadedImages.length - 2) {
-                            zIndex = 1; // Second most recent image
+                            zIndex = 1; // Second-most
                           } else {
-                            zIndex = 0; // All other images
+                            zIndex = 0; // Others
                           }
 
                           return (
