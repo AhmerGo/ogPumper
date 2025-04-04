@@ -12,6 +12,7 @@ import { useUser } from "ogcommon";
 import debounce from "lodash.debounce";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { baseUrl } from "./config";
 
 const TicketItem = lazy(() => import("./TicketItem"));
 
@@ -73,12 +74,6 @@ const HomePage = React.memo(() => {
 
   const fetchTickets = useCallback(async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
       let fetchedTickets = [];
       let nextTicketID = null;
 

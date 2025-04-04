@@ -13,6 +13,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { useTheme } from "ogcommon";
+import { baseUrl } from "./config";
 
 const Leases = () => {
   const { theme } = useTheme();
@@ -48,17 +49,6 @@ const Leases = () => {
 
   const fetchLeases = async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
-      }
-
       const response = await axios.get(`${baseUrl}/api/leases.php`);
       const data = response.data;
       setLeases(data);
@@ -161,17 +151,6 @@ const Leases = () => {
         Tanks: [...formDataTanks, ...filteredTanks],
         Wells: [...formDataWells, ...filteredWells],
       };
-
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
-      }
 
       const response = await axios.patch(
         `${baseUrl}/api/leases.php`,
@@ -417,17 +396,6 @@ const EditLeaseModal = ({
 
   const handleDeleteWell = async (wellId) => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
-      }
-
       const response = await axios.delete(`${baseUrl}/api/leases.php`, {
         data: { LeaseID: lease.LeaseID, Wells: [{ UniqID: wellId }] },
       });
@@ -448,17 +416,6 @@ const EditLeaseModal = ({
 
   const fetchOptions = async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
-      }
-
       const response = await axios.get(`${baseUrl}/api/usertags.php`);
       const data = response.data;
       const tags = data.filter((item) => item.TagID && item.TagDesc);
@@ -499,17 +456,6 @@ const EditLeaseModal = ({
 
   const handleDeleteTank = async (tankId) => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
-      }
-
       const response = await axios.delete(`${baseUrl}/api/leases.php`, {
         data: { LeaseID: lease.LeaseID, Tanks: [{ UniqID: tankId }] },
       });

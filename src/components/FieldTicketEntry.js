@@ -13,30 +13,46 @@ import {
   faChevronDown,
   faChevronUp,
 } from "@fortawesome/free-solid-svg-icons";
+import { baseUrl } from "./config";
 
+/**
+ * FieldTicketEntry
+ * Allows creating a brand new Field Ticket with item selection,
+ * quantity or Start/Stop times, note, and optional images.
+ * If an item has UseStartStop === 'Y', we display two date/time inputs for Start/Stop.
+ */
 function FieldTicketEntry() {
   const { state } = useLocation();
-  const { ticketType } = state;
+  const { ticketType } = state; // from the route
   const { theme } = useTheme();
   const { userID } = useUser();
 
+  // Subdomain / environment
   const [subdomain, setSubdomain] = useState("");
+
+  // Image states
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+
+  // Loading & connectivity
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [isScrolled, setIsScrolled] = useState(false);
 
-  // GPS location state (will be set at submit time)
+  // Scroll management
+  const [isScrolled, setIsScrolled] = useState(false);
+  const scrollButtonRef = useRef(null);
+
+  // GPS location (captured at submission)
   const [gpsLocation, setGpsLocation] = useState(null);
 
+  // For file input
   const fileInputRef = useRef(null);
-  const scrollButtonRef = useRef(null);
-  const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
+  const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6 MB
 
   const navigate = useNavigate();
 
+  // Basic fields for the new ticket
   const [formFields, setFormFields] = useState({
     leaseID: state?.leaseID || "",
     ticketDate: state?.ticketDate || "",
@@ -48,60 +64,68 @@ function FieldTicketEntry() {
     jobTypeID: state?.jobTypeID || "",
   });
 
+  // The item arrays
   const [items, setItems] = useState([]);
   const [itemTypes, setItemTypes] = useState([]);
   const [selectedItem, setSelectedItem] = useState("");
-  const [ticketTypes, setTicketTypes] = useState([]);
+  const [ticketTypes, setTicketTypes] = useState([]); // If you need to store them
 
+  // =============================
+  //    EFFECTS
+  // =============================
+  // Grab subdomain
   useEffect(() => {
     const extractSubdomain = () => {
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
       if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        setSubdomain(subdomainPart);
+        setSubdomain(parts.shift());
       } else {
         setSubdomain("");
       }
     };
-
     extractSubdomain();
     window.scrollTo(0, 0);
   }, []);
 
+  // Listen for online/offline changes
   useEffect(() => {
     const updateOnlineStatus = () => {
       setIsOnline(navigator.onLine);
     };
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
+
     return () => {
       window.removeEventListener("online", updateOnlineStatus);
       window.removeEventListener("offline", updateOnlineStatus);
     };
   }, []);
 
+  // Fetch item types & items for the current job type
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const hostname = window.location.hostname;
-        const parts = hostname.split(".");
-        let baseUrl;
-
-        if (parts.length > 2) {
-          baseUrl = `https://${parts[0]}.ogfieldticket.ogpumper.net`;
-        } else {
-          baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
-        }
-
+        // get all job definitions
         const response = await fetch(`${baseUrl}/api/jobs.php`);
         const data = await response.json();
 
-        // Find the job type that matches the passed ticketType
+        // find the job type that matches this ticketType
         const selectedType = data.find(
           (type) => type.Description === ticketType
         );
-        setItems(selectedType?.Items || []);
+
+        // If found, store them
+        if (selectedType && selectedType.Items) {
+          // Initialize each item with potential Start/Stop fields if needed
+          const initItems = selectedType.Items.map((it) => ({
+            ...it,
+            quantity: 0,
+            start: null,
+            stop: null,
+          }));
+          setItems(initItems);
+        }
       } catch (error) {
         console.error("Error fetching job items:", error);
       }
@@ -109,21 +133,14 @@ function FieldTicketEntry() {
 
     const fetchItemTypes = async () => {
       try {
-        const hostname = window.location.hostname;
-        const parts = hostname.split(".");
-        let baseUrl;
-
-        if (parts.length > 2) {
-          baseUrl = `https://${parts[0]}.ogfieldticket.ogpumper.net`;
-        } else {
-          baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
-        }
-
-        const response = await fetch(`${baseUrl}/api/jobitem.php?item_types=1`);
-        const data = await response.json();
-        setItemTypes(
-          (data.itemTypes || []).filter((item) => !item.ItemID.match(/_[0-9]$/))
+        // fetch item types (like a master list)
+        const resp = await fetch(`${baseUrl}/api/jobitem.php?item_types=1`);
+        const data = await resp.json();
+        // filter out duplicates
+        const filtered = (data.itemTypes || []).filter(
+          (it) => !it.ItemID.match(/_[0-9]$/)
         );
+        setItemTypes(filtered);
       } catch (error) {
         console.error("Error fetching item types:", error);
       }
@@ -133,69 +150,120 @@ function FieldTicketEntry() {
     fetchItemTypes();
   }, [ticketType, subdomain]);
 
-  // Handle form and items
+  // =============================
+  //    HELPERS
+  // =============================
+  // Convert ISO date string -> local "YYYY-MM-DDTHH:MM" for <input type="datetime-local">
+  const toDatetimeLocalString = (isoString) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    const offset = date.getTimezoneOffset() * 60000;
+    const localTime = new Date(date - offset).toISOString().slice(0, 16);
+    return localTime;
+  };
+
+  // =============================
+  //    HANDLERS
+  // =============================
+  // For top-level note or item quantity
   const handleChange = (e, itemId) => {
     const { name, value } = e.target;
+
     if (name === "note") {
-      setFormFields((prevFields) => ({
-        ...prevFields,
-        [name]: value,
-      }));
-    } else if (name === "quantity") {
-      const quantity = parseFloat(value);
+      setFormFields((prev) => ({ ...prev, note: value }));
+      return;
+    }
+
+    // quantity changes
+    if (name === "quantity") {
+      const quantity = parseFloat(value) || 0;
       setItems((prevItems) =>
-        prevItems.map((item) =>
-          item.ItemID === itemId ? { ...item, quantity } : item
-        )
+        prevItems.map((it) => (it.ItemID === itemId ? { ...it, quantity } : it))
       );
     }
   };
 
+  // If item.UseStartStop is "Y", we handle start/stop changes
+  const handleTimeFieldChange = (e, itemId, field) => {
+    const rawValue = e.target.value; // "2025-03-21T14:30"
+    const isoValue = rawValue ? new Date(rawValue).toISOString() : null;
+
+    setItems((prevItems) =>
+      prevItems.map((it) => {
+        if (it.ItemID === itemId) {
+          // If user tries to set Stop < Start, block it
+          if (
+            field === "stop" &&
+            it.start &&
+            isoValue &&
+            new Date(isoValue) < new Date(it.start)
+          ) {
+            alert("Stop time cannot be before Start time!");
+            return it; // Skip updating
+          }
+          return { ...it, [field]: isoValue };
+        }
+        return it;
+      })
+    );
+  };
+
+  // Adding an item from itemTypes
   const addItem = (itemID) => {
-    const itemToAdd = itemTypes.find((item) => item.ItemID === itemID);
-    if (itemToAdd) {
-      setItems((prevItems) => [
-        ...prevItems,
-        {
-          ...itemToAdd,
-          quantity: 0,
-          ItemID: `${itemToAdd.ItemID}`,
-        },
-      ]);
-    }
+    const found = itemTypes.find((it) => it.ItemID === itemID);
+    if (!found) return;
+
+    setItems((prev) => [
+      ...prev,
+      {
+        ...found,
+        quantity: 0,
+        start: null,
+        stop: null,
+        // ensure we keep the item’s potential UseStartStop
+        UseStartStop: found.UseStartStop || "N",
+      },
+    ]);
     setSelectedItem("");
   };
-  // Image handling
+
+  // Image-related
   const handleImageChange = (event) => {
     const files = Array.from(event.target.files);
     const imageUrls = files.map((file) => URL.createObjectURL(file));
-    setUploadedImages((prevImages) => [...prevImages, ...imageUrls]);
+    setUploadedImages((prev) => [...prev, ...imageUrls]);
     onImageChange(event);
   };
 
   const onImageChange = (event) => {
     const files = event.target.files;
-    if (!files) {
-      return;
+    if (!files) return;
+
+    const valid = Array.from(files).filter((f) => f.size <= MAX_FILE_SIZE);
+    if (valid.length !== files.length) {
+      alert("Some files exceed the 6MB limit.");
     }
-
-    const validFiles = Array.from(files).filter(
-      (file) => file.size <= MAX_FILE_SIZE
-    );
-
-    if (validFiles.length !== files.length) {
-      alert("Some files are too large. Maximum file size is 6MB.");
-    }
-
-    if (validFiles.length > 0) {
-      handleImageUpload({ target: { files: validFiles } });
+    if (valid.length > 0) {
+      handleImageUpload({ target: { files: valid } });
     } else {
       fileInputRef.current.value = "";
     }
   };
 
+  const handleImageUpload = (e) => {
+    const files = e.target.files;
+    const newImages = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith("image/")) {
+        newImages.push(URL.createObjectURL(file));
+      }
+    }
+    setUploadedImages((prev) => [...prev, ...newImages]);
+  };
+
   const handleDeleteImage = (index) => {
-    setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+    setUploadedImages((prev) => prev.filter((_, i) => i !== index));
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -212,56 +280,42 @@ function FieldTicketEntry() {
     }
   };
 
-  const handleImageUpload = (e) => {
-    const files = e.target.files;
-    const newImages = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.type.startsWith("image/")) {
-        newImages.push(URL.createObjectURL(file));
-      }
-    }
-
-    setUploadedImages([...uploadedImages, ...newImages]);
-  };
-
   const openModal = (image) => {
     setSelectedImage(image);
     setIsModalOpen(true);
   };
-
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedImage(null);
   };
 
-  // Spring animation
+  // Spring animation for the entire page
   const pageAnimation = useSpring({
     from: { opacity: 0, y: 50 },
     to: { opacity: 1, y: 0 },
     config: { mass: 1, tension: 280, friction: 25 },
   });
 
-  // Final submission (fetch location permission & coords here)
+  // =============================
+  //   Final submission
+  // =============================
   const handleFinalSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      // 1) Attempt to get GPS location
+      // 1) Attempt geolocation
       let currentLocation = null;
       if ("geolocation" in navigator) {
         currentLocation = await new Promise((resolve) => {
           navigator.geolocation.getCurrentPosition(
-            (position) => {
+            (pos) => {
               resolve({
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
               });
             },
             () => {
-              // If permission denied or error, resolve with null
               resolve(null);
             }
           );
@@ -269,41 +323,34 @@ function FieldTicketEntry() {
       }
       setGpsLocation(currentLocation);
 
-      // 2) Continue with ticket submission
-      const selectedTicketType = ticketTypes.find(
-        (type) => type.Description === formFields.ticketType
-      );
-      const jobTypeID = selectedTicketType ? selectedTicketType.JobTypeID : "";
+      // 2) Build the item array. We can choose to store item.start & item.stop
+      const updatedItems = items.map((it, idx) => ({
+        Active: it.Active || "Y",
+        ItemCost: it.ItemCost || "0.00",
+        ItemDescription: it.ItemDescription || "",
+        ItemID: it.ItemID || "",
+        ItemOrder: it.ItemOrder || idx.toString(),
+        ItemQuantity: it.ItemQuantity || null,
+        JobItemID: it.JobItemID || "",
+        JobTypeID: formFields.jobTypeID || "",
+        UOM: it.UOM || "",
+        UseCost: it.UseCost || "Y",
+        UseQuantity: it.UseQuantity || "Y",
+        UseStartStop: it.UseStartStop || "N",
 
-      const updatedItems = items.map((item, index) => ({
-        Active: item.Active || "Y",
-        ItemCost: item.ItemCost || "0.00",
-        ItemDescription: item.ItemDescription || "",
-        ItemID: item.ItemID || "",
-        ItemOrder: item.ItemOrder || index.toString(),
-        ItemQuantity: item.ItemQuantity || null,
-        JobItemID: item.JobItemID || "",
-        JobTypeID: formFields.jobTypeID || jobTypeID,
-        UOM: item.UOM || "",
-        UseCost: item.UseCost || "Y",
-        UseQuantity: item.UseQuantity || "Y",
-        quantity: item.quantity || 0,
+        // If your server expects these:
+        start: it.start || null,
+        stop: it.stop || null,
 
-        UseStartStop: item.UseStartStop || "N",
+        quantity: it.quantity || 0,
       }));
 
-      // Format date as YYYY-MM-DD
-      const formattedDate = (() => {
-        const date = new Date(formFields.ticketDate);
-        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-        return date.toISOString().split("T")[0];
-      })();
+      // 3) Format the date as YYYY-MM-DD
+      const d = new Date(formFields.ticketDate);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      const formattedDate = d.toISOString().split("T")[0];
 
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogfieldticket.ogpumper.net`
-        : "https://stasney.ogfieldticket.ogpumper.net";
-
-      // Build ticket data (IMPORTANT: include lastUser)
+      // 4) Build final ticket data object
       const ticketData = {
         leaseID: formFields.leaseID,
         ticketDate: formattedDate,
@@ -313,31 +360,32 @@ function FieldTicketEntry() {
         ticketNumber: formFields.ticketNumber,
         userID: userID,
         note: formFields.note,
-        JobTypeID: formFields.jobTypeID, // from formFields
+        JobTypeID: formFields.jobTypeID,
         items: updatedItems,
-        // Pass the GPS location
         gps: currentLocation,
-        // NEW FIELD: lastUser
         lastUser: userID,
       };
 
-      // Prepare offline data
-      const updatedOfflineItems = updatedItems.map((item, index) => ({
-        Active: "Y",
-        ItemCost: item.ItemCost,
-        ItemDescription: item.ItemDescription,
-        ItemID: item.ItemID,
-        ItemOrder: item.ItemOrder,
-        JobItemID: item.JobItemID,
-        JobTypeID: item.JobTypeID,
-        UOM: item.UOM,
-        UseCost: item.UseCost,
-        UseQuantity: item.UseQuantity,
-        Quantity: item.quantity,
+      // (Optional) store offline
+      const offlineItems = updatedItems.map((it, idx) => ({
+        Active: it.Active || "Y",
+        ItemCost: it.ItemCost,
+        ItemDescription: it.ItemDescription,
+        ItemID: it.ItemID,
+        ItemOrder: it.ItemOrder,
+        JobItemID: it.JobItemID,
+        JobTypeID: it.JobTypeID,
+        UOM: it.UOM,
+        UseCost: it.UseCost,
+        UseQuantity: it.UseQuantity,
+        UseStartStop: it.UseStartStop,
+        start: it.start,
+        stop: it.stop,
+        Quantity: it.quantity,
         Ticket: formFields.ticketNumber,
-        TicketLine: index.toString(),
+        TicketLine: idx.toString(),
         totalCost: (
-          parseFloat(item.ItemCost) * parseFloat(item.quantity || 0)
+          parseFloat(it.ItemCost) * parseFloat(it.quantity || 0)
         ).toFixed(2),
       }));
 
@@ -349,26 +397,24 @@ function FieldTicketEntry() {
         WellID: formFields.well || null,
         Comments: formFields.note || "",
         JobDescription: formFields.ticketType,
-        JobTypeID: formFields.jobTypeID || jobTypeID,
-        Items: updatedOfflineItems,
+        JobTypeID: formFields.jobTypeID,
+        Items: offlineItems,
         Note: formFields.note || "",
         UserID: userID,
         Ticket: formFields.ticketNumber,
-        // If you want to store it offline, you can also include lastUser here:
         lastUser: userID,
       };
 
-      // Save a local copy for offline usage
-      const storeTicket = (ticket) => {
+      const storeTicketLocally = (tktObj) => {
         const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
-        storedTickets.push(ticket);
+        storedTickets.push(tktObj);
         localStorage.setItem("tickets", JSON.stringify(storedTickets));
       };
+      storeTicketLocally(normalizedTicket);
 
-      storeTicket(normalizedTicket);
+      // 5) If you do chunked image upload, here's where you'd handle it...
 
-      // Chunked image upload logic
-      const chunkSize = 1024 * 1024; // 1MB
+      const chunkSize = 1024 * 1024; // 1 MB
 
       const uploadChunk = async (
         image,
@@ -385,59 +431,53 @@ function FieldTicketEntry() {
         formData.append("totalChunks", totalChunks);
         formData.append("chunk", chunk);
 
-        const response = await fetch(
+        const resp = await fetch(
           `${baseUrl}/api/tickets.php?upload_chunk=true`,
           {
             method: "POST",
             body: formData,
           }
         );
-
-        return response.json();
+        return resp.json();
       };
 
       const uploadImageInChunks = async (image, ticketNumber, imageIndex) => {
-        const response = await fetch(image);
-        const blob = await response.blob();
+        const resp = await fetch(image);
+        const blob = await resp.blob();
         const totalChunks = Math.ceil(blob.size / chunkSize);
 
-        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-          const start = chunkIndex * chunkSize;
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * chunkSize;
           const end = Math.min(start + chunkSize, blob.size);
           const chunk = blob.slice(start, end);
-
           await uploadChunk(
             image,
             ticketNumber,
             imageIndex,
             chunk,
-            chunkIndex,
+            i,
             totalChunks
           );
         }
       };
 
-      const ticketNumber = formFields.ticketNumber;
-      const imageUploadPromises = uploadedImages.map((image, index) =>
-        uploadImageInChunks(image, ticketNumber, index)
+      // Wait for all images to upload
+      const promises = uploadedImages.map((img, idx) =>
+        uploadImageInChunks(img, ticketData.ticketNumber, idx)
       );
+      await Promise.all(promises);
 
-      await Promise.all(imageUploadPromises);
-
-      // We send ticketData + a simple image list (optional)
+      // 6) POST the main ticket data to the server
       const payload = {
         ticketData,
-        images: uploadedImages.map((image, index) => ({
-          name: `uploads/ticket_${formFields.ticketNumber}/image_${index}.jpg`,
+        images: uploadedImages.map((_, idx) => ({
+          name: `uploads/ticket_${formFields.ticketNumber}/image_${idx}.jpg`,
         })),
       };
 
-      // POST to API (tickets.php) with location included
       const response = await fetch(`${baseUrl}/api/tickets.php`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -446,29 +486,33 @@ function FieldTicketEntry() {
       } else {
         console.error("Error submitting ticket:", response.statusText);
       }
-    } catch (error) {
-      console.error("Error submitting ticket:", error);
+    } catch (err) {
+      console.error("Error submitting ticket:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Create an ISO-based date from `ticketDate` for display
   const formattedDate = (() => {
     const date = new Date(formFields.ticketDate);
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-    return date.toISOString().split("T")[0]; // "YYYY-MM-DD"
+    return date.toISOString().split("T")[0]; // e.g. "2025-03-21"
   })();
 
+  // Scroll behavior (mobile)
   const scrollToBottom = () => {
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
     setIsScrolled(true);
   };
-
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
     setIsScrolled(false);
   };
 
+  // =============================
+  //   RENDER
+  // =============================
   return (
     <animated.main
       style={pageAnimation}
@@ -484,6 +528,7 @@ function FieldTicketEntry() {
         </div>
       ) : (
         <>
+          {/* background gradient overlays */}
           <div
             className={`absolute inset-0 animate-gradient-xy transition-colors duration-500 ${
               theme === "dark"
@@ -491,7 +536,6 @@ function FieldTicketEntry() {
                 : "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-300"
             } opacity-20 mix-blend-soft-light`}
           ></div>
-
           <div
             className={`absolute inset-0 transition-colors duration-500 ${
               theme === "dark"
@@ -507,6 +551,7 @@ function FieldTicketEntry() {
             } rounded-full mix-blend-multiply filter blur-3xl opacity-50`}
           ></div>
 
+          {/* main container */}
           <div
             className={`w-full max-w-6xl mx-auto transition-colors duration-500 ${
               theme === "dark"
@@ -514,6 +559,7 @@ function FieldTicketEntry() {
                 : "bg-white/90 text-gray-800"
             } backdrop-blur-md rounded-xl shadow-2xl overflow-hidden z-10`}
           >
+            {/* Home button */}
             <button
               onClick={() => navigate("/home")}
               className={`absolute top-5 right-5 p-2 rounded-full hover:bg-opacity-30 transition-all ${
@@ -546,7 +592,8 @@ function FieldTicketEntry() {
               >
                 Field Ticket
               </h2>
-              {/* Desktop layout */}
+
+              {/* Desktop summary row */}
               <div className="hidden sm:grid grid-cols-3 gap-8 mb-8 items-center text-center">
                 <div>
                   <p
@@ -566,7 +613,6 @@ function FieldTicketEntry() {
                     </span>
                   </p>
                 </div>
-
                 <div>
                   <p
                     className={`text-lg font-bold ${
@@ -627,10 +673,9 @@ function FieldTicketEntry() {
                 </div>
               </div>
 
-              {/* Mobile layout */}
+              {/* Mobile summary grid */}
               <div className="sm:hidden">
                 <div className="grid grid-cols-2 gap-4 mb-8">
-                  {/* Ticket Number Section */}
                   <div className="flex flex-col items-center">
                     <p
                       className={`font-bold ${
@@ -647,7 +692,7 @@ function FieldTicketEntry() {
                       {formFields.ticketNumber || "N/A"}
                     </span>
                   </div>
-                  {/* Date Section */}
+
                   <div className="flex flex-col items-center">
                     <p
                       className={`font-bold ${
@@ -671,7 +716,7 @@ function FieldTicketEntry() {
                         theme === "dark" ? "text-indigo-400" : "text-indigo-600"
                       } text-center`}
                     >
-                      Lease/Well:
+                      Lease/Well
                     </p>
                     <span
                       className={`block text-center ${
@@ -685,7 +730,6 @@ function FieldTicketEntry() {
                     </span>
                   </div>
 
-                  {/* Ticket Type Section */}
                   <div className="flex flex-col items-center">
                     <p
                       className={`font-bold ${
@@ -707,13 +751,11 @@ function FieldTicketEntry() {
 
               {/* Add Item Section */}
               <div className="mb-8">
-                <label className="block font-medium transition-colors duration-500 mb-2">
-                  Add Item:
-                </label>
+                <label className="block font-medium mb-2">Add Item:</label>
                 <select
                   value={selectedItem}
                   onChange={(e) => setSelectedItem(e.target.value)}
-                  className={`form-select w-full px-4 py-2 rounded-md transition-colors duration-500 ${
+                  className={`form-select w-full px-4 py-2 rounded-md ${
                     theme === "dark"
                       ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
                       : "border border-gray-300 focus:ring-gray-500"
@@ -722,23 +764,23 @@ function FieldTicketEntry() {
                   <option value="" disabled>
                     Select an item...
                   </option>
-                  {itemTypes.map((item, index) => (
-                    <option key={index} value={item.ItemID}>
-                      {`${item.ItemID} / ${item.ItemDescription} ${
-                        item.UOM ? `/ ${item.UOM}` : ""
+                  {itemTypes.map((it, i) => (
+                    <option key={i} value={it.ItemID}>
+                      {`${it.ItemID} / ${it.ItemDescription}${
+                        it.UOM ? ` / ${it.UOM}` : ""
                       }`}
                     </option>
                   ))}
                 </select>
                 <button
                   onClick={() => addItem(selectedItem)}
-                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-300"
+                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
                 >
                   Add Item
                 </button>
               </div>
 
-              {/* Display selected items */}
+              {/* Render the item cards */}
               {items.map((item, index) => (
                 <div
                   key={index}
@@ -747,7 +789,7 @@ function FieldTicketEntry() {
                   } p-4 rounded-lg mb-4 shadow-md`}
                 >
                   <div className="mb-4 md:mb-0 text-center md:text-left">
-                    <h4 className="text-xl md:text-2xl font-semibold transition-colors duration-500">
+                    <h4 className="text-xl md:text-2xl font-semibold">
                       {item.ItemDescription}{" "}
                       {item.UOM && (
                         <span
@@ -760,47 +802,95 @@ function FieldTicketEntry() {
                       )}
                     </h4>
                   </div>
-                  <div className="flex items-center justify-center md:justify-end">
-                    <label className="block font-medium transition-colors duration-500 mr-4">
-                      Qty:
-                    </label>
-                    {item.UseQuantity === "N" && item.ItemQuantity !== null ? (
-                      <span
-                        className={`inline-block w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
-                          theme === "dark" ? "text-gray-300" : "text-gray-700"
-                        }`}
-                      >
-                        {item.ItemQuantity}
-                      </span>
-                    ) : (
-                      <input
-                        type="number"
-                        name="quantity"
-                        value={item.quantity || 0}
-                        onChange={(e) => handleChange(e, item.ItemID)}
-                        onClick={(e) => e.target.select()}
-                        className={`form-input w-24 px-4 py-2 rounded-md transition-colors duration-500 ${
-                          theme === "dark"
-                            ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
-                            : "border border-gray-300 focus:ring-gray-500"
-                        }`}
-                        placeholder="0"
-                      />
-                    )}
-                  </div>
+
+                  {/* If item.UseStartStop === 'Y', show Start/Stop date-time fields */}
+                  {item.UseStartStop === "Y" ? (
+                    <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+                      <div className="flex flex-col">
+                        <label
+                          className={`font-medium text-sm ${
+                            theme === "dark" ? "text-gray-300" : "text-gray-800"
+                          } mb-1`}
+                        >
+                          Start:
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={toDatetimeLocalString(item.start)}
+                          onChange={(e) =>
+                            handleTimeFieldChange(e, item.ItemID, "start")
+                          }
+                          className={`form-input px-3 py-1.5 rounded-md border ${
+                            theme === "dark"
+                              ? "bg-gray-800 border-gray-700 text-white focus:ring-gray-600"
+                              : "border-gray-300 focus:ring-gray-500 text-gray-700"
+                          }`}
+                        />
+                      </div>
+
+                      <div className="flex flex-col">
+                        <label
+                          className={`font-medium text-sm ${
+                            theme === "dark" ? "text-gray-300" : "text-gray-800"
+                          } mb-1`}
+                        >
+                          Stop:
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={toDatetimeLocalString(item.stop)}
+                          onChange={(e) =>
+                            handleTimeFieldChange(e, item.ItemID, "stop")
+                          }
+                          className={`form-input px-3 py-1.5 rounded-md border ${
+                            theme === "dark"
+                              ? "bg-gray-800 border-gray-700 text-white focus:ring-gray-600"
+                              : "border-gray-300 focus:ring-gray-500 text-gray-700"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    // Otherwise, show normal quantity
+                    <div className="flex items-center justify-center md:justify-end">
+                      <label className="block font-medium mr-4">Qty:</label>
+                      {item.UseQuantity === "N" &&
+                      item.ItemQuantity !== null ? (
+                        <span
+                          className={`inline-block w-24 px-4 py-2 rounded-md ${
+                            theme === "dark" ? "text-gray-300" : "text-gray-700"
+                          }`}
+                        >
+                          {item.ItemQuantity}
+                        </span>
+                      ) : (
+                        <input
+                          type="number"
+                          name="quantity"
+                          value={item.quantity || 0}
+                          onChange={(e) => handleChange(e, item.ItemID)}
+                          onClick={(e) => e.target.select()}
+                          className={`form-input w-24 px-4 py-2 rounded-md ${
+                            theme === "dark"
+                              ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
+                              : "border border-gray-300 focus:ring-gray-500"
+                          }`}
+                          placeholder="0"
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
 
-              {/* Note Field */}
+              {/* Note field */}
               <div className="mb-8 md:mb-16">
-                <label className="block font-medium transition-colors duration-500 mb-2">
-                  Note:
-                </label>
+                <label className="block font-medium mb-2">Note:</label>
                 <textarea
                   name="note"
                   value={formFields.note || ""}
                   onChange={(e) => handleChange(e)}
-                  className={`form-textarea w-full px-4 py-2 rounded-md transition-colors duration-500 ${
+                  className={`form-textarea w-full px-4 py-2 rounded-md ${
                     theme === "dark"
                       ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
                       : "border border-gray-300 focus:ring-gray-500"
@@ -809,7 +899,7 @@ function FieldTicketEntry() {
                 ></textarea>
               </div>
 
-              {/* Image Upload Section (Only if online) */}
+              {/* Image Upload, only if online */}
               {isOnline && (
                 <div className="flex flex-col items-center justify-center w-full px-4">
                   <label
@@ -822,29 +912,26 @@ function FieldTicketEntry() {
                   <div className="mb-4 w-full max-w-5xl">
                     <div className="flex items-center justify-center w-full relative">
                       {uploadedImages.length > 0 &&
-                        uploadedImages.map((image, index) => {
+                        uploadedImages.map((image, idx) => {
                           let zIndex;
-                          if (index === uploadedImages.length - 1) {
-                            zIndex = 2; // Most recent
-                          } else if (index === uploadedImages.length - 2) {
-                            zIndex = 1; // Second-most
+                          if (idx === uploadedImages.length - 1) {
+                            zIndex = 2;
+                          } else if (idx === uploadedImages.length - 2) {
+                            zIndex = 1;
                           } else {
-                            zIndex = 0; // Others
+                            zIndex = 0;
                           }
-
                           return (
                             <div
-                              key={index}
+                              key={idx}
                               className={`relative w-48 h-64 transform transition-transform duration-300 hover:scale-105 ${
-                                index === 0 ? "-ml-2" : "-ml-10"
+                                idx === 0 ? "-ml-2" : "-ml-10"
                               } mt-4`}
-                              style={{
-                                zIndex,
-                              }}
+                              style={{ zIndex }}
                             >
                               <img
                                 src={image}
-                                alt={`uploaded ${index}`}
+                                alt={`uploaded ${idx}`}
                                 className="w-full h-full object-cover rounded-lg shadow-md cursor-pointer"
                                 onClick={() => openModal(image)}
                               />
@@ -864,7 +951,7 @@ function FieldTicketEntry() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDeleteImage(index);
+                                    handleDeleteImage(idx);
                                   }}
                                   className="text-white hover:text-gray-300 focus:outline-none"
                                 >
@@ -877,6 +964,7 @@ function FieldTicketEntry() {
                             </div>
                           );
                         })}
+
                       <div
                         className={`relative w-48 h-64 p-6 rounded-lg border-2 cursor-pointer transition-colors duration-500 z-10 ${
                           theme === "dark"
@@ -928,9 +1016,7 @@ function FieldTicketEntry() {
                         type="file"
                         accept="image/*"
                         multiple
-                        onChange={(e) => {
-                          handleImageChange(e);
-                        }}
+                        onChange={handleImageChange}
                         ref={fileInputRef}
                         className="hidden"
                         disabled={!isOnline}
@@ -950,7 +1036,7 @@ function FieldTicketEntry() {
                       }`}
                     >
                       <div
-                        className={` p-4 rounded-lg shadow-lg max-w-xl mx-auto z-50 relative ${
+                        className={`p-4 rounded-lg shadow-lg max-w-xl mx-auto z-50 relative ${
                           theme === "dark" ? "bg-gray-800" : "bg-white"
                         }`}
                       >
@@ -967,7 +1053,7 @@ function FieldTicketEntry() {
                                 className="text-gray-800 hover:text-gray-600 focus:outline-none"
                               >
                                 <svg
-                                  xmlns="https://www.w3.org/2000/svg"
+                                  xmlns="http://www.w3.org/2000/svg"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                   stroke="grey"
@@ -990,10 +1076,11 @@ function FieldTicketEntry() {
                 </div>
               )}
 
+              {/* Submit button */}
               <div className="text-center">
                 <button
                   onClick={handleFinalSubmit}
-                  className={`text-xl md:text-2xl px-12 py-4 focus:outline-none focus:ring-4 shadow-lg shadow-gray-500/50 hover:shadow-gray-600/50 font-semibold rounded-full transition-all ease-in-out duration-300 ${
+                  className={`text-xl md:text-2xl px-12 py-4 focus:outline-none focus:ring-4 shadow-lg font-semibold rounded-full transition-all ease-in-out duration-300 ${
                     theme === "dark"
                       ? "bg-gradient-to-r from-gray-600 to-gray-700 hover:bg-gradient-to-l focus:ring-gray-500 text-gray-100"
                       : "bg-gradient-to-r from-gray-200 to-gray-300 hover:bg-gradient-to-l focus:ring-gray-300 text-gray-800"
@@ -1004,6 +1091,8 @@ function FieldTicketEntry() {
               </div>
             </div>
           </div>
+
+          {/* Mobile scroll button */}
           <button
             ref={scrollButtonRef}
             className="fixed bottom-5 right-5 bg-blue-500 bg-opacity-75 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-all duration-300 transform focus:outline-none z-50 hover:bg-blue-700 hover:bg-opacity-100 hover:scale-110 animate-pulse md:hidden"

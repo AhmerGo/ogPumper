@@ -14,7 +14,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import logo from "../assets/logo.jpg";
 import { useUser } from "ogcommon";
-
+import { baseUrl } from "./config";
 function SignInPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -59,17 +59,6 @@ function SignInPage() {
     }
 
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
-      }
-
       const response = await fetch(`${baseUrl}/api/passwordreset.php`, {
         method: "POST",
         headers: {
@@ -107,16 +96,6 @@ function SignInPage() {
   async function handleSignIn(e) {
     e.preventDefault();
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
-      }
       if (!navigator.onLine) {
         handleOfflineSignIn(e);
       } else {
@@ -202,13 +181,6 @@ function SignInPage() {
     const parts = hostname.split(".");
     let baseUrl;
 
-    if (parts.length > 2) {
-      const subdomainPart = parts.shift();
-      baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-    } else {
-      baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
-    }
-
     fetch(`${baseUrl}/api/google_login.php`, {
       method: "POST",
       headers: {
@@ -251,13 +223,6 @@ function SignInPage() {
     const parts = hostname.split(".");
     let baseUrl;
 
-    if (parts.length > 2) {
-      const subdomainPart = parts.shift();
-      baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-    } else {
-      baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
-    }
-
     fetch(`${baseUrl}/api/google_login.php`, {
       method: "POST",
       headers: {
@@ -289,17 +254,6 @@ function SignInPage() {
 
   const handleCreateNewUser = async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
-      }
-
       const response = await fetch(`${baseUrl}/api/google_login.php`, {
         method: "PATCH",
         headers: {

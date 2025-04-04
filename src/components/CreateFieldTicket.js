@@ -6,6 +6,7 @@ import { useTheme } from "ogcommon";
 import { useSpring, animated } from "react-spring";
 import debounce from "lodash.debounce";
 import { useUser } from "ogcommon";
+import { baseUrl } from "./config";
 function CreateFieldTicket() {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -53,16 +54,6 @@ function CreateFieldTicket() {
 
   const fetchLeases = useCallback(async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
-      }
       const response = await fetch(`${baseUrl}/api/leases.php`);
       let data = await response.json();
 
@@ -102,7 +93,7 @@ function CreateFieldTicket() {
             const subdomainPart = parts.shift();
             baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
           } else {
-            baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
+            baseUrl = "https://testtwo.ogfieldticket.ogpumper.net";
           }
 
           const response = await fetch(
@@ -126,17 +117,6 @@ function CreateFieldTicket() {
 
   const fetchTicketTypes = useCallback(async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseUrl = "https://stasney.ogfieldticket.ogpumper.net";
-      }
-
       const response = await fetch(`${baseUrl}/api/jobs.php`);
       const data = await response.json();
 

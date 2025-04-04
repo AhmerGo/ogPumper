@@ -14,6 +14,7 @@ import {
   faPrint,
 } from "@fortawesome/free-solid-svg-icons";
 import "tailwindcss/tailwind.css";
+import { baseUrl } from "./config";
 
 Modal.setAppElement("#root");
 
@@ -38,13 +39,6 @@ const MasterList = () => {
 
   const fetchData = async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
-
       const response = await axios.get(
         `${baseUrl}/api/jobitem.php?item_types=true`
       );
@@ -90,13 +84,6 @@ const MasterList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
-
       const response = await axios.patch(`${baseUrl}/api/jobitem.php`, {
         item_id: selectedItem.ItemID,
         ...formData,
@@ -170,13 +157,6 @@ const MasterList = () => {
     };
 
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
-
       await axios.patch(`${baseUrl}/api/jobitem.php`, updatedData);
       fetchData();
     } catch (error) {

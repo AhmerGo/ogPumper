@@ -11,6 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { baseUrl } from "./config";
 
 function UserProfile() {
   const { theme } = useTheme();
@@ -45,19 +46,6 @@ function UserProfile() {
   useEffect(() => {
     const fetchUserDetails = async () => {
       try {
-        const hostname = window.location.hostname;
-        const parts = hostname.split(".");
-        let baseUrl;
-
-        if (parts.length > 2) {
-          const subdomainPart = parts.shift();
-          baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-          console.log(`Using subdomain URL: ${baseUrl}`);
-        } else {
-          baseUrl = "https://test.ogfieldticket.ogpumper.net";
-          console.log(`Using default URL: ${baseUrl}`);
-        }
-
         console.log(userID);
         console.log(companyName);
         console.log(userRole);
@@ -89,18 +77,6 @@ function UserProfile() {
 
   const handleSaveProfile = async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseUrl;
-
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-        console.log(`Using subdomain URL: ${baseUrl}`);
-      } else {
-        baseUrl = "https://test.ogfieldticket.ogpumper.net";
-        console.log(`Using default URL: ${baseUrl}`);
-      }
       const response = await fetch(`${baseUrl}/api/userdetails.php`, {
         method: "PATCH",
         headers: {
@@ -143,9 +119,6 @@ function UserProfile() {
         UserID: user.UserID,
         Sec: password, // Assuming 'Sec' is your backend field for password
       };
-      const baseUrl = subdomain
-        ? `https://${subdomain}.ogfieldticket.ogpumper.net`
-        : "https://test.ogfieldticket.ogpumper.net";
 
       const response = await axios.patch(
         `${baseUrl}/api/userdetails.php`,

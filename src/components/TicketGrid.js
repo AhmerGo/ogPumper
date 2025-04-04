@@ -19,6 +19,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
+import { baseUrl } from "./config";
 
 const TicketGrid = () => {
   const [tickets, setTickets] = useState([]);
@@ -49,9 +50,8 @@ const TicketGrid = () => {
         headerName: "Ticket",
         field: "Ticket",
         sortable: true,
-        sort: "desc", // Set the default sort order to descending
+        sort: "desc",
         filter: true,
-        width: 100,
         cellStyle: { textAlign: "center" },
       },
       {
@@ -59,14 +59,13 @@ const TicketGrid = () => {
         field: "TicketDate",
         sortable: true,
         filter: "agDateColumnFilter",
-        width: 120,
         valueFormatter: (params) =>
           params.value
             ? new Date(params.value + "T00:00:00").toLocaleDateString()
             : "",
         filterParams: {
-          comparator: function (filterLocalDateAtMidnight, cellValue) {
-            const cellDate = new Date(cellValue + "T00:00:00"); // Ensure consistent time for filtering
+          comparator: (filterLocalDateAtMidnight, cellValue) => {
+            const cellDate = new Date(cellValue + "T00:00:00");
             if (cellDate < filterLocalDateAtMidnight) {
               return -1;
             } else if (cellDate > filterLocalDateAtMidnight) {
@@ -77,34 +76,29 @@ const TicketGrid = () => {
           },
         },
       },
-
       {
         headerName: "Lease/Well",
         field: "LeaseWell",
         sortable: true,
         filter: true,
-        width: 200,
       },
       {
         headerName: "Type",
         field: "JobDescription",
         sortable: true,
         filter: true,
-        width: 150,
       },
       {
         headerName: "User",
         field: "UserID",
         sortable: true,
         filter: true,
-        width: 100,
       },
       {
         headerName: "Total $",
         field: "TotalAmount",
         sortable: true,
         filter: true,
-        width: 120,
         valueFormatter: (params) =>
           params.value ? `$${parseFloat(params.value).toFixed(2)}` : "$0.00",
         cellStyle: { textAlign: "right" },
@@ -114,14 +108,33 @@ const TicketGrid = () => {
         field: "Billed",
         sortable: true,
         filter: true,
-        width: 100,
         cellRenderer: (params) => (params.value === "Y" ? "Yes" : "No"),
         cellStyle: { textAlign: "center" },
       },
       {
+        headerName: "Images",
+        field: "hasImages",
+        sortable: true,
+        filter: true,
+        cellRenderer: (params) => (params.value === "Y" ? "Yes" : "No"),
+        cellStyle: { textAlign: "center" },
+      },
+      {
+        headerName: "Notes",
+        field: "Note",
+        sortable: true,
+        filter: true,
+        autoHeight: true,
+        wrapText: true,
+        cellStyle: {
+          whiteSpace: "normal",
+          lineHeight: "1.25",
+          padding: "4px",
+        },
+      },
+      {
         headerName: "Details",
         field: "details",
-        width: 80,
         cellRenderer: (params) => (
           <button
             onClick={() => handleViewDetailsClick(params.data)}
@@ -149,17 +162,12 @@ const TicketGrid = () => {
 
   const fetchTickets = useCallback(async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
       let nextTicketID = null;
 
       const response = await fetch(`${baseUrl}/api/tickets.php`);
       const data = await response.json();
 
+      // Separate out the "isNextTicketID" record
       const ticketsData = data.filter((ticket) => {
         if (ticket.isNextTicketID) {
           nextTicketID = ticket.Ticket;
@@ -168,7 +176,8 @@ const TicketGrid = () => {
         return true;
       });
 
-      let processedTickets = ticketsData.map((ticket) => {
+      // Process tickets to compute total amount, lease/well label, etc.
+      const processedTickets = ticketsData.map((ticket) => {
         const totalAmount = ticket.Items.reduce((sum, item) => {
           const quantity = parseFloat(item.Quantity) || 0;
           const cost = parseFloat(item.Cost) || 0;
@@ -180,14 +189,20 @@ const TicketGrid = () => {
           leaseWell += ` / ${ticket.WellID}`;
         }
 
+        // Check for images: assume ticket.Images is an array if present
+        const hasImage = ticket.Images && ticket.Images.length > 0;
+
         return {
           ...ticket,
           TotalAmount: totalAmount,
           LeaseWell: leaseWell,
+          HasImage: hasImage,
+          TicketNotes: ticket.TicketNotes || "",
         };
       });
 
-      let filteredTickets = processedTickets.filter((ticket) => {
+      // Filter by user role and billing state
+      let filtered = processedTickets.filter((ticket) => {
         const isUnbilled = ticket.Billed !== "Y";
         const isCurrentUser = ticket.UserID === userID;
         const matchesUserRole = userRole !== "P" || isCurrentUser;
@@ -200,22 +215,22 @@ const TicketGrid = () => {
         return matchesUserRole && matchesBillingStatus;
       });
 
-      filteredTickets.sort(
+      // Sort descending by ticket number (and secondary by date if needed)
+      filtered.sort(
         (a, b) =>
           b.Ticket - a.Ticket || new Date(b.TicketDate) - new Date(a.TicketDate)
       );
 
+      // Determine the next ticket number
       setHighestTicketNumber(
         nextTicketID ||
           (
-            Math.max(
-              ...processedTickets.map((ticket) => Number(ticket.Ticket))
-            ) + 1
+            Math.max(...processedTickets.map((t) => Number(t.Ticket))) + 1
           ).toString()
       );
 
       setTickets(processedTickets);
-      setFilteredTickets(filteredTickets);
+      setFilteredTickets(filtered);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching tickets:", error);
@@ -228,6 +243,7 @@ const TicketGrid = () => {
     window.scrollTo(0, 0);
   }, [fetchTickets]);
 
+  // Debounced search
   const debouncedSearch = useMemo(
     () =>
       debounce((query) => {
@@ -245,13 +261,14 @@ const TicketGrid = () => {
   );
 
   const handleToggle = useCallback(() => {
-    setShowUnbilled((prevState) => {
-      const newState = !prevState;
+    setShowUnbilled((prev) => {
+      const newState = !prev;
       localStorage.setItem("showUnbilled", JSON.stringify(newState));
       return newState;
     });
   }, []);
 
+  // Apply filtering for unbilled/billed and search
   useEffect(() => {
     let updatedTickets = tickets.filter((ticket) => {
       const isUnbilled = ticket.Billed !== "Y";
@@ -286,15 +303,17 @@ const TicketGrid = () => {
           : "bg-gray-100 text-gray-900"
       }`}
     >
-      <div className="container mx-auto px-4 py-8">
+      {/* Reduced padding on container to tighten horizontal/vertical space */}
+      <div className="container mx-auto px-2 py-4">
         {loading ? (
           <div className="flex justify-center items-center h-screen">
             <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
           </div>
         ) : (
           <div className="flex flex-col">
-            <div className="flex flex-col md:flex-row justify-between items-center mb-4">
-              <div className="flex items-center space-x-4">
+            {/* Reduced bottom margin on controls */}
+            <div className="flex flex-col md:flex-row justify-between items-center mb-2">
+              <div className="flex items-center space-x-2">
                 <div
                   onClick={handleCreateNewTicket}
                   className={`inline-flex items-center justify-center font-bold py-2 px-4 rounded-full shadow-lg transition duration-200 ease-in-out pop-effect ${
@@ -311,7 +330,7 @@ const TicketGrid = () => {
                     type="text"
                     placeholder="Search tickets..."
                     onChange={handleSearchChange}
-                    className={`pl-10 pr-4 py-2 border rounded ${
+                    className={`pl-8 pr-2 py-2 border rounded ${
                       theme === "dark"
                         ? "bg-gray-800 border-gray-700 text-white"
                         : "bg-white border-gray-300 text-gray-800"
@@ -319,14 +338,14 @@ const TicketGrid = () => {
                   />
                   <FontAwesomeIcon
                     icon={faSearch}
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500"
                   />
                 </div>
               </div>
               {userRole !== "P" && (
                 <button
                   onClick={handleToggle}
-                  className={`px-4 py-2 rounded ${
+                  className={`mt-2 md:mt-0 px-4 py-2 rounded ${
                     theme === "dark"
                       ? "bg-blue-600 text-white"
                       : "bg-blue-500 text-white"
@@ -356,6 +375,8 @@ const TicketGrid = () => {
                   sortable: true,
                   filter: true,
                   resizable: true,
+                  autoHeight: true,
+                  wrapText: true,
                 }}
                 pagination={true}
                 paginationPageSize={20}

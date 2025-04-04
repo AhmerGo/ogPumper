@@ -11,6 +11,7 @@ import { useSpring, animated } from "react-spring";
 import { useTheme, useUser } from "ogcommon";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Modal from "react-modal";
+import { baseUrl } from "./config";
 import {
   faSearchPlus,
   faTrashAlt,
@@ -22,7 +23,9 @@ import PrintSection from "./PrintSection";
 import { parseISO, format } from "date-fns";
 import * as XLSX from "xlsx";
 
-// Confirmation Modal
+// ============================
+//   Confirmation Modal
+// ============================
 const ConfirmationModal = ({
   isOpen,
   onConfirm,
@@ -95,6 +98,9 @@ const ConfirmationModal = ({
   );
 };
 
+// ============================
+//   ViewFieldTicket Component
+// ============================
 const ViewFieldTicket = () => {
   const { theme } = useTheme();
   const location = useLocation();
@@ -117,6 +123,10 @@ const ViewFieldTicket = () => {
   const [itemsMap, setItemsMap] = useState(new Map());
   const [itemTypes, setItemTypes] = useState([]);
   const [selectedItem, setSelectedItem] = useState("");
+
+  // For item removal confirmation
+  const [showRemoveItemModal, setShowRemoveItemModal] = useState(false);
+  const [itemLineToRemove, setItemLineToRemove] = useState(null);
 
   // Subdomain logic
   const [subdomain, setSubdomain] = useState("");
@@ -171,7 +181,34 @@ const ViewFieldTicket = () => {
     delay: 600,
   });
 
-  // Try capturing user geolocation for lastUpdatedGPSValue
+  // ============================
+  //   Helper: Compute total cost
+  // ============================
+  const computeTotalCost = (item) => {
+    const costVal = parseFloat(item.Cost || item.ItemCost || 0);
+
+    // If item has Start/Stop, compute time difference in hours x cost
+    if (item.UseStartStop === "Y" && item.Start && item.Stop) {
+      const startTime = new Date(item.Start).getTime();
+      const stopTime = new Date(item.Stop).getTime();
+      let hours = (stopTime - startTime) / 3600000;
+      if (hours < 0) hours = 0;
+      return (costVal * hours).toFixed(2);
+    }
+
+    // Otherwise, if item uses quantity
+    if (item.UseQuantity === "Y") {
+      const q = parseFloat(item.Quantity) || 0;
+      return (costVal * q).toFixed(2);
+    }
+
+    // Fallback: just cost
+    return costVal.toFixed(2);
+  };
+
+  // ============================
+  //   Fetch user geolocation
+  // ============================
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -189,7 +226,9 @@ const ViewFieldTicket = () => {
     }
   }, []);
 
-  // Subdomain extraction
+  // ============================
+  //   Subdomain extraction
+  // ============================
   useEffect(() => {
     const extractSubdomain = () => {
       const hostname = window.location.hostname;
@@ -203,23 +242,20 @@ const ViewFieldTicket = () => {
     extractSubdomain();
   }, []);
 
-  // Get ticketNumber from URL query param
+  // ============================
+  //   Get ticketNumber from URL
+  // ============================
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const ticketNum = params.get("ticket");
     setTicketNumber(ticketNum);
   }, [location]);
 
-  // Fetch ticket from server (if ticketNumber is known)
+  // ============================
+  //   Fetch ticket from server
+  // ============================
   useEffect(() => {
     if (ticketNumber) {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
-
       fetch(`${baseUrl}/api/tickets.php?ticket=${ticketNumber}`)
         .then((response) => response.json())
         .then((data) => {
@@ -233,7 +269,9 @@ const ViewFieldTicket = () => {
     }
   }, [ticketNumber]);
 
-  // Once we get the ticket, either from location.state or localStorage, set it
+  // ============================
+  //   Initialize from location/state or localStorage
+  // ============================
   useEffect(() => {
     if (location.state && location.state.ticket) {
       initializeTicketState(location.state.ticket);
@@ -249,15 +287,10 @@ const ViewFieldTicket = () => {
     }
   }, [location.state]);
 
-  // Fetch itemTypes
+  // ============================
+  //   Fetch itemTypes
+  // ============================
   useEffect(() => {
-    const hostname = window.location.hostname;
-    const parts = hostname.split(".");
-    const baseUrl =
-      parts.length > 2
-        ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-        : "https://stasney.ogfieldticket.ogpumper.net";
-
     const fetchItemTypes = async () => {
       try {
         const resp = await fetch(`${baseUrl}/api/jobitem.php?item_types=1`);
@@ -275,11 +308,14 @@ const ViewFieldTicket = () => {
     fetchItemTypes();
   }, []);
 
-  // Initialize local state from a given ticket object
+  // ============================
+  //   initTicket helper
+  // ============================
   const initializeTicketState = (ticketData) => {
     if (!ticketData.Items) {
       setTicket({ ...ticketData, Items: [] });
     } else {
+      // Build a local itemsMap if needed
       const itemsMapData = new Map(
         ticketData.Items.map((item) => [
           item.JobItemID,
@@ -293,14 +329,10 @@ const ViewFieldTicket = () => {
 
       // Update each item with totalCost
       const updatedItems = ticketData.Items.map((item) => {
-        const itemData = itemsMapData.get(item.JobItemID) || {
-          ItemCost: 0,
-          UseQuantity: false,
-        };
-        const quantity = itemData.UseQuantity ? parseFloat(item.Quantity) : 1;
-        const totalCost = (itemData.ItemCost * quantity).toFixed(2);
-        return { ...item, totalCost, UseQuantity: itemData.UseQuantity };
+        const totalCost = computeTotalCost(item);
+        return { ...item, totalCost };
       });
+
       setTicket({ ...ticketData, Items: updatedItems });
     }
 
@@ -348,13 +380,15 @@ const ViewFieldTicket = () => {
     setTicket((old) => ({ ...old, ...ticketData }));
   };
 
-  // Field note
+  // ============================
+  //   Handle Field Note
+  // ============================
   const handleFieldNoteChange = (e) => {
     setFieldNote(e.target.value);
   };
 
   // ============================
-  //   ADD NEW ITEM
+  //   Add New Item
   // ============================
   const addItem = (itemID) => {
     if (!itemID) return;
@@ -376,7 +410,7 @@ const ViewFieldTicket = () => {
       UOM: itemToAdd.UOM || "",
       UseCost: itemToAdd.UseCost || "Y",
       UseQuantity: itemToAdd.UseQuantity || "Y",
-      /** THIS is your new field, matching the DB if it exists: **/
+      // Keep track of Start/Stop usage
       UseStartStop: itemToAdd.UseStartStop || "N",
 
       ItemCost: itemToAdd.ItemCost || "0.00",
@@ -397,22 +431,27 @@ const ViewFieldTicket = () => {
   };
 
   // ============================
-  //   ITEM EDITS (COST/QTY)
+  //   Item Edits (Cost/Qty)
   // ============================
   const handleCostChange = (e, ticketLine) => {
-    const newCost = parseFloat(e.target.value);
-    setTicket((prevTicket) => ({
-      ...prevTicket,
-      Items: prevTicket.Items.map((item) =>
-        item.TicketLine === ticketLine ? { ...item, Cost: newCost } : item
-      ),
-    }));
+    const newCost = e.target.value;
+    setTicket((prevTicket) => {
+      const updatedItems = prevTicket.Items.map((item) => {
+        if (item.TicketLine === ticketLine) {
+          const newItem = { ...item, Cost: newCost };
+          newItem.totalCost = computeTotalCost(newItem);
+          return newItem;
+        }
+        return item;
+      });
+      return { ...prevTicket, Items: updatedItems };
+    });
   };
 
+  // For general field changes on an item
   const handleChange = useCallback(
-    (e, itemId) => {
+    (e, itemLine) => {
       const { name, value } = e.target;
-      const parsedValue = parseFloat(value);
 
       setTicket((prevTicket) => {
         // If editing top-level field
@@ -425,16 +464,10 @@ const ViewFieldTicket = () => {
         }
         // Otherwise, editing an item field
         const updatedItems = prevTicket.Items.map((item) => {
-          if (item.TicketLine === itemId) {
+          if (item.TicketLine === itemLine) {
             const updatedItem = { ...item, [name]: value };
-            if (name === "Quantity" && item.UseQuantity) {
-              const itemData = itemsMap.get(item.JobItemID) || {
-                ItemCost: parseFloat(item.Cost || 0),
-                UseQuantity: item.UseQuantity,
-              };
-              const totalCost = (itemData.ItemCost * parsedValue).toFixed(2);
-              updatedItem.totalCost = totalCost;
-            }
+            // Recompute total cost
+            updatedItem.totalCost = computeTotalCost(updatedItem);
             return updatedItem;
           }
           return item;
@@ -442,36 +475,66 @@ const ViewFieldTicket = () => {
         return { ...prevTicket, Items: updatedItems };
       });
     },
-    [itemsMap]
+    [computeTotalCost]
   );
 
   // ============================
-  //  START/STOP CLICK HANDLING
+  //   Helper for <input type="datetime-local">
+  // ============================
+  const toDatetimeLocalString = (isoString) => {
+    if (!isoString) return "";
+    const date = new Date(isoString);
+    // offset so it appears local
+    const tzOffset = date.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(date - tzOffset).toISOString().slice(0, 16);
+    return localISOTime;
+  };
+
+  // ============================
+  //   Handle Time Field Change
+  // ============================
+  const handleTimeFieldChange = (e, ticketLine, field) => {
+    const { value } = e.target; // e.g. "2025-03-21T14:30"
+    setTicket((prev) => {
+      const updatedItems = prev.Items.map((item) => {
+        if (item.TicketLine === ticketLine) {
+          const isoValue = value ? new Date(value).toISOString() : null;
+          const newItem = { ...item, [field]: isoValue };
+
+          // Validation: if field === "Stop" and new Stop < Start => disallow
+          if (
+            field === "Stop" &&
+            newItem.Start &&
+            new Date(isoValue) < new Date(newItem.Start)
+          ) {
+            alert("Stop time must be after Start time.");
+            return item; // Skip updating
+          }
+
+          // Recompute total cost after editing time
+          newItem.totalCost = computeTotalCost(newItem);
+          return newItem;
+        }
+        return item;
+      });
+      return { ...prev, Items: updatedItems };
+    });
+  };
+  // ============================
+  //   START/STOP CLICK HANDLING
   // ============================
   const handleStartStopClick = async (item, action) => {
-    // Suppose you have an endpoint: e.g. `ticketsapi` or `tickets.php`
-    // This function sets either item.Start or item.Stop to the current ISO string
-    // Then does a PATCH to your server for that item.
+    // This sets item.Start or item.Stop to "now"
     try {
       const nowISO = new Date().toISOString();
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
-
-      // Construct data to patch
+      // Patch payload
       const patchPayload = {
         ticket: ticket.Ticket,
         itemTicketLine: item.TicketLine,
-        // If action is 'start', we set item.Start = now
-        // If action is 'stop', we set item.Stop = now
         Start: action === "start" ? nowISO : item.Start,
         Stop: action === "stop" ? nowISO : item.Stop,
       };
 
-      // Make the request
       const response = await fetch(
         `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
         {
@@ -489,11 +552,14 @@ const ViewFieldTicket = () => {
       setTicket((prev) => {
         const updatedItems = prev.Items.map((i) => {
           if (i.TicketLine === item.TicketLine) {
-            return {
+            const newItem = {
               ...i,
               Start: action === "start" ? nowISO : i.Start,
               Stop: action === "stop" ? nowISO : i.Stop,
             };
+            // Recompute total
+            newItem.totalCost = computeTotalCost(newItem);
+            return newItem;
           }
           return i;
         });
@@ -505,7 +571,36 @@ const ViewFieldTicket = () => {
   };
 
   // ============================
-  //  IMAGE UPLOAD + DELETE
+  //   Remove Item (Confirm First)
+  // ============================
+  const openRemoveItemModal = (ticketLine) => {
+    setItemLineToRemove(ticketLine);
+    setShowRemoveItemModal(true);
+  };
+
+  const handleRemoveItemConfirm = () => {
+    if (!itemLineToRemove) {
+      setShowRemoveItemModal(false);
+      return;
+    }
+    // Actually remove from state
+    setTicket((prevTicket) => {
+      const newItems = prevTicket.Items.filter(
+        (it) => it.TicketLine !== itemLineToRemove
+      );
+      return { ...prevTicket, Items: newItems };
+    });
+    setShowRemoveItemModal(false);
+    setItemLineToRemove(null);
+  };
+
+  const handleRemoveItemCancel = () => {
+    setShowRemoveItemModal(false);
+    setItemLineToRemove(null);
+  };
+
+  // ============================
+  //   IMAGE UPLOAD + DELETE
   // ============================
   const handleImageChange = (event) => {
     const files = Array.from(event.target.files);
@@ -580,12 +675,6 @@ const ViewFieldTicket = () => {
             Ticket: ticket.Ticket,
             removedImages: [imageToDelete.split("/").pop()],
           };
-          const hostname = window.location.hostname;
-          const parts = hostname.split(".");
-          const baseUrl =
-            parts.length > 2
-              ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-              : "https://stasney.ogfieldticket.ogpumper.net";
 
           const response = await fetch(
             `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
@@ -628,13 +717,6 @@ const ViewFieldTicket = () => {
   // ============================
   const fetchTicketImages = async (imageDirectory) => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
-
       const encodedImageDirectory = encodeURIComponent(
         imageDirectory.replace(/^\.\.\//, "")
       );
@@ -654,7 +736,7 @@ const ViewFieldTicket = () => {
   };
 
   // ============================
-  //      EXPORT BUTTON
+  //   EXPORT BUTTON
   // ============================
   const handleExport = () => {
     if (!ticket || !ticket.Items) return;
@@ -719,7 +801,7 @@ const ViewFieldTicket = () => {
   };
 
   // ============================
-  //    EDIT / DELETE / BILL
+  //   EDIT / DELETE / BILL
   // ============================
   const handleEditClick = () => {
     setIsEditing(true);
@@ -734,46 +816,48 @@ const ViewFieldTicket = () => {
       if (cachedTicket) initializeTicketState(cachedTicket);
     }
   };
-
   const handleSaveClick = async () => {
     try {
       const nowISO = new Date().toISOString();
+
+      // Copy current ticket, attach the updated Note
       const updatedTicket = { ...ticket, Note: fieldNote };
 
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
-
-      // Prepare patch data
+      // Build the final payload to PATCH
       const patchData = {
         ...updatedTicket,
         TicketDate: ticket.TicketDate,
         LeaseName: ticket.LeaseName,
         WellID: ticket.WellID,
         Note: fieldNote,
-        addedImages: [],
-        removedImages: [],
-        Items: ticket.Items.map((item) => {
-          const cost = (item.Cost || item.ItemCost || "0").toString();
-          const quantity = parseFloat(item.Quantity) || 0;
-          return {
-            ...item,
-            Cost: cost,
-            ItemCost: cost,
-            totalCost: (parseFloat(cost) * quantity).toFixed(2),
-          };
-        }),
         lastUser: userID,
         lastUpdatedTimestamp: nowISO,
         lastUpdatedGPSValue: lastUpdatedGPSValue
           ? JSON.stringify(lastUpdatedGPSValue)
           : "",
+        addedImages: [],
+        removedImages: [],
+
+        // Recompute items (including hours for UseStartStop)
+        Items: ticket.Items.map((item) => {
+          const newItem = { ...item };
+
+          // If item uses Start/Stop and both times are set, recalc Quantity as hours
+          if (newItem.UseStartStop === "Y" && newItem.Start && newItem.Stop) {
+            const startTime = new Date(newItem.Start).getTime();
+            const stopTime = new Date(newItem.Stop).getTime();
+            let hours = (stopTime - startTime) / 3600000;
+            if (hours < 0) hours = 0;
+            newItem.Quantity = hours;
+          }
+
+          // Then compute the totalCost from cost * quantity
+          newItem.totalCost = computeTotalCost(newItem);
+          return newItem;
+        }),
       };
 
-      // Identify new images
+      // Identify newly added images
       const existingImageNames = Array.isArray(retrievedImages)
         ? retrievedImages.map((img) => img.split("/").pop())
         : [];
@@ -786,14 +870,17 @@ const ViewFieldTicket = () => {
       // Convert newly added images to base64
       for (const addedImage of addedImages) {
         const imageName = addedImage.split("/").pop();
-        if (existingImageNames.includes(imageName)) continue;
+        if (existingImageNames.includes(imageName)) continue; // Already known
         const response = await fetch(addedImage);
         const blob = await response.blob();
+
         const reader = new FileReader();
         const base64Data = await new Promise((resolve) => {
           reader.onloadend = () => resolve(reader.result.split(",")[1]);
           reader.readAsDataURL(blob);
         });
+
+        // Derive file extension
         const fileExtension = (addedImage.match(/\.\w+$/) || [".jpg"])[0];
         patchData.addedImages.push({
           name: `${Date.now()}_${patchData.addedImages.length}${fileExtension}`,
@@ -801,11 +888,11 @@ const ViewFieldTicket = () => {
         });
       }
 
-      // Identify removed images
+      // Identify removed images (previously existed, but now not in uploadedImages)
       const removedImages = existingImageNames.filter(
         (img) =>
           !Array.isArray(uploadedImages) ||
-          !uploadedImages.map((up) => up.split("/").pop()).includes(img)
+          !uploadedImages.map((u) => u.split("/").pop()).includes(img)
       );
       patchData.removedImages = removedImages;
 
@@ -813,61 +900,61 @@ const ViewFieldTicket = () => {
       localStorage.setItem("currentTicket", JSON.stringify(updatedTicket));
       const storedTickets = JSON.parse(localStorage.getItem("tickets")) || [];
 
-      // Make PATCH
+      // Make the PATCH call (with &itemRemoval=1 to handle item deletion)
       const response = await fetch(
-        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
+        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}&itemRemoval=1`,
         {
           method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(patchData),
         }
       );
 
-      if (response.ok) {
-        setIsEditing(false);
-        // Update local store
-        const updatedStoredTickets = storedTickets.map((t) =>
-          t.Ticket === ticket.Ticket
-            ? { ...patchData, ImageDirectory: uploadedImages.join(",") }
-            : t
-        );
-        localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
-
-        // Update local state
-        setTicket((prevTicket) => ({
-          ...prevTicket,
-          TicketDate: patchData.TicketDate,
-          LeaseName: patchData.LeaseName,
-          WellID: patchData.WellID,
-          Note: fieldNote,
-          Items: patchData.Items,
-          lastUser: userID,
-          lastUpdatedTimestamp: nowISO,
-          lastUpdatedGPSValue: patchData.lastUpdatedGPSValue,
-        }));
-
-        // Reformat date
-        setFormattedDate(
-          ticket.TicketDate
-            ? format(parseISO(ticket.TicketDate), "MMMM dd, yyyy")
-            : ticket.TicketDate
-        );
-
-        // Parse new lastUpdatedGPSValue
-        if (patchData.lastUpdatedGPSValue) {
-          try {
-            setParsedLastUpdatedGPSValue(
-              JSON.parse(patchData.lastUpdatedGPSValue)
-            );
-          } catch (err) {
-            console.error("Error re-parsing lastUpdatedGPSValue:", err);
-          }
-        }
-      } else {
+      if (!response.ok) {
         console.error("Error updating ticket:", response.statusText);
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // On success, exit editing mode
+      setIsEditing(false);
+
+      // Update local "tickets" store
+      const updatedStoredTickets = storedTickets.map((t) =>
+        t.Ticket === ticket.Ticket
+          ? { ...patchData, ImageDirectory: uploadedImages.join(",") }
+          : t
+      );
+      localStorage.setItem("tickets", JSON.stringify(updatedStoredTickets));
+
+      // Update local state
+      setTicket((prevTicket) => ({
+        ...prevTicket,
+        TicketDate: patchData.TicketDate,
+        LeaseName: patchData.LeaseName,
+        WellID: patchData.WellID,
+        Note: fieldNote,
+        Items: patchData.Items,
+        lastUser: userID,
+        lastUpdatedTimestamp: nowISO,
+        lastUpdatedGPSValue: patchData.lastUpdatedGPSValue,
+      }));
+
+      // Reformat TicketDate for display
+      setFormattedDate(
+        ticket.TicketDate
+          ? format(parseISO(ticket.TicketDate), "MMMM dd, yyyy")
+          : ticket.TicketDate
+      );
+
+      // If we have a new lastUpdatedGPSValue, parse and store it
+      if (patchData.lastUpdatedGPSValue) {
+        try {
+          setParsedLastUpdatedGPSValue(
+            JSON.parse(patchData.lastUpdatedGPSValue)
+          );
+        } catch (err) {
+          console.error("Error re-parsing lastUpdatedGPSValue:", err);
+        }
       }
     } catch (error) {
       console.error("Error updating ticket:", error);
@@ -879,13 +966,6 @@ const ViewFieldTicket = () => {
   };
   const handleDeleteConfirm = async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogfieldticket.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
-
       if (navigator.onLine) {
         const response = await fetch(
           `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
@@ -933,18 +1013,14 @@ const ViewFieldTicket = () => {
     setShowConfirmation(false);
   };
 
-  // Billed
+  // ============================
+  //   Billed
+  // ============================
   const handleBillClick = () => {
     setShowBillingConfirmation(true);
   };
   const handleBillConfirm = async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
       const updatedTicket = { ...ticket, Billed: "Y" };
 
       const response = await fetch(
@@ -972,12 +1048,6 @@ const ViewFieldTicket = () => {
   };
   const handleUnbillClick = async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      const baseUrl =
-        parts.length > 2
-          ? `https://${parts.shift()}.ogpumper.net`
-          : "https://stasney.ogfieldticket.ogpumper.net";
       const updatedTicket = { ...ticket, Billed: "N" };
 
       const response = await fetch(
@@ -1001,7 +1071,9 @@ const ViewFieldTicket = () => {
     }
   };
 
-  // Modal
+  // ============================
+  //   Image Modal
+  // ============================
   const openModal = (image) => {
     setSelectedImage(image);
     setIsModalOpen(true);
@@ -1038,6 +1110,35 @@ const ViewFieldTicket = () => {
     }
   }
 
+  // Calculate Net Cost with updated item totals
+  // Example adjustment to netCost calculation:
+  const netCost = ticket?.Items
+    ? ticket.Items.reduce((sum, item) => {
+        const costVal = parseFloat(item.Cost ?? item.ItemCost ?? 0);
+
+        // If item uses Start/Stop and both times are set:
+        if (item.UseStartStop === "Y" && item.Start && item.Stop) {
+          const startTime = new Date(item.Start).getTime();
+          const stopTime = new Date(item.Stop).getTime();
+          let hours = (stopTime - startTime) / 3600000;
+          if (hours < 0) hours = 0;
+          return sum + hours * costVal;
+        }
+
+        // Otherwise if item uses normal Quantity:
+        if (item.UseQuantity === "Y") {
+          const q = parseFloat(item.Quantity ?? 0);
+          return sum + q * costVal;
+        }
+
+        // Fallback: just cost
+        return sum + costVal;
+      }, 0).toFixed(2)
+    : "0.00";
+
+  // ============================
+  //   Return JSX
+  // ============================
   return (
     <>
       <animated.main
@@ -1216,12 +1317,7 @@ const ViewFieldTicket = () => {
                             : "font-semibold text-gray-700"
                         }
                       >
-                        {ticket.Items && Array.isArray(ticket.Items)
-                          ? `$${ticket.Items.reduce(
-                              (sum, it) => sum + (Number(it.totalCost) || 0),
-                              0
-                            ).toFixed(2)}`
-                          : "$0.00"}
+                        ${netCost}
                       </span>
                     </p>
                   </div>
@@ -1364,12 +1460,7 @@ const ViewFieldTicket = () => {
                           theme === "dark" ? "text-gray-300" : "text-gray-700"
                         }`}
                       >
-                        {ticket.Items && Array.isArray(ticket.Items)
-                          ? `$${ticket.Items.reduce(
-                              (sum, it) => sum + (Number(it.totalCost) || 0),
-                              0
-                            ).toFixed(2)}`
-                          : "$0.00"}
+                        ${netCost}
                       </span>
                     </div>
                   )}
@@ -1412,90 +1503,213 @@ const ViewFieldTicket = () => {
 
             {/* Item List */}
             {ticket?.Items?.length > 0 &&
-              ticket.Items.map((item) => (
-                <animated.div
-                  key={item.TicketLine}
-                  style={itemAnimation}
-                  className={`flex flex-col md:flex-row justify-between items-center ${
-                    theme === "dark" ? "bg-gray-700" : "bg-gray-200"
-                  } p-4 rounded-lg mb-4 shadow-md`}
-                >
-                  <div className="flex-1 w-full md:w-auto mb-4 md:mb-0 text-center md:text-left">
-                    <h4
-                      className={`text-lg md:text-xl font-semibold ${
-                        theme === "dark" ? "text-gray-200" : "text-gray-800"
-                      }`}
-                    >
-                      {item.ItemDescription}
-                    </h4>
-                    {item.UOM && (
-                      <span
-                        className={`block md:inline mt-1 md:mt-0 ${
-                          theme === "dark"
-                            ? "text-sm text-gray-400"
-                            : "text-sm text-gray-600"
+              ticket.Items.map((item) => {
+                // For Start/Stop items, compute hours as quantity
+                let hoursWorked = 0;
+                if (item.UseStartStop === "Y" && item.Start && item.Stop) {
+                  const startTime = new Date(item.Start).getTime();
+                  const stopTime = new Date(item.Stop).getTime();
+                  hoursWorked = (stopTime - startTime) / 3600000;
+                  if (hoursWorked < 0) hoursWorked = 0;
+                }
+
+                return (
+                  <animated.div
+                    key={item.TicketLine}
+                    style={itemAnimation}
+                    className={`flex flex-col md:flex-row justify-between items-center ${
+                      theme === "dark" ? "bg-gray-700" : "bg-gray-200"
+                    } p-4 rounded-lg mb-4 shadow-md`}
+                  >
+                    <div className="flex-1 w-full md:w-auto mb-4 md:mb-0 text-center md:text-left">
+                      <h4
+                        className={`text-lg md:text-xl font-semibold ${
+                          theme === "dark" ? "text-gray-200" : "text-gray-800"
                         }`}
                       >
-                        ({item.UOM})
-                      </span>
-                    )}
-                  </div>
-
-                  {/* If UseStartStop === "Y", show Start/Stop controls instead of a quantity */}
-                  {item.UseStartStop === "Y" ? (
-                    <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-12">
-                      <div className="text-center md:text-left">
-                        <p
-                          className={`text-sm mb-1 ${
-                            theme === "dark" ? "text-gray-300" : "text-gray-800"
+                        {item.ItemDescription}
+                      </h4>
+                      {item.UOM && (
+                        <span
+                          className={`block md:inline mt-1 md:mt-0 ${
+                            theme === "dark"
+                              ? "text-sm text-gray-400"
+                              : "text-sm text-gray-600"
                           }`}
                         >
-                          <span className="font-medium">Start:</span>{" "}
-                          {item.Start
-                            ? format(parseISO(item.Start), "PPpp")
-                            : "Not started"}
-                        </p>
-                        <p
-                          className={`text-sm ${
-                            theme === "dark" ? "text-gray-300" : "text-gray-800"
-                          }`}
-                        >
-                          <span className="font-medium">Stop:</span>{" "}
-                          {item.Stop
-                            ? format(parseISO(item.Stop), "PPpp")
-                            : "Not stopped"}
-                        </p>
-                      </div>
-                      {isEditing && (
-                        <div className="flex items-center gap-3">
-                          {/* If not started, show start button; if started but not stopped, show stop button */}
-                          {!item.Start && (
-                            <button
-                              className={`px-3 py-1.5 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition`}
-                              onClick={() =>
-                                handleStartStopClick(item, "start")
-                              }
-                            >
-                              Start
-                            </button>
-                          )}
-                          {item.Start && !item.Stop && (
-                            <button
-                              className={`px-3 py-1.5 rounded-md text-white bg-red-600 hover:bg-red-700 transition`}
-                              onClick={() => handleStartStopClick(item, "stop")}
-                            >
-                              Stop
-                            </button>
-                          )}
-                        </div>
+                          ({item.UOM})
+                        </span>
                       )}
                     </div>
-                  ) : (
-                    // Otherwise, if UseStartStop != "Y", fallback to normal cost/quantity
-                    <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-12">
-                      {userRole !== "P" && item.UseCost !== "N" && (
-                        <div className="flex-1 text-center md:text-center">
-                          {isEditing && !item.JobItemID ? (
+
+                    {/* UseStartStop? */}
+                    {item.UseStartStop === "Y" ? (
+                      <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-2 md:gap-6">
+                        {/* Main info row */}
+                        <div className="flex flex-row items-center gap-4 text-sm">
+                          {userRole !== "P" && !isEditing && (
+                            <p
+                              className={
+                                theme === "dark"
+                                  ? "text-gray-300"
+                                  : "text-gray-800"
+                              }
+                            >
+                              <span className="font-medium">Cost:</span> $
+                              {(
+                                parseFloat(item.Cost) *
+                                parseFloat(item.Quantity || 0)
+                              ).toFixed(2)}
+                            </p>
+                          )}
+                          {!isEditing && (
+                            <>
+                              <p
+                                className={
+                                  theme === "dark"
+                                    ? "text-gray-300"
+                                    : "text-gray-800"
+                                }
+                              >
+                                <span className="font-medium">Start:</span>{" "}
+                                {item.Start
+                                  ? format(parseISO(item.Start), "PPpp")
+                                  : "Not started"}
+                              </p>
+                              <p
+                                className={
+                                  theme === "dark"
+                                    ? "text-gray-300"
+                                    : "text-gray-800"
+                                }
+                              >
+                                <span className="font-medium">Stop:</span>{" "}
+                                {item.Stop
+                                  ? format(parseISO(item.Stop), "PPpp")
+                                  : "Not stopped"}
+                              </p>
+                            </>
+                          )}
+
+                          <p
+                            className={
+                              theme === "dark"
+                                ? "text-gray-300"
+                                : "text-gray-800"
+                            }
+                          >
+                            <span className="font-medium">Qty:</span>{" "}
+                            {hoursWorked > 0 ? hoursWorked.toFixed(2) : "0.00"}
+                          </p>
+                        </div>
+
+                        {/* Editing controls (if isEditing) */}
+                        {isEditing && (
+                          <div className="flex flex-row items-center gap-3 mt-2 md:mt-0">
+                            {/* Time inputs */}
+                            <label className="text-xs">
+                              <span className="mr-1">Edit Start:</span>
+                              <input
+                                type="datetime-local"
+                                value={toDatetimeLocalString(item.Start)}
+                                onChange={(e) =>
+                                  handleTimeFieldChange(
+                                    e,
+                                    item.TicketLine,
+                                    "Start"
+                                  )
+                                }
+                                className="px-2 py-1 border rounded-md text-sm"
+                              />
+                            </label>
+                            <label className="text-xs">
+                              <span className="mr-1">Edit Stop:</span>
+                              <input
+                                type="datetime-local"
+                                value={toDatetimeLocalString(item.Stop)}
+                                onChange={(e) =>
+                                  handleTimeFieldChange(
+                                    e,
+                                    item.TicketLine,
+                                    "Stop"
+                                  )
+                                }
+                                className="px-2 py-1 border rounded-md text-sm"
+                              />
+                            </label>
+
+                            {/* Start/Stop buttons */}
+                            {!item.Start && (
+                              <button
+                                className="px-3 py-1.5 rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                                onClick={() =>
+                                  handleStartStopClick(item, "start")
+                                }
+                              >
+                                Start
+                              </button>
+                            )}
+                            {item.Start && !item.Stop && (
+                              <button
+                                className="px-3 py-1.5 rounded-md text-white bg-red-600 hover:bg-red-700"
+                                onClick={() =>
+                                  handleStartStopClick(item, "stop")
+                                }
+                              >
+                                Stop
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      // Non–UseStartStop items
+                      <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-12">
+                        {userRole !== "P" && item.UseCost !== "N" && (
+                          <div className="flex-1 text-center md:text-center">
+                            {isEditing ? (
+                              <div className="flex items-center justify-center md:justify-end">
+                                <label
+                                  className={`mr-2 ${
+                                    theme === "dark"
+                                      ? "text-gray-400"
+                                      : "text-gray-600"
+                                  } font-medium text-lg`}
+                                >
+                                  Cost:
+                                </label>
+                                <input
+                                  type="number"
+                                  name="Cost"
+                                  value={item.Cost}
+                                  onChange={(e) =>
+                                    handleCostChange(e, item.TicketLine)
+                                  }
+                                  onClick={(e) => e.target.select()}
+                                  className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
+                                    theme === "dark"
+                                      ? "border-gray-600 bg-gray-800 text-gray-300"
+                                      : "border-gray-400 bg-white text-gray-700"
+                                  } focus:ring-indigo-400 focus:border-indigo-400 transition`}
+                                  placeholder="0.00"
+                                />
+                              </div>
+                            ) : (
+                              <p
+                                className={`text-base ${
+                                  theme === "dark"
+                                    ? "text-gray-400"
+                                    : "text-gray-600"
+                                }`}
+                              >
+                                <span className="font-medium">Cost:</span> $
+                                {item.Cost * item.Quantity}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        <div className="w-full md:w-auto text-center md:text-right">
+                          {isEditing ? (
                             <div className="flex items-center justify-center md:justify-end">
                               <label
                                 className={`mr-2 ${
@@ -1504,23 +1718,35 @@ const ViewFieldTicket = () => {
                                     : "text-gray-600"
                                 } font-medium text-lg`}
                               >
-                                Cost:
+                                Qty:
                               </label>
-                              <input
-                                type="number"
-                                name="Cost"
-                                value={item.Cost}
-                                onChange={(e) =>
-                                  handleCostChange(e, item.TicketLine)
-                                }
-                                onClick={(e) => e.target.select()}
-                                className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
-                                  theme === "dark"
-                                    ? "border-gray-600 bg-gray-800 text-gray-300"
-                                    : "border-gray-400 bg-white text-gray-700"
-                                } focus:ring-indigo-400 focus:border-indigo-400 transition`}
-                                placeholder="0.00"
-                              />
+                              {item.UseQuantity === "Y" ? (
+                                <input
+                                  type="number"
+                                  name="Quantity"
+                                  value={item.Quantity}
+                                  onChange={(e) =>
+                                    handleChange(e, item.TicketLine)
+                                  }
+                                  onClick={(e) => e.target.select()}
+                                  className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
+                                    theme === "dark"
+                                      ? "border-gray-600 bg-gray-800 text-gray-300"
+                                      : "border-gray-400 bg-white text-gray-700"
+                                  } focus:ring-indigo-400 focus:border-indigo-400 transition`}
+                                  placeholder="0"
+                                />
+                              ) : (
+                                <p
+                                  className={`text-base ${
+                                    theme === "dark"
+                                      ? "text-gray-400"
+                                      : "text-gray-600"
+                                  }`}
+                                >
+                                  {item.Quantity}
+                                </p>
+                              )}
                             </div>
                           ) : (
                             <p
@@ -1530,69 +1756,26 @@ const ViewFieldTicket = () => {
                                   : "text-gray-600"
                               }`}
                             >
-                              <span className="font-medium">Cost:</span> $
-                              {item.totalCost}
+                              <span className="font-medium">Qty:</span>{" "}
+                              {item.Quantity}
                             </p>
                           )}
                         </div>
-                      )}
-                      <div className="w-full md:w-auto text-center md:text-right">
-                        {isEditing ? (
-                          <div className="flex items-center justify-center md:justify-end">
-                            <label
-                              className={`mr-2 ${
-                                theme === "dark"
-                                  ? "text-gray-400"
-                                  : "text-gray-600"
-                              } font-medium text-lg`}
-                            >
-                              Qty:
-                            </label>
-                            {item.UseQuantity === "Y" ? (
-                              <input
-                                type="number"
-                                name="Quantity"
-                                value={item.Quantity}
-                                onChange={(e) =>
-                                  handleChange(e, item.TicketLine)
-                                }
-                                onClick={(e) => e.target.select()}
-                                className={`form-input w-24 px-3 py-1.5 rounded-md border text-base ${
-                                  theme === "dark"
-                                    ? "border-gray-600 bg-gray-800 text-gray-300"
-                                    : "border-gray-400 bg-white text-gray-700"
-                                } focus:ring-indigo-400 focus:border-indigo-400 transition`}
-                                placeholder="0"
-                              />
-                            ) : (
-                              <p
-                                className={`text-base ${
-                                  theme === "dark"
-                                    ? "text-gray-400"
-                                    : "text-gray-600"
-                                }`}
-                              >
-                                {item.Quantity}
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <p
-                            className={`text-base ${
-                              theme === "dark"
-                                ? "text-gray-400"
-                                : "text-gray-600"
-                            }`}
-                          >
-                            <span className="font-medium">Qty:</span>{" "}
-                            {item.Quantity}
-                          </p>
-                        )}
                       </div>
-                    </div>
-                  )}
-                </animated.div>
-              ))}
+                    )}
+
+                    {/* Remove item button (only if editing) */}
+                    {isEditing && (
+                      <button
+                        onClick={() => openRemoveItemModal(item.TicketLine)}
+                        className="mt-4 md:mt-0 md:ml-4 px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700 transition"
+                      >
+                        <FontAwesomeIcon icon={faTrashAlt} className="mr-1" />
+                      </button>
+                    )}
+                  </animated.div>
+                );
+              })}
 
             {/* Field Note */}
             {!isEditing && fieldNote && (
@@ -1776,51 +1959,67 @@ const ViewFieldTicket = () => {
                   isOpen={isModalOpen}
                   onRequestClose={closeModal}
                   contentLabel="Image Zoom Modal"
-                  className="flex items-center justify-center h-full"
-                  overlayClassName={`fixed inset-0 z-40 ${
+                  /* Overlay with semi-dark backdrop */
+                  overlayClassName={`fixed inset-0 z-40 flex items-center justify-center transition-all ${
                     theme === "dark"
                       ? "bg-black bg-opacity-80"
                       : "bg-black bg-opacity-50"
                   }`}
+                  /* Center the modal content */
+                  className="relative outline-none flex items-center justify-center"
                 >
+                  {/* Container with soft zoom animation & nicer aesthetics */}
                   <div
-                    className={`p-4 rounded-lg shadow-lg max-w-3xl mx-auto z-50 relative ${
-                      theme === "dark" ? "bg-gray-800" : "bg-white"
-                    }`}
+                    className={`relative max-w-3xl w-full mx-auto rounded-xl shadow-2xl ${
+                      theme === "dark" ? "bg-gray-900" : "bg-white"
+                    } animate-zoomModal overflow-hidden`}
+                    style={{ maxHeight: "90vh" }}
                   >
                     {selectedImage && (
-                      <div className="relative">
+                      <div className="relative flex flex-col items-center p-4">
                         <img
                           src={selectedImage}
                           alt="Selected"
-                          className="w-full h-auto max-h-screen object-cover"
+                          className="max-h-[80vh] max-w-full object-contain rounded-lg shadow-md"
                         />
-                        <div className="absolute top-0 right-0 p-2">
-                          <button
-                            onClick={closeModal}
-                            className="text-gray-800 hover:text-gray-600 focus:outline-none"
+                        {/* High-contrast close button on top-right */}
+                        <button
+                          onClick={closeModal}
+                          className="absolute top-3 right-3 bg-black bg-opacity-70 rounded-full p-2
+                       hover:bg-opacity-90 transition focus:outline-none"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            stroke="#fff"
+                            viewBox="0 0 24 24"
+                            className="w-6 h-6"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="grey"
-                              className="w-6 h-6"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                              />
-                            </svg>
-                          </button>
-                        </div>
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
                       </div>
                     )}
                   </div>
                 </Modal>
               </Suspense>
+
+              <style>
+                {`
+  @keyframes zoomModal {
+    0%   { transform: scale(0.95); opacity: 0.85; }
+    100% { transform: scale(1);    opacity: 1;    }
+  }
+  .animate-zoomModal {
+    animation: zoomModal 0.2s ease-out forwards;
+  }
+`}
+              </style>
             </div>
 
             {/* Action Buttons */}
@@ -2008,6 +2207,7 @@ const ViewFieldTicket = () => {
 
         {/* Confirmation Modals */}
         <Suspense fallback={<div>Loading...</div>}>
+          {/* Ticket-level deletion */}
           <ConfirmationModal
             isOpen={showConfirmation}
             onConfirm={handleDeleteConfirm}
@@ -2015,12 +2215,21 @@ const ViewFieldTicket = () => {
             confirmationQuestion="Are you sure you want to delete this ticket?"
             actionButtonLabel="Delete"
           />
+          {/* Billing */}
           <ConfirmationModal
             isOpen={showBillingConfirmation}
             onConfirm={handleBillConfirm}
             onCancel={handleBillCancel}
             confirmationQuestion="Are you sure you want to mark this ticket as billed?"
             actionButtonLabel="Bill"
+          />
+          {/* Item removal */}
+          <ConfirmationModal
+            isOpen={showRemoveItemModal}
+            onConfirm={handleRemoveItemConfirm}
+            onCancel={handleRemoveItemCancel}
+            confirmationQuestion="Are you sure you want to remove this item?"
+            actionButtonLabel="Remove"
           />
         </Suspense>
       </animated.main>
@@ -2044,5 +2253,4 @@ const ViewFieldTicket = () => {
     </>
   );
 };
-
 export default ViewFieldTicket;

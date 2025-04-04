@@ -61,19 +61,7 @@ const ControlUsers = () => {
   // Function to fetch job roles from the API
   const fetchJobRoles = async () => {
     try {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      let baseApiUrl;
-
-      // Determine the base API URL based on the hostname
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        baseApiUrl = `https://${subdomainPart}.ogfieldticket.ogpumper.net`;
-      } else {
-        baseApiUrl = "https://test.ogfieldticket.ogpumper.net";
-      }
-
-      const response = await axios.get(`${baseApiUrl}/api/jobs.php`);
+      const response = await axios.get(`${baseUrl}/api/jobs.php`);
       const data = response.data;
 
       // Check if data is an array
