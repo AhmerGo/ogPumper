@@ -11,10 +11,10 @@ import {
 import Modal from "react-modal";
 import { useTheme } from "ogcommon";
 import JobListPage from "./JobTypeForm";
-import Leases from "./Leases";
 import ControlUsers from "./ControlUsers";
 import MasterList from "./ItemMasterList";
-import CrudeCalc from "./CrudeCalc";
+import { Leases } from "ogcommon";
+import { baseUrl } from "./config";
 
 Modal.setAppElement("#root");
 
@@ -154,20 +154,6 @@ const Admin = () => {
                 </button>
               </div>
             )}
-
-            {/* CRUDE CALC */}
-            <button
-              className={`w-full px-6 py-4 rounded-lg flex items-center gap-3 transition-colors duration-200 ${sidePanelHoverClass} ${
-                activePanel === "crudeCalc" ? activePanelClass : ""
-              }`}
-              onClick={() => handleChangePanel("crudeCalc")}
-            >
-              <FontAwesomeIcon
-                icon={faCalculator}
-                className="text-xl shrink-0"
-              />
-              <span className="text-lg font-medium">Crude Calc</span>
-            </button>
           </nav>
         </animated.div>
       </div>
@@ -182,12 +168,11 @@ const Admin = () => {
             <MasterList />
           )}
           {activePanel === "leases" && activeSubPanel === "leaseList" && (
-            <Leases />
+            <Leases baseUrl={baseUrl} />
           )}
           {activePanel === "users" && activeSubPanel === "userList" && (
             <ControlUsers />
           )}
-          {activePanel === "crudeCalc" && <CrudeCalc />}
         </animated.div>
       </div>
     </div>
