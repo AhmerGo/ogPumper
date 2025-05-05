@@ -154,12 +154,21 @@ function FieldTicketEntry() {
   //    HELPERS
   // =============================
   // Convert ISO date string -> local "YYYY-MM-DDTHH:MM" for <input type="datetime-local">
-  const toDatetimeLocalString = (isoString) => {
-    if (!isoString) return "";
-    const date = new Date(isoString);
-    const offset = date.getTimezoneOffset() * 60000;
-    const localTime = new Date(date - offset).toISOString().slice(0, 16);
-    return localTime;
+  const toDatetimeLocalString = (val) => {
+    if (!val) return "";
+    // already local ISO (no trailing “Z”)? → just trim to minutes
+    if (typeof val === "string" && !val.endsWith("Z")) return val.slice(0, 16);
+
+    const d = new Date(val); // parses “...Z” or offset‑aware
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // shift → local
+    return d.toISOString().slice(0, 16); // “YYYY‑MM‑DDTHH:MM”
+  };
+
+  const toSqlDateTime = (localISO) => {
+    if (!localISO) return null; // keep nulls
+    // ensure seconds + swap the “T” for a space (MySQL DATETIME)
+    const withSecs = localISO.length === 16 ? `${localISO}:00` : localISO;
+    return withSecs.replace("T", " ");
   };
 
   // =============================
@@ -185,25 +194,23 @@ function FieldTicketEntry() {
 
   // If item.UseStartStop is "Y", we handle start/stop changes
   const handleTimeFieldChange = (e, itemId, field) => {
-    const rawValue = e.target.value; // "2025-03-21T14:30"
-    const isoValue = rawValue ? new Date(rawValue).toISOString() : null;
+    const localVal = e.target.value; // “YYYY‑MM‑DDTHH:MM”
+    setItems((prev) =>
+      prev.map((it) => {
+        if (it.ItemID !== itemId) return it;
 
-    setItems((prevItems) =>
-      prevItems.map((it) => {
-        if (it.ItemID === itemId) {
-          // If user tries to set Stop < Start, block it
-          if (
-            field === "stop" &&
-            it.start &&
-            isoValue &&
-            new Date(isoValue) < new Date(it.start)
-          ) {
-            alert("Stop time cannot be before Start time!");
-            return it; // Skip updating
-          }
-          return { ...it, [field]: isoValue };
+        // guard: Stop can’t be < Start
+        if (
+          field === "stop" &&
+          it.start &&
+          localVal &&
+          new Date(localVal) < new Date(it.start)
+        ) {
+          alert("Stop time cannot be before Start time!");
+          return it;
         }
-        return it;
+
+        return { ...it, [field]: localVal }; // keep local string for UI
       })
     );
   };
@@ -213,17 +220,27 @@ function FieldTicketEntry() {
     const found = itemTypes.find((it) => it.ItemID === itemID);
     if (!found) return;
 
-    setItems((prev) => [
-      ...prev,
-      {
-        ...found,
-        quantity: 0,
-        start: null,
-        stop: null,
-        // ensure we keep the item’s potential UseStartStop
-        UseStartStop: found.UseStartStop || "N",
-      },
-    ]);
+    // Default cost
+    const itemCost = found.defaultCost ?? 0;
+
+    // Create new item
+    const newItem = {
+      ...found,
+      quantity: 0,
+      start: null,
+      stop: null,
+      // Ensures final submission sees a valid cost
+      ItemCost: itemCost,
+    };
+
+    // If the item uses Start/Stop and there's no start, set it to current time
+    if (newItem.UseStartStop === "Y" && !newItem.start) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      newItem.start = now.toISOString().slice(0, 16); // local ISO, NO “Z”
+    }
+
+    setItems((prev) => [...prev, newItem]);
     setSelectedItem("");
   };
 
@@ -339,9 +356,8 @@ function FieldTicketEntry() {
         UseStartStop: it.UseStartStop || "N",
 
         // If your server expects these:
-        start: it.start || null,
-        stop: it.stop || null,
-
+        start: toSqlDateTime(it.start), // ex: “2025‑04‑21 15:30:00”
+        stop: toSqlDateTime(it.stop),
         quantity: it.quantity || 0,
       }));
 
@@ -524,7 +540,7 @@ function FieldTicketEntry() {
     >
       {loading ? (
         <div className="flex justify-center items-center fixed inset-0 z-50">
-          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-blue-500" />
         </div>
       ) : (
         <>
@@ -535,21 +551,21 @@ function FieldTicketEntry() {
                 ? "bg-gradient-to-r from-gray-700 via-gray-800 to-gray-900"
                 : "bg-gradient-to-r from-gray-100 via-gray-200 to-gray-300"
             } opacity-20 mix-blend-soft-light`}
-          ></div>
+          />
           <div
             className={`absolute inset-0 transition-colors duration-500 ${
               theme === "dark"
                 ? "bg-gradient-to-tr from-gray-600 via-gray-700 to-gray-800"
                 : "bg-gradient-to-tr from-white via-gray-50 to-gray-100"
             } rounded-full mix-blend-multiply filter blur-3xl opacity-50`}
-          ></div>
+          />
           <div
             className={`absolute inset-0 transition-colors duration-500 ${
               theme === "dark"
                 ? "bg-gradient-to-tl from-gray-500 via-gray-600 to-gray-700"
                 : "bg-gradient-to-tl from-white via-gray-50 to-gray-100"
             } rounded-full mix-blend-multiply filter blur-3xl opacity-50`}
-          ></div>
+          />
 
           {/* main container */}
           <div
@@ -561,13 +577,14 @@ function FieldTicketEntry() {
           >
             {/* Home button */}
             <button
+              type="button"
               onClick={() => navigate("/home")}
               className={`absolute top-5 right-5 p-2 rounded-full hover:bg-opacity-30 transition-all ${
                 theme === "dark" ? "hover:bg-white" : "hover:bg-gray-400"
               }`}
             >
               <svg
-                xmlns="https://www.w3.org/2000/svg"
+                xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -601,7 +618,7 @@ function FieldTicketEntry() {
                       theme === "dark" ? "text-blue-300" : "text-blue-700"
                     }`}
                   >
-                    Ticket Number:{" "}
+                    Ticket Number:&nbsp;
                     <span
                       className={
                         theme === "dark"
@@ -619,7 +636,7 @@ function FieldTicketEntry() {
                       theme === "dark" ? "text-blue-300" : "text-blue-700"
                     }`}
                   >
-                    Date:{" "}
+                    Date:&nbsp;
                     <span
                       className={
                         theme === "dark"
@@ -637,7 +654,7 @@ function FieldTicketEntry() {
                       theme === "dark" ? "text-blue-300" : "text-blue-700"
                     }`}
                   >
-                    Lease/Well:{" "}
+                    Lease/Well:&nbsp;
                     <span
                       className={
                         theme === "dark"
@@ -646,7 +663,7 @@ function FieldTicketEntry() {
                       }
                     >
                       {formFields.lease || "N/A"}{" "}
-                      {formFields.well && !formFields.lease.includes("#")
+                      {formFields.well && !formFields.lease?.includes("#")
                         ? `# ${formFields.well}`
                         : ""}
                     </span>
@@ -659,7 +676,7 @@ function FieldTicketEntry() {
                       theme === "dark" ? "text-blue-300" : "text-blue-700"
                     }`}
                   >
-                    Ticket Type:{" "}
+                    Ticket Type:&nbsp;
                     <span
                       className={
                         theme === "dark"
@@ -680,14 +697,14 @@ function FieldTicketEntry() {
                     <p
                       className={`font-bold ${
                         theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      } text-center`}
+                      }`}
                     >
                       Ticket Number
                     </p>
                     <span
-                      className={`block text-center ${
+                      className={
                         theme === "dark" ? "text-gray-300" : "text-gray-700"
-                      }`}
+                      }
                     >
                       {formFields.ticketNumber || "N/A"}
                     </span>
@@ -697,14 +714,14 @@ function FieldTicketEntry() {
                     <p
                       className={`font-bold ${
                         theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      } text-center`}
+                      }`}
                     >
                       Date
                     </p>
                     <span
-                      className={`block text-center ${
+                      className={
                         theme === "dark" ? "text-gray-300" : "text-gray-700"
-                      }`}
+                      }
                     >
                       {formattedDate}
                     </span>
@@ -714,19 +731,19 @@ function FieldTicketEntry() {
                     <p
                       className={`font-bold ${
                         theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      } text-center`}
+                      }`}
                     >
                       Lease/Well
                     </p>
                     <span
-                      className={`block text-center ${
+                      className={
                         theme === "dark" ? "text-gray-300" : "text-gray-700"
-                      }`}
+                      }
                     >
                       {formFields.lease || "N/A"}
-                      {formFields.well && !formFields.lease.includes("#") ? (
-                        <span> # {formFields.well}</span>
-                      ) : null}
+                      {formFields.well && !formFields.lease?.includes("#") && (
+                        <>&nbsp;# {formFields.well}</>
+                      )}
                     </span>
                   </div>
 
@@ -734,14 +751,14 @@ function FieldTicketEntry() {
                     <p
                       className={`font-bold ${
                         theme === "dark" ? "text-indigo-400" : "text-indigo-600"
-                      } text-center`}
+                      }`}
                     >
                       Ticket Type
                     </p>
                     <span
-                      className={`block text-center ${
+                      className={
                         theme === "dark" ? "text-gray-300" : "text-gray-700"
-                      }`}
+                      }
                     >
                       {formFields.ticketType || "N/A"}
                     </span>
@@ -757,22 +774,25 @@ function FieldTicketEntry() {
                   onChange={(e) => setSelectedItem(e.target.value)}
                   className={`form-select w-full px-4 py-2 rounded-md ${
                     theme === "dark"
-                      ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
-                      : "border border-gray-300 focus:ring-gray-500"
+                      ? "bg-gray-800 border border-gray-700 text-white"
+                      : "border border-gray-300"
                   }`}
                 >
                   <option value="" disabled>
                     Select an item...
                   </option>
-                  {itemTypes.map((it, i) => (
-                    <option key={i} value={it.ItemID}>
-                      {`${it.ItemID} / ${it.ItemDescription}${
-                        it.UOM ? ` / ${it.UOM}` : ""
-                      }`}
-                    </option>
-                  ))}
+                  {itemTypes
+                    .filter((it) => it.Active === "Y")
+                    .map((it) => (
+                      <option key={it.ItemID} value={it.ItemID}>
+                        {`${it.ItemID} / ${it.ItemDescription}${
+                          it.UOM ? ` / ${it.UOM}` : ""
+                        }`}
+                      </option>
+                    ))}
                 </select>
                 <button
+                  type="button"
                   onClick={() => addItem(selectedItem)}
                   className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
                 >
@@ -781,107 +801,123 @@ function FieldTicketEntry() {
               </div>
 
               {/* Render the item cards */}
-              {items.map((item, index) => (
-                <div
-                  key={index}
-                  className={`flex flex-col md:flex-row justify-between items-center ${
-                    theme === "dark" ? "bg-gray-700" : "bg-gray-200"
-                  } p-4 rounded-lg mb-4 shadow-md`}
-                >
-                  <div className="mb-4 md:mb-0 text-center md:text-left">
-                    <h4 className="text-xl md:text-2xl font-semibold">
-                      {item.ItemDescription}{" "}
-                      {item.UOM && (
-                        <span
-                          className={`text-sm md:text-base ${
-                            theme === "dark" ? "text-gray-300" : "text-gray-500"
-                          }`}
-                        >
-                          ({item.UOM})
-                        </span>
-                      )}
-                    </h4>
+              {items.map((item, index) => {
+                if (item.UseStartStop === "Y" && !item.start) {
+                  const now = new Date();
+                  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                  item.start = now.toISOString().slice(0, 16); // local ISO, NO “Z”
+                }
+
+                return (
+                  <div
+                    key={index}
+                    className={`flex flex-col md:flex-row justify-between items-center ${
+                      theme === "dark" ? "bg-gray-700" : "bg-gray-200"
+                    } p-4 rounded-lg mb-4 shadow-md`}
+                  >
+                    <div className="mb-4 md:mb-0 text-center md:text-left">
+                      <h4 className="text-xl md:text-2xl font-semibold">
+                        {item.ItemDescription}&nbsp;
+                        {item.UOM && (
+                          <span
+                            className={`text-sm md:text-base ${
+                              theme === "dark"
+                                ? "text-gray-300"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            ({item.UOM})
+                          </span>
+                        )}
+                      </h4>
+                    </div>
+
+                    {/* If item.UseStartStop === 'Y', show Start/Stop date-time fields */}
+                    {item.UseStartStop === "Y" ? (
+                      <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
+                        <div className="flex flex-col">
+                          <label
+                            className={`font-medium text-sm ${
+                              theme === "dark"
+                                ? "text-gray-300"
+                                : "text-gray-800"
+                            } mb-1`}
+                          >
+                            Start:
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={toDatetimeLocalString(item.start)}
+                            onChange={(e) =>
+                              handleTimeFieldChange(e, item.ItemID, "start")
+                            }
+                            className={`form-input px-3 py-1.5 rounded-md border ${
+                              theme === "dark"
+                                ? "bg-gray-800 border-gray-700 text-white focus:ring-gray-600"
+                                : "border-gray-300 focus:ring-gray-500 text-gray-700"
+                            }`}
+                          />
+                        </div>
+
+                        <div className="flex flex-col">
+                          <label
+                            className={`font-medium text-sm ${
+                              theme === "dark"
+                                ? "text-gray-300"
+                                : "text-gray-800"
+                            } mb-1`}
+                          >
+                            Stop:
+                          </label>
+                          <input
+                            type="datetime-local"
+                            value={toDatetimeLocalString(item.stop)}
+                            onChange={(e) =>
+                              handleTimeFieldChange(e, item.ItemID, "stop")
+                            }
+                            className={`form-input px-3 py-1.5 rounded-md border ${
+                              theme === "dark"
+                                ? "bg-gray-800 border-gray-700 text-white focus:ring-gray-600"
+                                : "border-gray-300 focus:ring-gray-500 text-gray-700"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      /* Otherwise, show normal quantity */
+                      <div className="flex items-center justify-center md:justify-end">
+                        <label className="block font-medium mr-4">Qty:</label>
+                        {item.UseQuantity === "N" &&
+                        item.ItemQuantity != null ? (
+                          <span
+                            className={`inline-block w-24 px-4 py-2 rounded-md ${
+                              theme === "dark"
+                                ? "text-gray-300"
+                                : "text-gray-700"
+                            }`}
+                          >
+                            {item.ItemQuantity}
+                          </span>
+                        ) : (
+                          <input
+                            type="number"
+                            name="quantity"
+                            value={item.quantity || 0}
+                            onChange={(e) => handleChange(e, item.ItemID)}
+                            onClick={(e) => e.target.select()}
+                            className={`form-input w-24 px-4 py-2 rounded-md ${
+                              theme === "dark"
+                                ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
+                                : "border border-gray-300 focus:ring-gray-500"
+                            }`}
+                            placeholder="0"
+                          />
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {/* If item.UseStartStop === 'Y', show Start/Stop date-time fields */}
-                  {item.UseStartStop === "Y" ? (
-                    <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
-                      <div className="flex flex-col">
-                        <label
-                          className={`font-medium text-sm ${
-                            theme === "dark" ? "text-gray-300" : "text-gray-800"
-                          } mb-1`}
-                        >
-                          Start:
-                        </label>
-                        <input
-                          type="datetime-local"
-                          value={toDatetimeLocalString(item.start)}
-                          onChange={(e) =>
-                            handleTimeFieldChange(e, item.ItemID, "start")
-                          }
-                          className={`form-input px-3 py-1.5 rounded-md border ${
-                            theme === "dark"
-                              ? "bg-gray-800 border-gray-700 text-white focus:ring-gray-600"
-                              : "border-gray-300 focus:ring-gray-500 text-gray-700"
-                          }`}
-                        />
-                      </div>
-
-                      <div className="flex flex-col">
-                        <label
-                          className={`font-medium text-sm ${
-                            theme === "dark" ? "text-gray-300" : "text-gray-800"
-                          } mb-1`}
-                        >
-                          Stop:
-                        </label>
-                        <input
-                          type="datetime-local"
-                          value={toDatetimeLocalString(item.stop)}
-                          onChange={(e) =>
-                            handleTimeFieldChange(e, item.ItemID, "stop")
-                          }
-                          className={`form-input px-3 py-1.5 rounded-md border ${
-                            theme === "dark"
-                              ? "bg-gray-800 border-gray-700 text-white focus:ring-gray-600"
-                              : "border-gray-300 focus:ring-gray-500 text-gray-700"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    // Otherwise, show normal quantity
-                    <div className="flex items-center justify-center md:justify-end">
-                      <label className="block font-medium mr-4">Qty:</label>
-                      {item.UseQuantity === "N" &&
-                      item.ItemQuantity !== null ? (
-                        <span
-                          className={`inline-block w-24 px-4 py-2 rounded-md ${
-                            theme === "dark" ? "text-gray-300" : "text-gray-700"
-                          }`}
-                        >
-                          {item.ItemQuantity}
-                        </span>
-                      ) : (
-                        <input
-                          type="number"
-                          name="quantity"
-                          value={item.quantity || 0}
-                          onChange={(e) => handleChange(e, item.ItemID)}
-                          onClick={(e) => e.target.select()}
-                          className={`form-input w-24 px-4 py-2 rounded-md ${
-                            theme === "dark"
-                              ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
-                              : "border border-gray-300 focus:ring-gray-500"
-                          }`}
-                          placeholder="0"
-                        />
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
 
               {/* Note field */}
               <div className="mb-8 md:mb-16">
@@ -889,14 +925,14 @@ function FieldTicketEntry() {
                 <textarea
                   name="note"
                   value={formFields.note || ""}
-                  onChange={(e) => handleChange(e)}
+                  onChange={handleChange}
                   className={`form-textarea w-full px-4 py-2 rounded-md ${
                     theme === "dark"
                       ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
                       : "border border-gray-300 focus:ring-gray-500"
                   }`}
                   rows={4}
-                ></textarea>
+                />
               </div>
 
               {/* Image Upload, only if online */}
@@ -911,59 +947,55 @@ function FieldTicketEntry() {
                   </label>
                   <div className="mb-4 w-full max-w-5xl">
                     <div className="flex items-center justify-center w-full relative">
-                      {uploadedImages.length > 0 &&
-                        uploadedImages.map((image, idx) => {
-                          let zIndex;
-                          if (idx === uploadedImages.length - 1) {
-                            zIndex = 2;
-                          } else if (idx === uploadedImages.length - 2) {
-                            zIndex = 1;
-                          } else {
-                            zIndex = 0;
-                          }
-                          return (
-                            <div
-                              key={idx}
-                              className={`relative w-48 h-64 transform transition-transform duration-300 hover:scale-105 ${
-                                idx === 0 ? "-ml-2" : "-ml-10"
-                              } mt-4`}
-                              style={{ zIndex }}
-                            >
-                              <img
-                                src={image}
-                                alt={`uploaded ${idx}`}
-                                className="w-full h-full object-cover rounded-lg shadow-md cursor-pointer"
-                                onClick={() => openModal(image)}
-                              />
-                              <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center space-x-4 opacity-100 sm:opacity-0 sm:hover:opacity-100 transition-opacity duration-300">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    openModal(image);
-                                  }}
-                                  className="text-white hover:text-gray-300 focus:outline-none"
-                                >
-                                  <FontAwesomeIcon
-                                    icon={faSearchPlus}
-                                    size="lg"
-                                  />
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteImage(idx);
-                                  }}
-                                  className="text-white hover:text-gray-300 focus:outline-none"
-                                >
-                                  <FontAwesomeIcon
-                                    icon={faTrashAlt}
-                                    size="lg"
-                                  />
-                                </button>
-                              </div>
+                      {uploadedImages.map((image, idx) => {
+                        const shift = idx === 0 ? "-ml-2" : "-ml-10";
+                        const zIndex =
+                          idx === uploadedImages.length - 1
+                            ? 2
+                            : idx === uploadedImages.length - 2
+                            ? 1
+                            : 0;
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`relative w-48 h-64 transform transition-transform duration-300 hover:scale-105 ${shift} mt-4`}
+                            style={{ zIndex }}
+                          >
+                            <img
+                              src={image}
+                              alt={`uploaded ${idx}`}
+                              className="w-full h-full object-cover rounded-lg shadow-md cursor-pointer"
+                              onClick={() => openModal(image)}
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center space-x-4 opacity-100 sm:opacity-0 sm:hover:opacity-100 transition-opacity duration-300">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openModal(image);
+                                }}
+                                className="text-white hover:text-gray-300 focus:outline-none"
+                              >
+                                <FontAwesomeIcon
+                                  icon={faSearchPlus}
+                                  size="lg"
+                                />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteImage(idx);
+                                }}
+                                className="text-white hover:text-gray-300 focus:outline-none"
+                              >
+                                <FontAwesomeIcon icon={faTrashAlt} size="lg" />
+                              </button>
                             </div>
-                          );
-                        })}
+                          </div>
+                        );
+                      })}
 
                       <div
                         className={`relative w-48 h-64 p-6 rounded-lg border-2 cursor-pointer transition-colors duration-500 z-10 ${
@@ -974,24 +1006,20 @@ function FieldTicketEntry() {
                           uploadedImages.length > 0 ? "-ml-10 mt-4" : "mt-4"
                         }`}
                       >
-                        <div className="flex items-center justify-center h-full">
+                        <div className="flex items-center justify-center h-full space-x-4">
                           {uploadedImages.length === 0 ? (
                             <>
                               <button
+                                type="button"
                                 className="focus:outline-none"
-                                onClick={() =>
-                                  isOnline && triggerFileInput(true)
-                                }
-                                disabled={!isOnline}
+                                onClick={() => triggerFileInput(true)}
                               >
                                 <FontAwesomeIcon icon={faCamera} size="3x" />
                               </button>
                               <button
-                                className="focus:outline-none ml-4"
-                                onClick={() =>
-                                  isOnline && triggerFileInput(false)
-                                }
-                                disabled={!isOnline}
+                                type="button"
+                                className="focus:outline-none"
+                                onClick={() => triggerFileInput(false)}
                               >
                                 <FontAwesomeIcon
                                   icon={faFolderOpen}
@@ -1001,11 +1029,9 @@ function FieldTicketEntry() {
                             </>
                           ) : (
                             <button
+                              type="button"
                               className="focus:outline-none"
-                              onClick={() =>
-                                isOnline && triggerFileInput(false)
-                              }
-                              disabled={!isOnline}
+                              onClick={() => triggerFileInput(false)}
                             >
                               <FontAwesomeIcon icon={faPlusCircle} size="3x" />
                             </button>
@@ -1019,7 +1045,6 @@ function FieldTicketEntry() {
                         onChange={handleImageChange}
                         ref={fileInputRef}
                         className="hidden"
-                        disabled={!isOnline}
                       />
                     </div>
 
@@ -1047,27 +1072,26 @@ function FieldTicketEntry() {
                               alt="Selected"
                               className="w-full h-auto max-h-screen object-cover"
                             />
-                            <div className="absolute top-0 right-0 p-2">
-                              <button
-                                onClick={closeModal}
-                                className="text-gray-800 hover:text-gray-600 focus:outline-none"
+                            <button
+                              type="button"
+                              onClick={closeModal}
+                              className="absolute top-0 right-0 p-2 text-gray-800 hover:text-gray-600 focus:outline-none"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                className="w-6 h-6"
                               >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="grey"
-                                  className="w-6 h-6"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M6 18L18 6M6 6l12 12"
-                                  />
-                                </svg>
-                              </button>
-                            </div>
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
+                              </svg>
+                            </button>
                           </div>
                         )}
                       </div>
@@ -1079,6 +1103,7 @@ function FieldTicketEntry() {
               {/* Submit button */}
               <div className="text-center">
                 <button
+                  type="button"
                   onClick={handleFinalSubmit}
                   className={`text-xl md:text-2xl px-12 py-4 focus:outline-none focus:ring-4 shadow-lg font-semibold rounded-full transition-all ease-in-out duration-300 ${
                     theme === "dark"
@@ -1095,6 +1120,7 @@ function FieldTicketEntry() {
           {/* Mobile scroll button */}
           <button
             ref={scrollButtonRef}
+            type="button"
             className="fixed bottom-5 right-5 bg-blue-500 bg-opacity-75 text-white font-bold py-2 px-4 rounded-full shadow-lg transition-all duration-300 transform focus:outline-none z-50 hover:bg-blue-700 hover:bg-opacity-100 hover:scale-110 animate-pulse md:hidden"
             onClick={isScrolled ? scrollToTop : scrollToBottom}
           >
@@ -1105,5 +1131,4 @@ function FieldTicketEntry() {
     </animated.main>
   );
 }
-
 export default FieldTicketEntry;

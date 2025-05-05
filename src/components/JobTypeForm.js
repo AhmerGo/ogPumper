@@ -64,6 +64,8 @@ const JobListPage = () => {
       const response = await fetch(`${baseUrl}/api/jobs.php`);
       const data = await response.json();
       console.log(data);
+      data.sort((a, b) => a.Description.localeCompare(b.Description));
+
       setTicketTypes(data);
     } catch (error) {
       console.error("Error fetching ticket types:", error);
@@ -1237,6 +1239,29 @@ const ItemsAnimation = ({
                     const selectedItemId = e.target.value;
                     setSelectedItem(selectedItemId);
                     handleInputChange(e);
+
+                    // If user selects an existing item (not "new"),
+                    // pre-fill from that item’s defaultCost and auto-check Use Cost.
+                    if (selectedItemId !== "new") {
+                      const foundItem = availableItems.find(
+                        (item) => item.ItemID === selectedItemId
+                      );
+                      if (foundItem) {
+                        setNewItem((prev) => ({
+                          ...prev,
+                          item_id: foundItem.ItemID,
+                          uom: foundItem.UOM,
+                          item_description: foundItem.ItemDescription,
+                          use_quantity: foundItem.UseQuantity,
+                          use_start_shop: foundItem.UseStartStop,
+                          // Convert defaultCost to a numeric or leave as string
+                          item_cost: foundItem.defaultCost
+                            ? parseFloat(foundItem.defaultCost)
+                            : "",
+                          use_cost: "Y", // auto-check Use Cost
+                        }));
+                      }
+                    }
                   }}
                   className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
                     theme === "dark"
@@ -1255,6 +1280,7 @@ const ItemsAnimation = ({
                 </select>
               </div>
             </div>
+
             {selectedItem === "new" && (
               <div className="mb-8">
                 <label
@@ -1277,6 +1303,7 @@ const ItemsAnimation = ({
                 />
               </div>
             )}
+
             <div className="mb-8">
               <label htmlFor="uom" className="block mb-2 font-semibold">
                 UOM:
@@ -1295,6 +1322,7 @@ const ItemsAnimation = ({
                 }`}
               />
             </div>
+
             <div className="mb-8">
               <label
                 htmlFor="item_description"
@@ -1316,6 +1344,7 @@ const ItemsAnimation = ({
                 }`}
               ></textarea>
             </div>
+
             <div className="mb-8">
               <fieldset>
                 <legend className="block mb-2 font-semibold">
@@ -1390,6 +1419,7 @@ const ItemsAnimation = ({
                 </div>
               </fieldset>
             </div>
+
             {newItem.use_quantity === "N" && (
               <div className="mb-8">
                 <label
@@ -1412,6 +1442,7 @@ const ItemsAnimation = ({
                 />
               </div>
             )}
+
             {newItem.use_cost === "Y" && (
               <div className="mb-8">
                 <label htmlFor="item_cost" className="block mb-2 font-semibold">
@@ -1441,6 +1472,7 @@ const ItemsAnimation = ({
                 </div>
               </div>
             )}
+
             <div className="flex justify-end space-x-4">
               <button
                 type="button"

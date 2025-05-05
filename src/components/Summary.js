@@ -106,7 +106,7 @@ const ViewFieldTicket = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { userRole, userID } = useUser(); // userID => "lastUser"
+  const { userRole, userID, setUser, companyName } = useUser();
 
   // Ticket and date
   const [ticket, setTicket] = useState(null);
@@ -402,6 +402,9 @@ const ViewFieldTicket = () => {
     const maxLine = existingLines.length > 0 ? Math.max(...existingLines) : 0;
     const newTicketLine = (maxLine + 1).toString();
 
+    // Use defaultCost if present, otherwise fall back to "0.00"
+    const newCost = itemToAdd.defaultCost ?? "0.00";
+
     const newItem = {
       ...itemToAdd,
       ItemDescription: itemToAdd.ItemDescription || "",
@@ -410,18 +413,28 @@ const ViewFieldTicket = () => {
       UOM: itemToAdd.UOM || "",
       UseCost: itemToAdd.UseCost || "Y",
       UseQuantity: itemToAdd.UseQuantity || "Y",
-      // Keep track of Start/Stop usage
       UseStartStop: itemToAdd.UseStartStop || "N",
 
-      ItemCost: itemToAdd.ItemCost || "0.00",
+      // Set the cost fields to defaultCost
+      ItemCost: newCost,
+      Cost: newCost,
+
       TicketLine: newTicketLine,
-      Active: "Y",
-      Cost: itemToAdd.ItemCost || "0.00",
+      Active: "N", // All newly added items are "Active":"N"
       Quantity: 0,
       totalCost: "0.00",
       Start: null,
       Stop: null,
     };
+
+    // If UseStartStop is "Y" and no Start is set, default Start to createdTimestamp
+    if (
+      newItem.UseStartStop === "Y" &&
+      !newItem.Start &&
+      ticket?.createdTimestamp
+    ) {
+      newItem.Start = ticket.createdTimestamp;
+    }
 
     setTicket((prev) => ({
       ...prev,
@@ -478,18 +491,26 @@ const ViewFieldTicket = () => {
     [computeTotalCost]
   );
 
+  const localNowISO = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // local, no offset
+    return d.toISOString().slice(0, 19);                  // “YYYY‑MM‑DDTHH:MM:SS”
+  };
+  
+  
+
   // ============================
   //   Helper for <input type="datetime-local">
   // ============================
-  const toDatetimeLocalString = (isoString) => {
-    if (!isoString) return "";
-    const date = new Date(isoString);
-    // offset so it appears local
-    const tzOffset = date.getTimezoneOffset() * 60000;
-    const localISOTime = new Date(date - tzOffset).toISOString().slice(0, 16);
-    return localISOTime;
+  const toDatetimeLocalString = (val) => {
+    if (!val) return "";
+    // if it’s already local (no trailing “Z”) just trim to minutes
+    if (typeof val === "string" && !val.endsWith("Z")) return val.slice(0, 16);
+  
+    const d = new Date(val);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); // UTC → local
+    return d.toISOString().slice(0, 16);                  // “YYYY‑MM‑DDTHH:MM”
   };
-
   // ============================
   //   Handle Time Field Change
   // ============================
@@ -498,7 +519,8 @@ const ViewFieldTicket = () => {
     setTicket((prev) => {
       const updatedItems = prev.Items.map((item) => {
         if (item.TicketLine === ticketLine) {
-          const isoValue = value ? new Date(value).toISOString() : null;
+          const isoValue = value || null;
+
           const newItem = { ...item, [field]: isoValue };
 
           // Validation: if field === "Stop" and new Stop < Start => disallow
@@ -520,56 +542,50 @@ const ViewFieldTicket = () => {
       return { ...prev, Items: updatedItems };
     });
   };
+
   // ============================
   //   START/STOP CLICK HANDLING
   // ============================
   const handleStartStopClick = async (item, action) => {
-    // This sets item.Start or item.Stop to "now"
     try {
-      const nowISO = new Date().toISOString();
-      // Patch payload
+      const nowISO = localNowISO();                      // <— TZ‑safe
       const patchPayload = {
-        ticket: ticket.Ticket,
-        itemTicketLine: item.TicketLine,
+        ticket:        ticket.Ticket,
+        itemTicketLine:item.TicketLine,
         Start: action === "start" ? nowISO : item.Start,
-        Stop: action === "stop" ? nowISO : item.Stop,
+        Stop:  action === "stop"  ? nowISO : item.Stop,
       };
-
-      const response = await fetch(
-        `${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(patchPayload),
-        }
-      );
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`);
-      }
-      // On success, update local state
-      setTicket((prev) => {
-        const updatedItems = prev.Items.map((i) => {
-          if (i.TicketLine === item.TicketLine) {
-            const newItem = {
-              ...i,
-              Start: action === "start" ? nowISO : i.Start,
-              Stop: action === "stop" ? nowISO : i.Stop,
-            };
-            // Recompute total
-            newItem.totalCost = computeTotalCost(newItem);
-            return newItem;
-          }
-          return i;
-        });
-        return { ...prev, Items: updatedItems };
+  
+      const resp = await fetch(`${baseUrl}/api/tickets.php?ticket=${ticket.Ticket}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patchPayload),
       });
-    } catch (error) {
-      console.error("Error handling start/stop:", error);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  
+      // local state update
+      setTicket((prev) => ({
+        ...prev,
+        Items: prev.Items.map((i) =>
+          i.TicketLine === item.TicketLine
+            ? {
+                ...i,
+                Start: action === "start" ? nowISO : i.Start,
+                Stop:  action === "stop"  ? nowISO : i.Stop,
+                totalCost: computeTotalCost({
+                  ...i,
+                  Start: action === "start" ? nowISO : i.Start,
+                  Stop:  action === "stop"  ? nowISO : i.Stop,
+                }),
+              }
+            : i
+        ),
+      }));
+    } catch (err) {
+      console.error("start/stop error:", err);
     }
   };
-
+  
   // ============================
   //   Remove Item (Confirm First)
   // ============================
@@ -816,6 +832,7 @@ const ViewFieldTicket = () => {
       if (cachedTicket) initializeTicketState(cachedTicket);
     }
   };
+
   const handleSaveClick = async () => {
     try {
       const nowISO = new Date().toISOString();
@@ -964,6 +981,7 @@ const ViewFieldTicket = () => {
   const handleDeleteClick = () => {
     setShowConfirmation(true);
   };
+
   const handleDeleteConfirm = async () => {
     try {
       if (navigator.onLine) {
@@ -1009,6 +1027,7 @@ const ViewFieldTicket = () => {
       console.error("Error deleting ticket:", error);
     }
   };
+
   const handleDeleteCancel = () => {
     setShowConfirmation(false);
   };
@@ -1019,6 +1038,7 @@ const ViewFieldTicket = () => {
   const handleBillClick = () => {
     setShowBillingConfirmation(true);
   };
+
   const handleBillConfirm = async () => {
     try {
       const updatedTicket = { ...ticket, Billed: "Y" };
@@ -1043,9 +1063,11 @@ const ViewFieldTicket = () => {
       console.error("Error updating ticket:", error);
     }
   };
+
   const handleBillCancel = () => {
     setShowBillingConfirmation(false);
   };
+
   const handleUnbillClick = async () => {
     try {
       const updatedTicket = { ...ticket, Billed: "N" };
@@ -1078,6 +1100,7 @@ const ViewFieldTicket = () => {
     setSelectedImage(image);
     setIsModalOpen(true);
   };
+
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedImage(null);
@@ -1111,7 +1134,6 @@ const ViewFieldTicket = () => {
   }
 
   // Calculate Net Cost with updated item totals
-  // Example adjustment to netCost calculation:
   const netCost = ticket?.Items
     ? ticket.Items.reduce((sum, item) => {
         const costVal = parseFloat(item.Cost ?? item.ItemCost ?? 0);
@@ -1136,9 +1158,6 @@ const ViewFieldTicket = () => {
       }, 0).toFixed(2)
     : "0.00";
 
-  // ============================
-  //   Return JSX
-  // ============================
   return (
     <>
       <animated.main
@@ -1317,7 +1336,7 @@ const ViewFieldTicket = () => {
                             : "font-semibold text-gray-700"
                         }
                       >
-                        ${netCost}
+                        ${parseFloat(netCost).toFixed(2)}
                       </span>
                     </p>
                   </div>
@@ -1460,7 +1479,7 @@ const ViewFieldTicket = () => {
                           theme === "dark" ? "text-gray-300" : "text-gray-700"
                         }`}
                       >
-                        ${netCost}
+                        ${parseFloat(netCost).toFixed(2)}
                       </span>
                     </div>
                   )}
@@ -1484,13 +1503,16 @@ const ViewFieldTicket = () => {
                   <option value="" disabled>
                     Select an item...
                   </option>
-                  {itemTypes.map((it) => (
-                    <option key={it.ItemID} value={it.ItemID}>
-                      {`${it.ItemID} / ${it.ItemDescription} ${
-                        it.UOM ? `/ ${it.UOM}` : ""
-                      }`}
-                    </option>
-                  ))}
+                  {/* Only map over itemTypes with Active="Y" */}
+                  {itemTypes
+                    .filter((it) => it.Active === "Y")
+                    .map((it) => (
+                      <option key={it.ItemID} value={it.ItemID}>
+                        {`${it.ItemID} / ${it.ItemDescription}${
+                          it.UOM ? ` / ${it.UOM}` : ""
+                        }`}
+                      </option>
+                    ))}
                 </select>
                 <button
                   onClick={() => addItem(selectedItem)}
@@ -1504,7 +1526,6 @@ const ViewFieldTicket = () => {
             {/* Item List */}
             {ticket?.Items?.length > 0 &&
               ticket.Items.map((item) => {
-                // For Start/Stop items, compute hours as quantity
                 let hoursWorked = 0;
                 if (item.UseStartStop === "Y" && item.Start && item.Stop) {
                   const startTime = new Date(item.Start).getTime();
@@ -1521,6 +1542,7 @@ const ViewFieldTicket = () => {
                       theme === "dark" ? "bg-gray-700" : "bg-gray-200"
                     } p-4 rounded-lg mb-4 shadow-md`}
                   >
+                    {/* Left Section: Item name, etc. */}
                     <div className="flex-1 w-full md:w-auto mb-4 md:mb-0 text-center md:text-left">
                       <h4
                         className={`text-lg md:text-xl font-semibold ${
@@ -1542,12 +1564,13 @@ const ViewFieldTicket = () => {
                       )}
                     </div>
 
-                    {/* UseStartStop? */}
+                    {/* Right Section: If uses Start/Stop */}
                     {item.UseStartStop === "Y" ? (
-                      <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-2 md:gap-6">
-                        {/* Main info row */}
-                        <div className="flex flex-row items-center gap-4 text-sm">
-                          {userRole !== "P" && !isEditing && (
+                      <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-2 md:gap-3">
+                        {/* Show cost in read-only if not editing & userRole != P */}
+                        {!isEditing &&
+                          userRole !== "P" &&
+                          item.UseCost !== "N" && (
                             <p
                               className={
                                 theme === "dark"
@@ -1562,53 +1585,71 @@ const ViewFieldTicket = () => {
                               ).toFixed(2)}
                             </p>
                           )}
-                          {!isEditing && (
-                            <>
-                              <p
-                                className={
-                                  theme === "dark"
-                                    ? "text-gray-300"
-                                    : "text-gray-800"
-                                }
-                              >
-                                <span className="font-medium">Start:</span>{" "}
-                                {item.Start
-                                  ? format(parseISO(item.Start), "PPpp")
-                                  : "Not started"}
-                              </p>
-                              <p
-                                className={
-                                  theme === "dark"
-                                    ? "text-gray-300"
-                                    : "text-gray-800"
-                                }
-                              >
-                                <span className="font-medium">Stop:</span>{" "}
-                                {item.Stop
-                                  ? format(parseISO(item.Stop), "PPpp")
-                                  : "Not stopped"}
-                              </p>
-                            </>
-                          )}
 
-                          <p
-                            className={
-                              theme === "dark"
-                                ? "text-gray-300"
-                                : "text-gray-800"
-                            }
-                          >
-                            <span className="font-medium">Qty:</span>{" "}
-                            {hoursWorked > 0 ? hoursWorked.toFixed(2) : "0.00"}
-                          </p>
-                        </div>
+                        {/* Non-editing: Start/Stop/Qty info */}
+                        {!isEditing && (
+                          <div className="flex flex-row flex-wrap items-center gap-3 text-sm">
+                            <p
+                              className={
+                                theme === "dark"
+                                  ? "text-gray-300"
+                                  : "text-gray-800"
+                              }
+                            >
+                              <span className="font-medium">Start:</span>{" "}
+                              {item.Start
+                                ? format(parseISO(item.Start), "PPpp")
+                                : "Not started"}
+                            </p>
+                            <p
+                              className={
+                                theme === "dark"
+                                  ? "text-gray-300"
+                                  : "text-gray-800"
+                              }
+                            >
+                              <span className="font-medium">Stop:</span>{" "}
+                              {item.Stop
+                                ? format(parseISO(item.Stop), "PPpp")
+                                : "Not stopped"}
+                            </p>
+                            <p
+                              className={
+                                theme === "dark"
+                                  ? "text-gray-300"
+                                  : "text-gray-800"
+                              }
+                            >
+                              <span className="font-medium">Qty:</span>{" "}
+                              {hoursWorked > 0
+                                ? hoursWorked.toFixed(2)
+                                : "0.00"}
+                            </p>
+                          </div>
+                        )}
 
-                        {/* Editing controls (if isEditing) */}
+                        {/* Editing mode for Start/Stop items */}
                         {isEditing && (
-                          <div className="flex flex-row items-center gap-3 mt-2 md:mt-0">
-                            {/* Time inputs */}
-                            <label className="text-xs">
-                              <span className="mr-1">Edit Start:</span>
+                          <div className="flex flex-col md:flex-row flex-wrap md:items-center gap-3 mt-2 md:mt-0 text-sm">
+                            {/* Cost if used & userRole != P */}
+                            {userRole !== "P" && item.UseCost !== "N" && (
+                              <label className="text-xs flex items-center">
+                                <span className="mr-1 font-medium">Cost:</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  value={item.Cost}
+                                  onChange={(e) =>
+                                    handleCostChange(e, item.TicketLine)
+                                  }
+                                  className="w-16 px-2 py-1 border rounded-md text-sm"
+                                />
+                              </label>
+                            )}
+
+                            {/* Start datetime-local */}
+                            <label className="text-xs flex items-center">
+                              <span className="mr-1 font-medium">Start:</span>
                               <input
                                 type="datetime-local"
                                 value={toDatetimeLocalString(item.Start)}
@@ -1622,8 +1663,10 @@ const ViewFieldTicket = () => {
                                 className="px-2 py-1 border rounded-md text-sm"
                               />
                             </label>
-                            <label className="text-xs">
-                              <span className="mr-1">Edit Stop:</span>
+
+                            {/* Stop datetime-local */}
+                            <label className="text-xs flex items-center">
+                              <span className="mr-1 font-medium">Stop:</span>
                               <input
                                 type="datetime-local"
                                 value={toDatetimeLocalString(item.Stop)}
@@ -1638,7 +1681,7 @@ const ViewFieldTicket = () => {
                               />
                             </label>
 
-                            {/* Start/Stop buttons */}
+                            {/* Start/Stop "Now" buttons */}
                             {!item.Start && (
                               <button
                                 className="px-3 py-1.5 rounded-md text-white bg-blue-600 hover:bg-blue-700"
@@ -1659,11 +1702,21 @@ const ViewFieldTicket = () => {
                                 Stop
                               </button>
                             )}
+
+                            {/* Computed hours (quantity) displayed in editing */}
+                            <div>
+                              <span className="font-medium">Qty:</span>{" "}
+                              {hoursWorked > 0
+                                ? hoursWorked.toFixed(2)
+                                : "0.00"}
+                            </div>
                           </div>
                         )}
                       </div>
                     ) : (
-                      // Non–UseStartStop items
+                      // =======================
+                      //   Non Start/Stop Items
+                      // =======================
                       <div className="flex flex-col md:flex-row items-center w-full md:w-auto gap-4 md:gap-12">
                         {userRole !== "P" && item.UseCost !== "N" && (
                           <div className="flex-1 text-center md:text-center">
@@ -1681,6 +1734,7 @@ const ViewFieldTicket = () => {
                                 <input
                                   type="number"
                                   name="Cost"
+                                  step="0.01"
                                   value={item.Cost}
                                   onChange={(e) =>
                                     handleCostChange(e, item.TicketLine)
@@ -1702,8 +1756,11 @@ const ViewFieldTicket = () => {
                                     : "text-gray-600"
                                 }`}
                               >
-                                <span className="font-medium">Cost:</span> $
-                                {item.Cost * item.Quantity}
+                                <span className="font-medium">Cost:</span>{" "}
+                                {`$${(
+                                  parseFloat(item.Cost) *
+                                  parseFloat(item.Quantity || 0)
+                                ).toFixed(2)}`}
                               </p>
                             )}
                           </div>
@@ -1959,16 +2016,13 @@ const ViewFieldTicket = () => {
                   isOpen={isModalOpen}
                   onRequestClose={closeModal}
                   contentLabel="Image Zoom Modal"
-                  /* Overlay with semi-dark backdrop */
                   overlayClassName={`fixed inset-0 z-40 flex items-center justify-center transition-all ${
                     theme === "dark"
                       ? "bg-black bg-opacity-80"
                       : "bg-black bg-opacity-50"
                   }`}
-                  /* Center the modal content */
                   className="relative outline-none flex items-center justify-center"
                 >
-                  {/* Container with soft zoom animation & nicer aesthetics */}
                   <div
                     className={`relative max-w-3xl w-full mx-auto rounded-xl shadow-2xl ${
                       theme === "dark" ? "bg-gray-900" : "bg-white"
@@ -1982,7 +2036,6 @@ const ViewFieldTicket = () => {
                           alt="Selected"
                           className="max-h-[80vh] max-w-full object-contain rounded-lg shadow-md"
                         />
-                        {/* High-contrast close button on top-right */}
                         <button
                           onClick={closeModal}
                           className="absolute top-3 right-3 bg-black bg-opacity-70 rounded-full p-2
@@ -2042,6 +2095,7 @@ const ViewFieldTicket = () => {
                   {userRole !== "P" && (
                     <div className="hidden md:block">
                       <PrintSection
+                        companyName={companyName}
                         userRole={userRole}
                         ticket={ticket}
                         theme={theme}
@@ -2207,7 +2261,6 @@ const ViewFieldTicket = () => {
 
         {/* Confirmation Modals */}
         <Suspense fallback={<div>Loading...</div>}>
-          {/* Ticket-level deletion */}
           <ConfirmationModal
             isOpen={showConfirmation}
             onConfirm={handleDeleteConfirm}
@@ -2215,7 +2268,6 @@ const ViewFieldTicket = () => {
             confirmationQuestion="Are you sure you want to delete this ticket?"
             actionButtonLabel="Delete"
           />
-          {/* Billing */}
           <ConfirmationModal
             isOpen={showBillingConfirmation}
             onConfirm={handleBillConfirm}
@@ -2223,7 +2275,6 @@ const ViewFieldTicket = () => {
             confirmationQuestion="Are you sure you want to mark this ticket as billed?"
             actionButtonLabel="Bill"
           />
-          {/* Item removal */}
           <ConfirmationModal
             isOpen={showRemoveItemModal}
             onConfirm={handleRemoveItemConfirm}
@@ -2253,4 +2304,5 @@ const ViewFieldTicket = () => {
     </>
   );
 };
+
 export default ViewFieldTicket;

@@ -12,6 +12,7 @@ import {
   faTimes,
   faFileExport,
   faPrint,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import "tailwindcss/tailwind.css";
 import { baseUrl } from "./config";
@@ -23,12 +24,17 @@ const MasterList = () => {
   const [data, setData] = useState([]);
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+
+  // Include the new field `use_start_stop` in our formData state.
   const [formData, setFormData] = useState({
+    item_id: "",
     item_description: "",
     uom: "",
     use_quantity: "N",
     use_cost: "N",
+    use_start_stop: "N", // NEW FIELD
     active: "Y",
+    defaultCost: 0,
   });
 
   const gridApiRef = useRef(null);
@@ -39,6 +45,7 @@ const MasterList = () => {
 
   const fetchData = async () => {
     try {
+      // GET all from ItemTypes (including defaultCost and UseStartStop)
       const response = await axios.get(
         `${baseUrl}/api/jobitem.php?item_types=true`
       );
@@ -56,14 +63,38 @@ const MasterList = () => {
     config: { tension: 220, friction: 20 },
   });
 
+  /**
+   * Open the modal to edit an existing item
+   */
   const openModal = (item) => {
     setSelectedItem(item);
     setFormData({
+      item_id: item.ItemID,
       item_description: item.ItemDescription,
       uom: item.UOM,
       use_quantity: item.UseQuantity,
       use_cost: item.UseCost,
+      use_start_stop: item.UseStartStop, // Carry over from DB
       active: item.Active,
+      defaultCost: item.defaultCost || 0,
+    });
+    setModalIsOpen(true);
+  };
+
+  /**
+   * Open the modal to add a new item
+   */
+  const openAddModal = () => {
+    setSelectedItem(null);
+    setFormData({
+      item_id: "",
+      item_description: "",
+      uom: "",
+      use_quantity: "N",
+      use_cost: "N",
+      use_start_stop: "N", // default
+      active: "Y",
+      defaultCost: 0,
     });
     setModalIsOpen(true);
   };
@@ -73,6 +104,9 @@ const MasterList = () => {
     setSelectedItem(null);
   };
 
+  /**
+   * Handle changes on form fields
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -81,21 +115,59 @@ const MasterList = () => {
     }));
   };
 
+  /**
+   * Handle form submission:
+   * - if selectedItem != null => PATCH
+   * - else => POST
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      const response = await axios.patch(`${baseUrl}/api/jobitem.php`, {
-        item_id: selectedItem.ItemID,
-        ...formData,
-      });
-      if (response.data.success) {
-        fetchData();
-        closeModal();
-      } else {
-        console.error("Error updating item", response.data.message);
+
+    if (selectedItem) {
+      // EDIT existing => PATCH
+      try {
+        const response = await axios.patch(`${baseUrl}/api/jobitem.php`, {
+          item_id: formData.item_id,
+          item_description: formData.item_description,
+          uom: formData.uom,
+          use_quantity: formData.use_quantity,
+          use_cost: formData.use_cost,
+          use_start_stop: formData.use_start_stop, // pass the new field
+          active: formData.active,
+          defaultCost: formData.defaultCost,
+        });
+        if (response.data.success) {
+          fetchData();
+          closeModal();
+        } else {
+          console.error("Error updating item", response.data.message);
+        }
+      } catch (error) {
+        console.error("Error updating item", error);
       }
-    } catch (error) {
-      console.error("Error updating item", error);
+    } else {
+      // CREATE new => POST
+      try {
+        const response = await axios.post(`${baseUrl}/api/jobitem.php`, {
+          item_id: formData.item_id.trim(),
+          item_description: formData.item_description,
+          uom: formData.uom,
+          use_quantity: formData.use_quantity,
+          use_cost: formData.use_cost,
+          use_start_stop: formData.use_start_stop, // pass the new field
+          active: formData.active,
+          defaultCost: formData.defaultCost,
+          // no job_type_id => item not tied to a job
+        });
+        if (response.data.success) {
+          fetchData();
+          closeModal();
+        } else {
+          console.error("Error creating item", response.data.message);
+        }
+      } catch (error) {
+        console.error("Error creating item", error);
+      }
     }
   };
 
@@ -105,9 +177,13 @@ const MasterList = () => {
     theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black";
   const inputClass =
     theme === "dark"
-      ? "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-900 text-white"
+      ? "shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-900"
       : "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline";
 
+  /**
+   * The columns for the grid – now including UseStartStop
+   * and currency formatting for Default Cost.
+   */
   const columnDefs = [
     {
       headerName: "Item ID",
@@ -122,7 +198,11 @@ const MasterList = () => {
       editable: true,
       cellClass: "custom-cell",
     },
-    { headerName: "UOM", field: "UOM", editable: true },
+    {
+      headerName: "UOM",
+      field: "UOM",
+      editable: true,
+    },
     {
       headerName: "Use Qty",
       field: "UseQuantity",
@@ -138,14 +218,37 @@ const MasterList = () => {
       cellEditorParams: { values: ["Y", "N"] },
     },
     {
+      headerName: "Use StartStop", // NEW COLUMN
+      field: "UseStartStop",
+      editable: true,
+      cellEditor: "agSelectCellEditor",
+      cellEditorParams: { values: ["Y", "N"] },
+    },
+    {
       headerName: "Active",
       field: "Active",
       editable: true,
       cellEditor: "agSelectCellEditor",
       cellEditorParams: { values: ["Y", "N"] },
     },
+    {
+      headerName: "Default Cost",
+      field: "defaultCost",
+      editable: true,
+      // Right-align the currency
+      cellStyle: { textAlign: "right" },
+      // Show currency format with $ sign and 2 decimals
+      valueFormatter: (params) => {
+        const value = parseFloat(params.value);
+        if (isNaN(value)) return "";
+        return `$${value.toFixed(2)}`;
+      },
+    },
   ];
 
+  /**
+   * Called when a cell's value is changed in the grid
+   */
   const onCellValueChanged = async (params) => {
     const updatedData = {
       item_id: params.data.ItemID,
@@ -153,25 +256,40 @@ const MasterList = () => {
       uom: params.data.UOM,
       use_quantity: params.data.UseQuantity,
       use_cost: params.data.UseCost,
+      use_start_stop: params.data.UseStartStop, // pass to PATCH
       active: params.data.Active,
+      // Send numeric or string, whichever your backend expects
+      defaultCost: params.data.defaultCost,
     };
 
     try {
-      await axios.patch(`${baseUrl}/api/jobitem.php`, updatedData);
+      const response = await axios.patch(
+        `${baseUrl}/api/jobitem.php`,
+        updatedData
+      );
+      if (!response.data.success) {
+        console.error("Error updating item", response.data.message);
+      }
       fetchData();
     } catch (error) {
       console.error("Error updating item", error);
     }
   };
 
+  /**
+   * Export the grid data to CSV
+   */
   const onExportClick = () => {
-    const currentDate = new Date().toISOString().slice(0, 10); // Gets YYYY-MM-DD
+    const currentDate = new Date().toISOString().slice(0, 10);
     const params = {
       fileName: `master-list-${currentDate}.csv`,
     };
     gridApiRef.current.exportDataAsCsv(params);
   };
 
+  /**
+   * Print the grid data
+   */
   const onPrintClick = async () => {
     try {
       const allRowData = [];
@@ -179,6 +297,7 @@ const MasterList = () => {
 
       const printWindow = window.open("", "", "width=800,height=600");
 
+      // Build the table with the currency format for the defaultCost column
       const gridHtml = `
         <table style="border-collapse: collapse; width: 100%;">
           <thead>
@@ -193,20 +312,27 @@ const MasterList = () => {
           </thead>
           <tbody>
             ${allRowData
-              .map(
-                (row) => `
+              .map((row) => {
+                return `
               <tr>
                 ${columnDefs
-                  .map(
-                    (col) =>
-                      `<td style="border: 1px solid black; padding: 8px;">${
-                        row[col.field]
-                      }</td>`
-                  )
+                  .map((col) => {
+                    if (col.field === "defaultCost") {
+                      const val = parseFloat(row[col.field]);
+                      const formattedVal = !isNaN(val)
+                        ? "$" + val.toFixed(2)
+                        : "";
+                      return `<td style="border: 1px solid black; padding: 8px;">${formattedVal}</td>`;
+                    } else {
+                      return `<td style="border: 1px solid black; padding: 8px;">
+                        ${row[col.field] != null ? row[col.field] : ""}
+                      </td>`;
+                    }
+                  })
                   .join("")}
               </tr>
-            `
-              )
+            `;
+              })
               .join("")}
           </tbody>
         </table>
@@ -241,6 +367,9 @@ const MasterList = () => {
     }
   };
 
+  /**
+   * Grid is ready
+   */
   const onGridReady = (params) => {
     gridApiRef.current = params.api;
     params.api.sizeColumnsToFit();
@@ -258,7 +387,17 @@ const MasterList = () => {
         <div className="p-5 text-center bg-gray-50 dark:bg-gray-700 dark:text-white">
           <h2 className="text-4xl font-bold">Master List</h2>
         </div>
+
+        {/* Top-right buttons */}
         <div className="flex justify-end p-4">
+          <button
+            onClick={openAddModal}
+            className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2"
+          >
+            <FontAwesomeIcon icon={faPlus} className="mr-2" />
+            Add New Item
+          </button>
+
           <button
             onClick={onExportClick}
             className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2"
@@ -266,6 +405,7 @@ const MasterList = () => {
             <FontAwesomeIcon icon={faFileExport} className="mr-2" />
             Export
           </button>
+
           <button
             onClick={onPrintClick}
             className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
@@ -274,6 +414,8 @@ const MasterList = () => {
             Print
           </button>
         </div>
+
+        {/* The AG Grid */}
         <div
           className={`ag-theme-alpine min-w-full ${tableClass}`}
           style={{ height: 800 }}
@@ -297,10 +439,12 @@ const MasterList = () => {
             suppressRowClickSelection={true}
             onGridReady={onGridReady}
             onCellValueChanged={onCellValueChanged}
+            onRowDoubleClicked={(event) => openModal(event.data)}
           />
         </div>
       </div>
 
+      {/* Modal for Add/Edit */}
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
@@ -310,111 +454,180 @@ const MasterList = () => {
         <div
           className={`rounded-lg overflow-hidden shadow-2xl max-w-md w-full p-6 ${modalBgClass}`}
         >
-          <h2 className="text-3xl mb-4 font-semibold">Edit Item</h2>
-          {selectedItem && (
-            <form onSubmit={handleSubmit}>
+          <h2 className="text-3xl mb-4 font-semibold">
+            {selectedItem ? "Edit Item" : "Add New Item"}
+          </h2>
+          <form onSubmit={handleSubmit}>
+            {/* Item ID (only for new) */}
+            {!selectedItem && (
               <div className="mb-4">
                 <label
                   className="block text-sm font-bold mb-2"
-                  htmlFor="item_description"
+                  htmlFor="item_id"
                 >
-                  Description
+                  Item ID
                 </label>
                 <input
-                  id="item_description"
-                  name="item_description"
+                  id="item_id"
+                  name="item_id"
                   type="text"
-                  value={formData.item_description}
+                  value={formData.item_id}
                   onChange={handleChange}
                   className={inputClass}
+                  required
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-2" htmlFor="uom">
-                  UOM
-                </label>
-                <input
-                  id="uom"
-                  name="uom"
-                  type="text"
-                  value={formData.uom}
-                  onChange={handleChange}
-                  className={inputClass}
-                />
-              </div>
-              <div className="mb-4">
-                <label
-                  className="block text-sm font-bold mb-2"
-                  htmlFor="use_quantity"
-                >
-                  Use Quantity
-                </label>
-                <select
-                  id="use_quantity"
-                  name="use_quantity"
-                  value={formData.use_quantity}
-                  onChange={handleChange}
-                  className={inputClass}
-                >
-                  <option value="Y">Yes</option>
-                  <option value="N">No</option>
-                </select>
-              </div>
-              <div className="mb-4">
-                <label
-                  className="block text-sm font-bold mb-2"
-                  htmlFor="use_cost"
-                >
-                  Use Cost
-                </label>
-                <select
-                  id="use_cost"
-                  name="use_cost"
-                  value={formData.use_cost}
-                  onChange={handleChange}
-                  className={inputClass}
-                >
-                  <option value="Y">Yes</option>
-                  <option value="N">No</option>
-                </select>
-              </div>
-              <div className="mb-4">
-                <label
-                  className="block text-sm font-bold mb-2"
-                  htmlFor="active"
-                >
-                  Active
-                </label>
-                <select
-                  id="active"
-                  name="active"
-                  value={formData.active}
-                  onChange={handleChange}
-                  className={inputClass}
-                >
-                  <option value="Y">Yes</option>
-                  <option value="N">No</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <button
-                  type="submit"
-                  className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                >
-                  <FontAwesomeIcon icon={faSave} className="mr-2" />
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="ml-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                >
-                  <FontAwesomeIcon icon={faTimes} className="mr-2" />
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
+            )}
+
+            {/* Description */}
+            <div className="mb-4">
+              <label
+                className="block text-sm font-bold mb-2"
+                htmlFor="item_description"
+              >
+                Description
+              </label>
+              <input
+                id="item_description"
+                name="item_description"
+                type="text"
+                value={formData.item_description}
+                onChange={handleChange}
+                className={inputClass}
+                required
+              />
+            </div>
+
+            {/* UOM */}
+            <div className="mb-4">
+              <label className="block text-sm font-bold mb-2" htmlFor="uom">
+                UOM
+              </label>
+              <input
+                id="uom"
+                name="uom"
+                type="text"
+                value={formData.uom}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
+
+            {/* Use Quantity */}
+            <div className="mb-4">
+              <label
+                className="block text-sm font-bold mb-2"
+                htmlFor="use_quantity"
+              >
+                Use Quantity
+              </label>
+              <select
+                id="use_quantity"
+                name="use_quantity"
+                value={formData.use_quantity}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="Y">Yes</option>
+                <option value="N">No</option>
+              </select>
+            </div>
+
+            {/* Use Cost */}
+            <div className="mb-4">
+              <label
+                className="block text-sm font-bold mb-2"
+                htmlFor="use_cost"
+              >
+                Use Cost
+              </label>
+              <select
+                id="use_cost"
+                name="use_cost"
+                value={formData.use_cost}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="Y">Yes</option>
+                <option value="N">No</option>
+              </select>
+            </div>
+
+            {/* Use StartStop (New Field) */}
+            <div className="mb-4">
+              <label
+                className="block text-sm font-bold mb-2"
+                htmlFor="use_start_stop"
+              >
+                Use StartStop
+              </label>
+              <select
+                id="use_start_stop"
+                name="use_start_stop"
+                value={formData.use_start_stop}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="Y">Yes</option>
+                <option value="N">No</option>
+              </select>
+            </div>
+
+            {/* Active */}
+            <div className="mb-4">
+              <label className="block text-sm font-bold mb-2" htmlFor="active">
+                Active
+              </label>
+              <select
+                id="active"
+                name="active"
+                value={formData.active}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option value="Y">Yes</option>
+                <option value="N">No</option>
+              </select>
+            </div>
+
+            {/* Default Cost */}
+            <div className="mb-6">
+              <label
+                className="block text-sm font-bold mb-2"
+                htmlFor="defaultCost"
+              >
+                Default Cost
+              </label>
+              <input
+                id="defaultCost"
+                name="defaultCost"
+                type="number"
+                step="0.01"
+                value={formData.defaultCost}
+                onChange={handleChange}
+                className={inputClass}
+              />
+            </div>
+
+            {/* Buttons */}
+            <div className="flex items-center justify-between">
+              <button
+                type="submit"
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              >
+                <FontAwesomeIcon icon={faSave} className="mr-2" />
+                {selectedItem ? "Save" : "Add"}
+              </button>
+              <button
+                type="button"
+                onClick={closeModal}
+                className="ml-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              >
+                <FontAwesomeIcon icon={faTimes} className="mr-2" />
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
       </Modal>
 

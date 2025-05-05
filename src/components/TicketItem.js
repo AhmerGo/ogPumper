@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useSpring, animated } from "react-spring";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useUser } from "./UserContext";
+import { useUser } from "ogcommon";
 import {
   faMapMarkerAlt,
   faCalendarAlt,

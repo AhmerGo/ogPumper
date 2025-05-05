@@ -2,7 +2,36 @@ import React, { useState } from "react";
 import { animated } from "react-spring";
 import Modal from "react-modal";
 
+// Helper: format a date-only value (e.g. TicketDate "2025-04-14") more readably.
+function formatDate(dateString) {
+  if (!dateString) return "N/A";
+  // If there's no time, assume midnight so we can use a Date object
+  const date = new Date(dateString + "T00:00:00");
+  if (isNaN(date)) return dateString; // fallback if invalid
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+// Helper: format a date/time value (e.g. item.Start or item.Stop) more readably.
+function formatDateTime(dateString) {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  if (isNaN(date)) return dateString; // fallback if invalid
+  return date.toLocaleString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 const PrintSection = ({
+  companyName,
   userRole,
   ticket,
   theme,
@@ -30,15 +59,12 @@ const PrintSection = ({
     const isSinglePageLayout =
       ticket.Items.length <= 9 && uploadedImages.length <= 1;
 
-    // Attempt to parse GPS from ticket.gps (if userRole === 'P')
-    let parsedGps = null;
-    if (userRole !== "P" && ticket.gps) {
-      try {
-        parsedGps = JSON.parse(ticket.gps);
-      } catch (err) {
-        console.error("Error parsing GPS:", err);
-      }
-    }
+    // Sum the totalCost from each item
+    const netCost = ticket.Items?.reduce((sum, item) => {
+      // Safely parse totalCost if it exists; otherwise default to 0
+      const total = parseFloat(item.totalCost ?? "0");
+      return sum + (isNaN(total) ? 0 : total);
+    }, 0).toFixed(2);
 
     const printWindow = window.open("", "", "height=600,width=800");
     printWindow.document.write(`
@@ -51,11 +77,6 @@ const PrintSection = ({
               font-family: 'Arial', sans-serif; color: #333;
               display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
               background-color: #f3f4f6;
-            }
-            .header {
-              width: 100%; padding: 15px; text-align: center;
-              background-color: #4a90e2; color: #fff; font-size: 20px;
-              border-bottom: 2px solid #ddd;
             }
             .content {
               width: 100%; max-width: 800px; margin: 20px auto; padding: 20px;
@@ -90,7 +111,7 @@ const PrintSection = ({
             .item:hover {
               transform: scale(1.05);
             }
-            .item h4 {  
+            .item h4 {
               margin-bottom: 10px; font-size: 14px; font-weight: bold; color: #333;
             }
             .item p {
@@ -122,10 +143,6 @@ const PrintSection = ({
                 -webkit-print-color-adjust: exact;
                 background-color: #fff;
               }
-              .header {
-                background-color: #4a90e2;
-                color: #fff;
-              }
               .content {
                 box-shadow: none;
                 border-radius: 0;
@@ -152,18 +169,18 @@ const PrintSection = ({
           </style>
         </head>
         <body>
-          <div class="header">
-            OgFieldTicket
-          </div>
           <div class="content">
             ${
               printSelections.ticketAndNote
                 ? `
                   <div class="section">
-                    <h2>Ticket Information & Items</h2>
-                    <div><strong>Date:</strong> ${new Date(
-                      ticket.TicketDate + "T00:00:00"
-                    ).toLocaleDateString()}</div>
+                    <h2>${companyName}</h2>
+                    <div><strong>Date:</strong> ${formatDate(
+                      ticket.TicketDate
+                    )}</div>
+                    <div><strong>Ticket Number:</strong> ${
+                      ticket.Ticket || "N/A"
+                    }</div>
                     <div><strong>Lease/User:</strong> ${
                       ticket.LeaseName || "N/A"
                     } / ${ticket.UserID || "N/A"}</div>
@@ -171,34 +188,36 @@ const PrintSection = ({
                     <div><strong>Ticket Type:</strong> ${
                       ticket.JobDescription || "N/A"
                     }</div>
-                    <div><strong>Ticket Number:</strong> ${
-                      ticket.Ticket || "N/A"
-                    }</div>
-                    <div><strong>Billed:</strong> ${
-                      ticket.Billed || "N/A"
-                    }</div>
-                    ${
-                      // Show GPS only if userRole === "P" and we have parsedGps
-                      userRole !== "P" && parsedGps
-                        ? `<div><strong>GPS:</strong> Lat: ${parsedGps.lat}, Lng: ${parsedGps.lng}</div>`
-                        : ""
-                    }
                     <div class="net-cost">
-                      Net Cost: $${ticket.Items?.reduce(
-                        (sum, item) => sum + (Number(item.totalCost) || 0),
-                        0
-                      ).toFixed(2)}
+                      Net Cost: $${netCost}
                     </div>
                     <div class="items">
-                      ${ticket?.Items?.map(
-                        (item) => `
-                        <div class="item">
-                          <h4>${item.ItemDescription}</h4>
-                          <p>Qty: ${item.Quantity}</p>
-                          <p>Total Cost: $${item.totalCost}</p>
-                        </div>
-                      `
-                      ).join("")}
+                      ${ticket?.Items?.map((item) => {
+                        const totalCost = parseFloat(item.totalCost ?? "0");
+                        const quantityVal = parseFloat(item.Quantity ?? "0");
+
+                        // Format Start/Stop if UseStartStop is "Y"
+                        const startStopFields =
+                          item.UseStartStop === "Y"
+                            ? `
+                                  <p>Start: ${formatDateTime(item.Start)}</p>
+                                  <p>Stop: ${formatDateTime(item.Stop)}</p>
+                                `
+                            : "";
+
+                        return `
+                            <div class="item">
+                              <h4>${item.ItemDescription ?? ""}</h4>
+                              ${
+                                item.UseQuantity === "Y"
+                                  ? `<p>Qty: ${quantityVal.toFixed(2)}</p>`
+                                  : ""
+                              }
+                              <p>Total Cost: $${totalCost.toFixed(2)}</p>
+                              ${startStopFields}
+                            </div>
+                          `;
+                      }).join("")}
                     </div>
                   </div>
                   ${
@@ -247,7 +266,7 @@ const PrintSection = ({
             }
           </div>
           <div class="footer">
-            OgEndeavors, LLC, PO Box 7091, Abilene, TX 79608
+            ${companyName}, PO Box 7091, Abilene, TX 79608
           </div>
         </body>
       </html>

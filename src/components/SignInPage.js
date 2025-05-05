@@ -109,6 +109,7 @@ function SignInPage() {
         const data = await response.json();
         const { success, message, user, companyName } = data;
         if (success) {
+          console.log(user);
           setUser(user.Role, user.UserID, companyName, user.JobRole);
 
           localStorage.setItem("userRole", user.Role);
@@ -126,11 +127,11 @@ function SignInPage() {
               companyName: companyName,
             })
           );
-
-          if (user.Role === "P") {
-            navigate("/home");
-          } else {
+          console.log(user.Role);
+          if (user.Role === "A") {
             navigate("/ticketGrid");
+          } else {
+            navigate("/home");
           }
         } else {
           setError(message);
@@ -162,10 +163,10 @@ function SignInPage() {
         localStorage.setItem("userID", userID);
         localStorage.setItem("companyName", companyName);
 
-        if (role === "P") {
-          navigate("/home");
+        if (role === "A") {
+          navigate("/ticketGrid");
         } else {
-          navigate("/dashboard");
+          navigate("/home");
         }
       } else {
         setError("Invalid credentials. Please sign in online first.");

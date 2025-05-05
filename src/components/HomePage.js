@@ -24,6 +24,8 @@ const HomePage = React.memo(() => {
   const navigate = useNavigate();
   const { theme } = useTheme();
   const { userRole, userID } = useUser();
+  console.log("HomePage: useUser() =>", useUser()); // see if it's undefined
+
   const [searchQuery, setSearchQuery] = useState("");
   const [subdomain, setSubdomain] = useState("");
   const [showUnbilled, setShowUnbilled] = useState(true);
@@ -31,6 +33,11 @@ const HomePage = React.memo(() => {
 
   useEffect(() => {
     const extractSubdomain = () => {
+      console.log("test");
+
+      console.log(userID);
+      console.log(userRole);
+
       const hostname = window.location.hostname;
       const parts = hostname.split(".");
       setSubdomain(parts.length > 2 ? parts.shift() : "");
@@ -51,7 +58,7 @@ const HomePage = React.memo(() => {
   );
 
   useEffect(() => {
-    if (userRole !== "P") {
+    if (userRole === "A") {
       navigate("/ticketGrid");
     }
   }, [userRole, navigate]);
