@@ -16,6 +16,7 @@ function CreateFieldTicket() {
   const [ticketType, setTicketType] = useState("");
   const location = useLocation();
   const { userRole, userID, jobRole } = useUser();
+
   const { highestTicketNumber } = useParams();
   const [leases, setLeases] = useState([]);
   const [wells, setWells] = useState([]);
@@ -121,7 +122,7 @@ function CreateFieldTicket() {
       const data = await response.json();
 
       // Check if 'jobRole' is null or an empty string
-      if (jobRole === null || jobRole === "") {
+      if (jobRole === null || jobRole === "" || jobRole === undefined) {
         // If 'jobRole' is null or empty, show all jobs
         setTicketTypes(data);
       } else {
