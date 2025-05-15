@@ -7,7 +7,7 @@ import { useUser } from "ogcommon";
 import OutsideClickHandler from "react-outside-click-handler";
 import logo from "../assets/100.png";
 import HomeIcon from "@mui/icons-material/Home";
-
+import Footer from "./Footer";
 const GlobalStyle = createGlobalStyle`
   body {
     font-family: 'Inter', sans-serif;
@@ -402,6 +402,7 @@ function Layout({ children }) {
       </NavBarContainer>
 
       <main style={{ paddingTop: "4rem" }}>{children}</main>
+      <Footer />
     </div>
   );
 }

@@ -123,51 +123,28 @@ const MasterList = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (selectedItem) {
-      // EDIT existing => PATCH
-      try {
-        const response = await axios.patch(`${baseUrl}/api/jobitem.php`, {
-          item_id: formData.item_id,
-          item_description: formData.item_description,
-          uom: formData.uom,
-          use_quantity: formData.use_quantity,
-          use_cost: formData.use_cost,
-          use_start_stop: formData.use_start_stop, // pass the new field
-          active: formData.active,
-          defaultCost: formData.defaultCost,
-        });
-        if (response.data.success) {
-          fetchData();
-          closeModal();
-        } else {
-          console.error("Error updating item", response.data.message);
-        }
-      } catch (error) {
-        console.error("Error updating item", error);
+    const payload = {
+      item_id: formData.item_id.trim(),
+      item_description: formData.item_description,
+      uom: formData.uom,
+      use_quantity: formData.use_quantity,
+      use_cost: formData.use_cost,
+      use_start_stop: formData.use_start_stop, // pass the new field
+      active: formData.active,
+      defaultCost: formData.defaultCost,
+    };
+
+    try {
+      const method = selectedItem ? axios.patch : axios.post;
+      const response = await method(`${baseUrl}/api/jobitem.php`, payload);
+      if (response.data.success) {
+        fetchData();
+        closeModal();
+      } else {
+        console.error("Error saving item", response.data.message);
       }
-    } else {
-      // CREATE new => POST
-      try {
-        const response = await axios.post(`${baseUrl}/api/jobitem.php`, {
-          item_id: formData.item_id.trim(),
-          item_description: formData.item_description,
-          uom: formData.uom,
-          use_quantity: formData.use_quantity,
-          use_cost: formData.use_cost,
-          use_start_stop: formData.use_start_stop, // pass the new field
-          active: formData.active,
-          defaultCost: formData.defaultCost,
-          // no job_type_id => item not tied to a job
-        });
-        if (response.data.success) {
-          fetchData();
-          closeModal();
-        } else {
-          console.error("Error creating item", response.data.message);
-        }
-      } catch (error) {
-        console.error("Error creating item", error);
-      }
+    } catch (error) {
+      console.error("Error saving item", error);
     }
   };
 
@@ -182,7 +159,7 @@ const MasterList = () => {
 
   /**
    * The columns for the grid – now including UseStartStop
-   * and currency formatting for Default Cost.
+   * Description column auto‑expands; Use* columns have fixed narrow widths.
    */
   const columnDefs = [
     {
@@ -191,36 +168,50 @@ const MasterList = () => {
       pinned: "left",
       editable: false,
       cellRenderer: "agGroupCellRenderer",
+      minWidth: 160,
+      flex: 2,
     },
     {
       headerName: "Description",
       field: "ItemDescription",
       editable: true,
+      flex: 2,
+      minWidth: 260,
       cellClass: "custom-cell",
     },
     {
       headerName: "UOM",
       field: "UOM",
       editable: true,
+      width: 100,
     },
     {
-      headerName: "Use Qty",
+      headerName: "Qty",
       field: "UseQuantity",
       editable: true,
+      maxWidth: 45,
+      maxWidth: 90,
+      flex: 0,
       cellEditor: "agSelectCellEditor",
       cellEditorParams: { values: ["Y", "N"] },
     },
     {
-      headerName: "Use Cost",
+      headerName: "Cost",
       field: "UseCost",
       editable: true,
+      width: 45,
+      maxWidth: 90,
+      flex: 0,
       cellEditor: "agSelectCellEditor",
       cellEditorParams: { values: ["Y", "N"] },
     },
     {
-      headerName: "Use StartStop", // NEW COLUMN
+      headerName: "Hours",
       field: "UseStartStop",
       editable: true,
+      width: 90,
+      maxWidth: 90,
+      flex: 0,
       cellEditor: "agSelectCellEditor",
       cellEditorParams: { values: ["Y", "N"] },
     },
@@ -228,16 +219,16 @@ const MasterList = () => {
       headerName: "Active",
       field: "Active",
       editable: true,
+      width: 100,
       cellEditor: "agSelectCellEditor",
       cellEditorParams: { values: ["Y", "N"] },
     },
     {
-      headerName: "Default Cost",
+      headerName: "Cost",
       field: "defaultCost",
       editable: true,
-      // Right-align the currency
+      width: 130,
       cellStyle: { textAlign: "right" },
-      // Show currency format with $ sign and 2 decimals
       valueFormatter: (params) => {
         const value = parseFloat(params.value);
         if (isNaN(value)) return "";
@@ -256,9 +247,8 @@ const MasterList = () => {
       uom: params.data.UOM,
       use_quantity: params.data.UseQuantity,
       use_cost: params.data.UseCost,
-      use_start_stop: params.data.UseStartStop, // pass to PATCH
+      use_start_stop: params.data.UseStartStop,
       active: params.data.Active,
-      // Send numeric or string, whichever your backend expects
       defaultCost: params.data.defaultCost,
     };
 
@@ -322,11 +312,11 @@ const MasterList = () => {
                       const formattedVal = !isNaN(val)
                         ? "$" + val.toFixed(2)
                         : "";
-                      return `<td style="border: 1px solid black; padding: 8px;">${formattedVal}</td>`;
+                      return `<td style="border: 1px solid black; padding: 8px; text-align:right;">${formattedVal}</td>`;
                     } else {
-                      return `<td style="border: 1px solid black; padding: 8px;">
-                        ${row[col.field] != null ? row[col.field] : ""}
-                      </td>`;
+                      return `<td style="border: 1px solid black; padding: 8px;">${
+                        row[col.field] != null ? row[col.field] : ""
+                      }</td>`;
                     }
                   })
                   .join("")}
@@ -373,6 +363,12 @@ const MasterList = () => {
   const onGridReady = (params) => {
     gridApiRef.current = params.api;
     params.api.sizeColumnsToFit();
+
+    // Auto‑size Description to content after initial fit.
+    setTimeout(() => {
+      const descCol = params.columnApi.getColumn("ItemDescription");
+      if (descCol) params.columnApi.autoSizeColumn(descCol);
+    }, 0);
   };
 
   return (
@@ -385,22 +381,22 @@ const MasterList = () => {
         } shadow-xl rounded-lg overflow-hidden ${tableClass}`}
       >
         <div className="p-5 text-center bg-gray-50 dark:bg-gray-700 dark:text-white">
-          <h2 className="text-4xl font-bold">Master List</h2>
+          <h2 className="text-4xl font-bold">Items Masterlist</h2>
         </div>
 
-        {/* Top-right buttons */}
-        <div className="flex justify-end p-4">
+        {/* Top‑right buttons */}
+        <div className="flex flex-wrap gap-2 justify-end p-4">
           <button
             onClick={openAddModal}
-            className="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2"
+            className="flex items-center bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
             <FontAwesomeIcon icon={faPlus} className="mr-2" />
-            Add New Item
+            Add Item
           </button>
 
           <button
             onClick={onExportClick}
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mr-2"
+            className="flex items-center bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
             <FontAwesomeIcon icon={faFileExport} className="mr-2" />
             Export
@@ -408,7 +404,7 @@ const MasterList = () => {
 
           <button
             onClick={onPrintClick}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="flex items-center bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
             <FontAwesomeIcon icon={faPrint} className="mr-2" />
             Print
@@ -426,7 +422,7 @@ const MasterList = () => {
             context={{ openModal }}
             defaultColDef={{
               flex: 1,
-              minWidth: 100,
+              minWidth: 90,
               sortable: true,
               filter: true,
               editable: true,
@@ -613,7 +609,7 @@ const MasterList = () => {
             <div className="flex items-center justify-between">
               <button
                 type="submit"
-                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                className="flex items-center bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               >
                 <FontAwesomeIcon icon={faSave} className="mr-2" />
                 {selectedItem ? "Save" : "Add"}
@@ -621,7 +617,7 @@ const MasterList = () => {
               <button
                 type="button"
                 onClick={closeModal}
-                className="ml-4 bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                className="flex items-center bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
               >
                 <FontAwesomeIcon icon={faTimes} className="mr-2" />
                 Cancel

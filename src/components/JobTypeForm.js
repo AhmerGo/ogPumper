@@ -744,7 +744,7 @@ const ItemsAnimation = ({
   const [availableItems, setAvailableItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("new");
 
-  // NEW: include "use_start_shop" in default newItem
+  // NEW: include "use_start_stop" in default newItem
   const [newItem, setNewItem] = useState({
     item_id: "",
     uom: "",
@@ -753,7 +753,7 @@ const ItemsAnimation = ({
     item_cost: null,
     use_quantity: "N",
     use_cost: "Y",
-    use_start_shop: "N", // <-- The new field
+    use_start_stop: "N", // <-- The new field
   });
 
   const [stateItems, setStateItems] = useState(items);
@@ -790,6 +790,11 @@ const ItemsAnimation = ({
 
     extractSubdomain();
   }, []);
+  useEffect(() => {
+    if (!editingItemId) return; // nothing selected yet
+    const row = stateItems.find((i) => i.ItemID === editingItemId);
+    if (row) setItemEdits({ ...row }); // ← now UseStartStop/UseCost pre-fill
+  }, [editingItemId, stateItems]);
 
   const handleEditClick = (item) => {
     console.log(item);
@@ -798,6 +803,9 @@ const ItemsAnimation = ({
       ItemDescription: item.ItemDescription,
       ItemCost: item.ItemCost,
       ...(item.ItemQuantity !== null && { ItemQuantity: item.ItemQuantity }),
+      use_quantity: item.use_quantity ?? "Y",
+      use_cost: item.use_cost ?? "Y",
+      use_start_stop: item.use_start_stop,
     });
   };
 
@@ -822,9 +830,132 @@ const ItemsAnimation = ({
     }
   };
 
+  /* ─── 1. edit-form handler ──────────────────────────────────────────────── */
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setItemEdits((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+
+    setItemEdits((prev) => {
+      const next = { ...prev };
+
+      if (type === "checkbox") {
+        const flag = checked ? "Y" : "N";
+        next[name] = flag; // UseStartStop / UseCost / UseQuantity
+
+        if (name === "UseStartStop" && flag === "Y") {
+          next.UseQuantity = "N"; // lock qty when Hours is used
+          next.item_quantity = null;
+        }
+        if (name === "UseQuantity") {
+          next.item_quantity = flag === "Y" ? null : 1;
+        }
+      } else {
+        next[name] = value;
+      }
+      return next;
+    });
+  };
+
+  /* ─── 2. persist edits to API ───────────────────────────────────────────── */
+  const finalizeEdit = async () => {
+    try {
+      const {
+        UseStartStop,
+        UseCost,
+        UseQuantity,
+        ...rest /* everything else stays the same */
+      } = itemEdits;
+
+      const payload = {
+        ...rest,
+        newOrder: null,
+        use_start_stop: UseStartStop, // ⇨ PHP expects snake_case
+        use_cost: UseCost,
+        use_quantity: UseQuantity,
+      };
+
+      const { data } = await axios.patch(
+        `${baseUrl}/api/jobs.php?itemID=${editingItemId}`,
+        payload
+      );
+
+      if (data.success) {
+        const updatedItems = stateItems.map((it) =>
+          it.ItemID === editingItemId ? { ...it, ...itemEdits } : it
+        );
+
+        setStateItems(updatedItems);
+        setTicketTypes((jobs) =>
+          jobs.map((job) =>
+            job.JobTypeID === activeJobId
+              ? { ...job, Items: updatedItems }
+              : job
+          )
+        );
+        setEditingItemId(null);
+        setItemEdits({});
+      } else {
+        console.error("Error updating item:", data.message);
+      }
+    } catch (err) {
+      console.error("Error updating item:", err);
+    }
+  };
+
+  /* ─── 3. create-form handler ────────────────────────────────────────────── */
+  const handleInputChange = (event) => {
+    const { name, value, type, checked } = event.target;
+
+    setNewItem((prev) => {
+      let next = { ...prev };
+
+      if (name === "item_id") {
+        if (value !== "new") {
+          const item = availableItems.find((i) => i.ItemID === value);
+          next = {
+            ...prev,
+            item_id: item.ItemID,
+            uom: item.UOM,
+            item_description: item.ItemDescription,
+            item_quantity: item.UseQuantity === "N" ? 1 : null,
+            item_cost: item.UseCost === "Y" ? 0.0 : null,
+            UseQuantity: item.UseQuantity,
+            UseCost: item.UseCost,
+            UseStartStop: item.UseStartStop || "N",
+          };
+        } else {
+          next = {
+            ...prev,
+            item_id: "",
+            uom: "",
+            item_description: "",
+            item_quantity: null,
+            item_cost: null,
+            UseQuantity: "Y",
+            UseCost: "Y",
+            UseStartStop: "N",
+          };
+        }
+      } else if (name === "new_item_id") {
+        next.item_id = value;
+      } else if (name === "UseQuantity") {
+        next.UseQuantity = checked ? "N" : "Y";
+        next.item_quantity = checked ? 1 : null;
+      } else if (name === "UseStartStop") {
+        next.UseStartStop = checked ? "Y" : "N";
+        if (next.UseStartStop === "Y") {
+          next.UseQuantity = "N";
+          next.item_quantity = null;
+        }
+      } else if (name === "UseCost") {
+        next.UseCost = checked ? "Y" : "N";
+      } else if (type === "checkbox") {
+        next[name] = checked ? "Y" : "N";
+      } else {
+        next[name] = value;
+      }
+
+      return next;
+    });
   };
 
   const handleDeleteItem = (itemId) => {
@@ -855,46 +986,6 @@ const ItemsAnimation = ({
       .catch((error) => {
         console.error("Error deleting item:", error);
       });
-  };
-
-  const finalizeEdit = async () => {
-    try {
-      const payload = {
-        ...itemEdits,
-        newOrder: null,
-      };
-
-      const response = await axios.patch(
-        `${baseUrl}/api/jobs.php?itemID=${editingItemId}`,
-        payload
-      );
-
-      if (response.data.success) {
-        const updatedItems = stateItems.map((item) => {
-          if (item.ItemID === editingItemId) {
-            return { ...item, ...itemEdits };
-          }
-          return item;
-        });
-
-        setStateItems(updatedItems);
-        setTicketTypes((prevTicketTypes) =>
-          prevTicketTypes.map((job) => {
-            if (job.JobTypeID === activeJobId) {
-              return { ...job, Items: updatedItems };
-            }
-            return job;
-          })
-        );
-
-        setEditingItemId(null);
-        setItemEdits({});
-      } else {
-        console.error("Error updating item:", response.data.message);
-      }
-    } catch (error) {
-      console.error("Error updating item:", error);
-    }
   };
 
   const handleCancelEdit = () => {
@@ -935,7 +1026,7 @@ const ItemsAnimation = ({
       const newPosition = index; // We'll use 'index' as the new ItemOrder
       const jobTypeID = movedItem.JobTypeID;
 
-      // We only send the new order + jobTypeID
+      // We only send the new order  jobTypeID
       const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemID}`, {
         method: "PATCH",
         headers: {
@@ -991,59 +1082,7 @@ const ItemsAnimation = ({
       item_cost: null,
       use_quantity: "N",
       use_cost: "Y",
-      use_start_shop: "N",
-    });
-  };
-
-  const handleInputChange = (event) => {
-    const { name, value, type, checked } = event.target;
-
-    setNewItem((prevItem) => {
-      let updatedItem = { ...prevItem };
-
-      if (name === "item_id") {
-        if (value !== "new") {
-          const item = availableItems.find((i) => i.ItemID === value);
-          updatedItem = {
-            ...prevItem,
-            item_id: item.ItemID,
-            uom: item.UOM,
-            item_description: item.ItemDescription,
-            item_quantity: item.UseQuantity === "N" ? 1 : null,
-            item_cost: item.UseCost === "Y" ? 0.0 : null,
-            use_quantity: item.UseQuantity,
-            use_cost: item.UseCost,
-            use_start_shop: item.UseStartShop ? item.UseStartShop : "N",
-          };
-        } else {
-          updatedItem = {
-            ...prevItem,
-            item_id: "",
-            uom: "",
-            item_description: "",
-            item_quantity: null,
-            item_cost: null,
-            use_quantity: "Y",
-            use_cost: "Y",
-            use_start_shop: "N",
-          };
-        }
-      } else if (name === "new_item_id") {
-        updatedItem.item_id = value;
-      } else if (name === "use_quantity") {
-        updatedItem.use_quantity = checked ? "N" : "Y";
-        updatedItem.item_quantity = checked ? 1 : null;
-      } else if (name === "use_start_shop") {
-        updatedItem.use_start_shop = checked ? "Y" : "N";
-      } else if (name === "use_cost") {
-        updatedItem.use_cost = checked ? "Y" : "N";
-      } else if (type === "checkbox") {
-        updatedItem[name] = checked ? "Y" : "N";
-      } else {
-        updatedItem[name] = value;
-      }
-
-      return updatedItem;
+      use_start_stop: "N",
     });
   };
 
@@ -1106,23 +1145,48 @@ const ItemsAnimation = ({
                     : "bg-gray-100 text-gray-800 border-gray-300"
                 }`}
               />
+              <div className="flex gap-4 mb-2">
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="UseStartStop"
+                    checked={itemEdits.UseStartStop === "Y"}
+                    className="form-checkbox"
+                    onChange={handleChange}
+                  />
+                  <span className="ml-1">Hours</span>
+                </label>
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="UseCost"
+                    checked={itemEdits.UseCost === "Y"}
+                    onChange={handleChange}
+                    className="form-checkbox"
+                  />
+                  <span className="ml-1">Cost</span>
+                </label>
+              </div>
+
               <input
                 type="number"
                 name="ItemCost"
                 value={itemEdits.ItemCost || ""}
                 onChange={handleChange}
+                disabled={itemEdits.use_cost !== "Y"}
                 className={`w-full mb-2 p-2 rounded ${
                   theme === "dark"
                     ? "bg-gray-700 text-white border-gray-600"
                     : "bg-gray-100 text-gray-800 border-gray-300"
                 }`}
               />
-              {item.ItemQuantity !== null && (
+              {item.ItemQuantity !== null && item.use_start_stop !== "Y" && (
                 <input
                   type="number"
                   name="ItemQuantity"
                   value={itemEdits.ItemQuantity || item.ItemQuantity}
                   onChange={handleChange}
+                  disabled={itemEdits.use_quantity !== "Y"}
                   className={`w-full mb-4 p-2 rounded ${
                     theme === "dark"
                       ? "bg-gray-700 text-white border-gray-600"
@@ -1156,12 +1220,17 @@ const ItemsAnimation = ({
                 </span>
               </h3>
               <p className="text-sm mb-1">Item ID: {item.ItemID}</p>
-              {item.ItemQuantity === null ? (
+              {item.ItemQuantity === null || item.use_start_stop === "Y" ? (
                 <p className="text-sm mb-1">Cost: ${item.ItemCost}</p>
               ) : (
                 <>
                   <p className="text-sm mb-1">Cost: ${item.ItemCost}</p>
-                  <p className="text-sm mb-1">Quantity: {item.ItemQuantity}</p>
+                  {item.use_start_stop !== "Y" &&
+                    item.ItemQuantity !== null && (
+                      <p className="text-sm mb-1">
+                        Quantity: {item.ItemQuantity}
+                      </p>
+                    )}{" "}
                 </>
               )}
               <div className="absolute top-2 right-2 flex space-x-2">
@@ -1253,7 +1322,7 @@ const ItemsAnimation = ({
                           uom: foundItem.UOM,
                           item_description: foundItem.ItemDescription,
                           use_quantity: foundItem.UseQuantity,
-                          use_start_shop: foundItem.UseStartStop,
+                          use_start_stop: foundItem.UseStartStop,
                           // Convert defaultCost to a numeric or leave as string
                           item_cost: foundItem.defaultCost
                             ? parseFloat(foundItem.defaultCost)
@@ -1401,8 +1470,8 @@ const ItemsAnimation = ({
                     >
                       <input
                         type="checkbox"
-                        name="use_start_shop"
-                        checked={newItem.use_start_shop === "Y"}
+                        name="use_start_stop"
+                        checked={newItem.use_start_stop === "Y"}
                         onChange={handleInputChange}
                         className="form-checkbox"
                       />
@@ -1420,7 +1489,7 @@ const ItemsAnimation = ({
               </fieldset>
             </div>
 
-            {newItem.use_quantity === "N" && (
+            {newItem.use_quantity === "N" && newItem.use_start_stop !== "Y" && (
               <div className="mb-8">
                 <label
                   htmlFor="item_quantity"
