@@ -736,141 +736,105 @@ const ItemsAnimation = ({
   setSubdomain,
 }) => {
   const { theme } = useTheme();
-  const [hoveredItem, setHoveredItem] = useState(null);
-  const [editingItemCost, setEditingItemCost] = useState("");
   const [editingItemId, setEditingItemId] = useState(null);
   const [itemEdits, setItemEdits] = useState({});
-  const [selection, setSelection] = useState("quantity");
   const [availableItems, setAvailableItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState("new");
 
-  // NEW: include "use_start_stop" in default newItem
+  /* ───────────────────────── NEW‑ITEM MODEL ─────────────────────────── */
   const [newItem, setNewItem] = useState({
     item_id: "",
     uom: "",
     item_description: "",
     item_quantity: null,
     item_cost: null,
-    use_quantity: "N",
-    use_cost: "Y",
-    use_start_stop: "N", // <-- The new field
+    use_quantity: "Y", // Quantity allowed by default
+    use_cost: "Y", // Cost input visible by default
+    use_start_stop: "N", // Hours disabled by default
   });
 
+  /* ───────────────────────── STATE  SYNC  ────────── */
   const [stateItems, setStateItems] = useState(items);
+  useEffect(() => setStateItems(items), [items]);
 
-  useEffect(() => {
-    setStateItems(items);
-  }, [items]);
-
+  /* ───────────────────────── FETCH AVAILABLE ITEMS ──────────────────── */
   const fetchAvailableItems = async () => {
     try {
-      const response = await axios.get(
+      const { data } = await axios.get(
         `${baseUrl}/api/jobitem.php?item_types=1`
       );
-      console.log(response.data);
-      setAvailableItems(response.data.itemTypes);
-    } catch (error) {
-      console.error("Error fetching available items:", error);
+      setAvailableItems(data.itemTypes);
+    } catch (err) {
+      console.error("Error fetching available items:", err);
     }
   };
 
+  /* ───────────────────────── FIND SUBDOMAIN ─────────────────────────── */
   useEffect(() => {
-    const extractSubdomain = () => {
-      const hostname = window.location.hostname;
-      const parts = hostname.split(".");
-      if (parts.length > 2) {
-        const subdomainPart = parts.shift();
-        console.log(`sub domain ${subdomainPart}`);
-        setSubdomain(subdomainPart);
-      } else {
-        console.log(`sub domain ${parts}`);
-        setSubdomain("");
-      }
-    };
-
-    extractSubdomain();
+    const parts = window.location.hostname.split(".");
+    setSubdomain(parts.length > 2 ? parts.shift() : "");
   }, []);
+
+  /* ───────────────────────── PRE‑FILL ON ✎ CLICK ────────────────────── */
   useEffect(() => {
-    if (!editingItemId) return; // nothing selected yet
+    if (!editingItemId) return;
     const row = stateItems.find((i) => i.ItemID === editingItemId);
-    if (row) setItemEdits({ ...row }); // ← now UseStartStop/UseCost pre-fill
+    if (row) {
+      setItemEdits({
+        ...row,
+        UseQuantity: row.UseQuantity ?? "Y",
+        UseCost: row.UseCost ?? "Y",
+        UseStartStop: row.UseStartStop ?? "N",
+      });
+    }
   }, [editingItemId, stateItems]);
 
-  const handleEditClick = (item) => {
-    console.log(item);
-    setEditingItemId(item.ItemID);
-    setItemEdits({
-      ItemDescription: item.ItemDescription,
-      ItemCost: item.ItemCost,
-      ...(item.ItemQuantity !== null && { ItemQuantity: item.ItemQuantity }),
-      use_quantity: item.use_quantity ?? "Y",
-      use_cost: item.use_cost ?? "Y",
-      use_start_stop: item.use_start_stop,
-    });
-  };
-
-  const handleRemoveItem = async (itemID) => {
-    try {
-      const response = await fetch(`${baseUrl}/api/jobitem.php`, {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ item_id: itemID }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setStateItems(stateItems.filter((item) => item.ItemID !== itemID));
-      } else {
-        console.error("Failed to remove item");
-      }
-    } catch (error) {
-      console.error("An error occurred while removing the item.");
-    }
-  };
-
-  /* ─── 1. edit-form handler ──────────────────────────────────────────────── */
+  /* ───────────────────────── EDIT CHANGE HANDLER ─────────────────────── */
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, type } = e.target;
+    const value =
+      type === "checkbox" ? (e.target.checked ? "Y" : "N") : e.target.value;
 
     setItemEdits((prev) => {
-      const next = { ...prev };
+      const next = { ...prev, [name]: value };
 
-      if (type === "checkbox") {
-        const flag = checked ? "Y" : "N";
-        next[name] = flag; // UseStartStop / UseCost / UseQuantity
-
-        if (name === "UseStartStop" && flag === "Y") {
-          next.UseQuantity = "N"; // lock qty when Hours is used
-          next.item_quantity = null;
-        }
-        if (name === "UseQuantity") {
-          next.item_quantity = flag === "Y" ? null : 1;
-        }
-      } else {
-        next[name] = value;
+      if (name === "UseStartStop" && value === "Y") {
+        next.UseQuantity = "N";
+        next.ItemQuantity = null;
+      }
+      if (name === "UseQuantity" && value === "Y") {
+        next.UseStartStop = "N";
+      }
+      if (name === "UseCost" && value === "N") {
+        next.ItemCost = null;
+      }
+      if (next.UseQuantity !== "Y") {
+        next.ItemQuantity = null;
       }
       return next;
     });
   };
 
-  /* ─── 2. persist edits to API ───────────────────────────────────────────── */
+  /* ───────────────────────── PATCH EDITS TO API ─────────────────────── */
   const finalizeEdit = async () => {
     try {
       const {
         UseStartStop,
         UseCost,
         UseQuantity,
-        ...rest /* everything else stays the same */
+        ItemCost,
+        ItemQuantity,
+        ...rest
       } = itemEdits;
 
       const payload = {
         ...rest,
-        newOrder: null,
-        use_start_stop: UseStartStop, // ⇨ PHP expects snake_case
+        use_start_stop: UseStartStop,
         use_cost: UseCost,
         use_quantity: UseQuantity,
+        item_cost: ItemCost,
+        item_quantity: ItemQuantity,
+        newOrder: null,
       };
 
       const { data } = await axios.patch(
@@ -879,16 +843,13 @@ const ItemsAnimation = ({
       );
 
       if (data.success) {
-        const updatedItems = stateItems.map((it) =>
+        const updated = stateItems.map((it) =>
           it.ItemID === editingItemId ? { ...it, ...itemEdits } : it
         );
-
-        setStateItems(updatedItems);
+        setStateItems(updated);
         setTicketTypes((jobs) =>
           jobs.map((job) =>
-            job.JobTypeID === activeJobId
-              ? { ...job, Items: updatedItems }
-              : job
+            job.JobTypeID === activeJobId ? { ...job, Items: updated } : job
           )
         );
         setEditingItemId(null);
@@ -901,178 +862,135 @@ const ItemsAnimation = ({
     }
   };
 
-  /* ─── 3. create-form handler ────────────────────────────────────────────── */
-  const handleInputChange = (event) => {
-    const { name, value, type, checked } = event.target;
+  /* ───────────────────────── NEW‑ITEM CHANGE HANDLER ─────────────────── */
+  const handleInputChange = (e) => {
+    const { name, type } = e.target;
+    const value =
+      type === "checkbox" ? (e.target.checked ? "Y" : "N") : e.target.value;
 
     setNewItem((prev) => {
-      let next = { ...prev };
+      let next = { ...prev, [name]: value };
 
-      if (name === "item_id") {
-        if (value !== "new") {
-          const item = availableItems.find((i) => i.ItemID === value);
+      if (name === "use_start_stop" && value === "Y") {
+        next.use_quantity = "N";
+        next.item_quantity = null;
+      }
+      if (name === "use_quantity" && value === "Y") {
+        next.use_start_stop = "N";
+      }
+      if (name === "use_cost" && value === "N") {
+        next.item_cost = null;
+      }
+
+      if (name === "item_id" && value !== "new") {
+        const chosen = availableItems.find((i) => i.ItemID === value);
+        if (chosen) {
           next = {
-            ...prev,
-            item_id: item.ItemID,
-            uom: item.UOM,
-            item_description: item.ItemDescription,
-            item_quantity: item.UseQuantity === "N" ? 1 : null,
-            item_cost: item.UseCost === "Y" ? 0.0 : null,
-            UseQuantity: item.UseQuantity,
-            UseCost: item.UseCost,
-            UseStartStop: item.UseStartStop || "N",
+            ...next,
+            item_id: chosen.ItemID,
+            uom: chosen.UOM,
+            item_description: chosen.ItemDescription,
+            use_quantity: chosen.UseQuantity ?? "Y",
+            use_cost: chosen.UseCost ?? "Y",
+            use_start_stop: chosen.UseStartStop ?? "N",
+            item_cost:
+              chosen.UseCost === "Y"
+                ? parseFloat(chosen.defaultCost || 0)
+                : null,
+            item_quantity: chosen.UseQuantity === "Y" ? 1 : null,
           };
-        } else {
-          next = {
-            ...prev,
-            item_id: "",
-            uom: "",
-            item_description: "",
-            item_quantity: null,
-            item_cost: null,
-            UseQuantity: "Y",
-            UseCost: "Y",
-            UseStartStop: "N",
-          };
+          if (next.use_start_stop === "Y") {
+            next.use_quantity = "N";
+            next.item_quantity = null;
+          }
         }
-      } else if (name === "new_item_id") {
-        next.item_id = value;
-      } else if (name === "UseQuantity") {
-        next.UseQuantity = checked ? "N" : "Y";
-        next.item_quantity = checked ? 1 : null;
-      } else if (name === "UseStartStop") {
-        next.UseStartStop = checked ? "Y" : "N";
-        if (next.UseStartStop === "Y") {
-          next.UseQuantity = "N";
-          next.item_quantity = null;
-        }
-      } else if (name === "UseCost") {
-        next.UseCost = checked ? "Y" : "N";
-      } else if (type === "checkbox") {
-        next[name] = checked ? "Y" : "N";
-      } else {
-        next[name] = value;
+      }
+      if (name === "item_id" && value === "new") {
+        next = {
+          item_id: "",
+          uom: "",
+          item_description: "",
+          item_quantity: null,
+          item_cost: null,
+          use_quantity: "Y",
+          use_cost: "Y",
+          use_start_stop: "N",
+        };
       }
 
       return next;
     });
   };
 
-  const handleDeleteItem = (itemId) => {
-    console.log(itemId);
-
-    const data = {
-      JobItemID: itemId.JobItemID,
-      ItemDescription: itemId.ItemDescription,
-    };
-    console.log(data);
-    fetch(`${baseUrl}/api/jobs.php?itemID=${itemId.JobItemID}`, {
+  /* ───────────────────────── DELETE ITEM ─────────────────────────────── */
+  const handleDeleteItem = (item) => {
+    fetch(`${baseUrl}/api/jobs.php?itemID=${item.JobItemID}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        JobItemID: item.JobItemID,
+        ItemDescription: item.ItemDescription,
+      }),
     })
-      .then((response) => {
-        if (response.ok) {
-          setStateItems(
-            stateItems.filter((item) => item.JobItemID !== itemId.JobItemID)
+      .then((r) => {
+        if (r.ok) {
+          setStateItems((prev) =>
+            prev.filter((i) => i.JobItemID !== item.JobItemID)
           );
-          onDeleteItem(itemId);
+          onDeleteItem(item);
         } else {
           throw new Error("Error deleting item");
         }
       })
-      .catch((error) => {
-        console.error("Error deleting item:", error);
-      });
+      .catch((err) => console.error("Error deleting item:", err));
   };
 
+  /* ───────────────────────── CANCEL EDIT ─────────────────────────────── */
   const handleCancelEdit = () => {
     setEditingItemId(null);
     setItemEdits({});
   };
 
-  const handleSelectionChange = (event) => {
-    setSelection(event.target.value);
-  };
-
-  const handleDragStart = (index) => (event) => {
-    event.dataTransfer.setData("draggedIndex", index);
-  };
-
+  /* ───────────────────────── DRAG & DROP ─────────────────────────────── */
   let requestInProgress = false;
-
-  // Updated reorder logic: we ignore any "oldOrder" mismatch on server
-  const handleDrop = (index) => async (event) => {
-    event.preventDefault();
-
-    if (requestInProgress) {
-      console.log("Request already in progress, please wait...");
-      return;
-    }
-
-    const draggedIndex = event.dataTransfer.getData("draggedIndex");
-    const updatedItems = Array.from(stateItems);
-    const [movedItem] = updatedItems.splice(draggedIndex, 1);
-    updatedItems.splice(index, 0, movedItem);
-
-    setStateItems(updatedItems);
+  const handleDragStart = (idx) => (e) => e.dataTransfer.setData("drag", idx);
+  const handleDrop = (idx) => async (e) => {
+    e.preventDefault();
+    if (requestInProgress) return;
+    const from = e.dataTransfer.getData("drag");
+    const arr = [...stateItems];
+    const [moved] = arr.splice(from, 1);
+    arr.splice(idx, 0, moved);
+    setStateItems(arr);
 
     requestInProgress = true;
     try {
-      console.log(movedItem);
-      const itemID = movedItem.ItemID;
-      const newPosition = index; // We'll use 'index' as the new ItemOrder
-      const jobTypeID = movedItem.JobTypeID;
-
-      // We only send the new order  jobTypeID
-      const response = await fetch(`${baseUrl}/api/jobs.php?itemID=${itemID}`, {
+      const r = await fetch(`${baseUrl}/api/jobs.php?itemID=${moved.ItemID}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ItemOrder: newPosition, // no oldOrder
-          JobTypeID: jobTypeID,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ItemOrder: idx, JobTypeID: moved.JobTypeID }),
       });
-
-      const data = await response.json();
-      if (data.success) {
-        // Re-sync stateItems
-        const updatedStateItems = updatedItems.map((item, idx) => {
-          return { ...item, ItemOrder: idx };
-        });
-        setStateItems(updatedStateItems);
-      } else {
-        console.error("Failed to update item position:", data.message);
-      }
-    } catch (error) {
-      console.error("Error updating item position:", error);
+      const d = await r.json();
+      if (!d.success) console.error("Failed to reorder:", d.message);
+    } catch (err) {
+      console.error("Reorder error:", err);
     } finally {
       requestInProgress = false;
     }
   };
 
-  const addButtonStyle = {
-    from: { transform: "scale(1)" },
-    enter: { transform: "scale(1.05)" },
-    leave: { transform: "scale(1)" },
-  };
-  const [addButtonProps, set, stop] = useSpring(() => addButtonStyle.from);
-
+  /* ───────────────────────── SPRING FOR ADD CARD ─────────────────────── */
+  const [addProps, api] = useSpring(() => ({ transform: "scale(1)" }));
   const iconColor = theme === "dark" ? "text-white" : "text-gray-800";
 
-  const [modalIsOpen, setModalIsOpen] = useState(false);
-
+  /* ───────────────────────── MODAL HELPERS ───────────────────────────── */
+  const [modalOpen, setModalOpen] = useState(false);
   const openModal = () => {
-    setModalIsOpen(true);
+    setModalOpen(true);
     fetchAvailableItems();
   };
-
   const closeModal = () => {
-    setModalIsOpen(false);
+    setModalOpen(false);
     setSelectedItem("new");
     setNewItem({
       item_id: "",
@@ -1080,40 +998,35 @@ const ItemsAnimation = ({
       item_description: "",
       item_quantity: null,
       item_cost: null,
-      use_quantity: "N",
+      use_quantity: "Y",
       use_cost: "Y",
       use_start_stop: "N",
     });
   };
 
+  /* ───────────────────────── ADD ITEM ──────────────────────────────── */
   const handleAddItem = () => {
-    let itemId;
-    if (selectedItem === "new") {
-      itemId = newItem.item_id;
-    } else {
-      itemId = `${selectedItem}`;
-    }
-
-    const updatedNewItem = {
+    const id = selectedItem === "new" ? newItem.item_id : selectedItem;
+    const payload = {
       ...newItem,
-      item_id: itemId,
+      item_id: id,
       item_quantity:
-        newItem.use_quantity === "N" ? newItem.item_quantity || 1 : null,
+        newItem.use_quantity === "Y" ? newItem.item_quantity || 1 : null,
     };
-
-    onAddItem(updatedNewItem);
-    setStateItems([...stateItems, updatedNewItem]);
+    onAddItem(payload);
+    setStateItems((prev) => [...prev, payload]);
     closeModal();
   };
 
+  /* ───────────────────────── RENDER ─────────────────────────────────── */
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {stateItems.map((item, index) => (
+      {stateItems.map((item, idx) => (
         <div
           key={item.ItemID}
           draggable
-          onDragStart={handleDragStart(index)}
-          onDrop={handleDrop(index)}
+          onDragStart={handleDragStart(idx)}
+          onDrop={handleDrop(idx)}
           onDragOver={(e) => e.preventDefault()}
           className={`border rounded-lg shadow-sm p-4 relative ${
             theme === "dark"
@@ -1123,6 +1036,7 @@ const ItemsAnimation = ({
         >
           {editingItemId === item.ItemID ? (
             <>
+              {/* ───── EDIT MODE ───── */}
               <textarea
                 name="ItemDescription"
                 value={itemEdits.ItemDescription || ""}
@@ -1145,17 +1059,32 @@ const ItemsAnimation = ({
                     : "bg-gray-100 text-gray-800 border-gray-300"
                 }`}
               />
+
+              {/* Checkboxes */}
               <div className="flex gap-4 mb-2">
                 <label className="inline-flex items-center">
                   <input
                     type="checkbox"
                     name="UseStartStop"
                     checked={itemEdits.UseStartStop === "Y"}
-                    className="form-checkbox"
                     onChange={handleChange}
+                    className="form-checkbox"
                   />
                   <span className="ml-1">Hours</span>
                 </label>
+
+                <label className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    name="UseQuantity"
+                    checked={itemEdits.UseQuantity === "Y"}
+                    onChange={handleChange}
+                    className="form-checkbox"
+                    disabled={itemEdits.UseStartStop === "Y"}
+                  />
+                  <span className="ml-1">Quantity</span>
+                </label>
+
                 <label className="inline-flex items-center">
                   <input
                     type="checkbox"
@@ -1167,33 +1096,51 @@ const ItemsAnimation = ({
                   <span className="ml-1">Cost</span>
                 </label>
               </div>
-
-              <input
-                type="number"
-                name="ItemCost"
-                value={itemEdits.ItemCost || ""}
-                onChange={handleChange}
-                disabled={itemEdits.use_cost !== "Y"}
-                className={`w-full mb-2 p-2 rounded ${
-                  theme === "dark"
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-gray-100 text-gray-800 border-gray-300"
-                }`}
-              />
-              {item.ItemQuantity !== null && item.use_start_stop !== "Y" && (
-                <input
-                  type="number"
-                  name="ItemQuantity"
-                  value={itemEdits.ItemQuantity || item.ItemQuantity}
-                  onChange={handleChange}
-                  disabled={itemEdits.use_quantity !== "Y"}
-                  className={`w-full mb-4 p-2 rounded ${
-                    theme === "dark"
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-gray-100 text-gray-800 border-gray-300"
-                  }`}
-                />
+              {itemEdits.UseCost === "Y" && (
+                <div className="relative mb-2">
+                  {(!itemEdits.ItemCost || itemEdits.ItemCost === "") && (
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+                      $
+                    </span>
+                  )}
+                  <input
+                    type="number"
+                    name="ItemCost"
+                    step="0.01"
+                    value={itemEdits.ItemCost || ""}
+                    onChange={handleChange}
+                    className={`w-full p-2 pl-7 rounded ${
+                      theme === "dark"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-gray-100 text-gray-800 border-gray-300"
+                    }`}
+                  />
+                </div>
               )}
+
+              {itemEdits.UseQuantity === "Y" &&
+                itemEdits.UseStartStop !== "Y" && (
+                  <div className="relative mb-4">
+                    {(!itemEdits.ItemQuantity ||
+                      itemEdits.ItemQuantity === "") && (
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+                        #
+                      </span>
+                    )}
+                    <input
+                      type="number"
+                      name="ItemQuantity"
+                      value={itemEdits.ItemQuantity || ""}
+                      onChange={handleChange}
+                      className={`w-full p-2 pl-7 rounded ${
+                        theme === "dark"
+                          ? "bg-gray-700 text-white border-gray-600"
+                          : "bg-gray-100 text-gray-800 border-gray-300"
+                      }`}
+                    />
+                  </div>
+                )}
+
               <div className="flex justify-end space-x-2">
                 <FontAwesomeIcon
                   icon={faCheck}
@@ -1213,6 +1160,7 @@ const ItemsAnimation = ({
             </>
           ) : (
             <>
+              {/* ───── DISPLAY MODE ───── */}
               <h3 className="font-semibold text-lg mb-1">
                 {item.ItemDescription}
                 <span className="text-sm text-gray-500 ml-2">
@@ -1220,23 +1168,24 @@ const ItemsAnimation = ({
                 </span>
               </h3>
               <p className="text-sm mb-1">Item ID: {item.ItemID}</p>
-              {item.ItemQuantity === null || item.use_start_stop === "Y" ? (
+
+              {item.UseCost === "Y" && (
                 <p className="text-sm mb-1">Cost: ${item.ItemCost}</p>
-              ) : (
-                <>
-                  <p className="text-sm mb-1">Cost: ${item.ItemCost}</p>
-                  {item.use_start_stop !== "Y" &&
-                    item.ItemQuantity !== null && (
-                      <p className="text-sm mb-1">
-                        Quantity: {item.ItemQuantity}
-                      </p>
-                    )}{" "}
-                </>
               )}
+              {item.UseStartStop === "Y" && (
+                <p className="text-sm mb-1">Hours Enabled</p>
+              )}
+              {item.UseQuantity === "Y" &&
+                item.UseStartStop !== "Y" &&
+                item.ItemQuantity !== "" &&
+                item.ItemQuantity !== null && (
+                  <p className="text-sm mb-1">Quantity: {item.ItemQuantity}</p>
+                )}
+
               <div className="absolute top-2 right-2 flex space-x-2">
                 <FontAwesomeIcon
                   icon={faPencilAlt}
-                  onClick={() => handleEditClick(item)}
+                  onClick={() => setEditingItemId(item.ItemID)}
                   className={`cursor-pointer ${
                     theme === "dark" ? "text-white" : "text-gray-800"
                   }`}
@@ -1252,15 +1201,13 @@ const ItemsAnimation = ({
             </>
           )}
         </div>
-      ))}{" "}
+      ))}
+
+      {/* ───── ADD CARD ───── */}
       <animated.div
-        style={addButtonProps}
-        onMouseEnter={() => {
-          set({ ...addButtonStyle.enter });
-        }}
-        onMouseLeave={() => {
-          set({ ...addButtonStyle.leave });
-        }}
+        style={addProps}
+        onMouseEnter={() => api.start({ transform: "scale(1.05)" })}
+        onMouseLeave={() => api.start({ transform: "scale(1)" })}
         onClick={openModal}
         className={`border rounded-lg shadow-sm p-4 flex justify-center items-center cursor-pointer ${
           theme === "dark"
@@ -1273,8 +1220,10 @@ const ItemsAnimation = ({
           <div className="font-semibold text-xl mt-2">Add Item</div>
         </div>
       </animated.div>
+
+      {/* ───── MODAL ───── */}
       <Modal
-        isOpen={modalIsOpen}
+        isOpen={modalOpen}
         onRequestClose={closeModal}
         contentLabel="Add Item Modal"
         className={`modal ${theme === "dark" ? "dark" : ""}`}
@@ -1295,61 +1244,37 @@ const ItemsAnimation = ({
           </button>
           <h2 className="text-3xl font-bold mb-8">Add Item</h2>
           <form>
+            {/* Item ID selection */}
             <div className="mb-8">
               <label htmlFor="item_id" className="block mb-2 font-semibold">
                 Item ID:
               </label>
-              <div className="relative">
-                <select
-                  id="item_id"
-                  name="item_id"
-                  value={selectedItem}
-                  onChange={(e) => {
-                    const selectedItemId = e.target.value;
-                    setSelectedItem(selectedItemId);
-                    handleInputChange(e);
-
-                    // If user selects an existing item (not "new"),
-                    // pre-fill from that item’s defaultCost and auto-check Use Cost.
-                    if (selectedItemId !== "new") {
-                      const foundItem = availableItems.find(
-                        (item) => item.ItemID === selectedItemId
-                      );
-                      if (foundItem) {
-                        setNewItem((prev) => ({
-                          ...prev,
-                          item_id: foundItem.ItemID,
-                          uom: foundItem.UOM,
-                          item_description: foundItem.ItemDescription,
-                          use_quantity: foundItem.UseQuantity,
-                          use_start_stop: foundItem.UseStartStop,
-                          // Convert defaultCost to a numeric or leave as string
-                          item_cost: foundItem.defaultCost
-                            ? parseFloat(foundItem.defaultCost)
-                            : "",
-                          use_cost: "Y", // auto-check Use Cost
-                        }));
-                      }
-                    }
-                  }}
-                  className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
-                    theme === "dark"
-                      ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
-                      : "bg-gray-100 border-gray-300 focus:ring-blue-500"
-                  }`}
-                >
-                  <option value="new">Add New Item</option>
-                  {availableItems
-                    .filter((item) => item.Active !== "N")
-                    .map((item) => (
-                      <option key={item.ItemID} value={item.ItemID}>
-                        {item.ItemID}
-                      </option>
-                    ))}
-                </select>
-              </div>
+              <select
+                id="item_id"
+                name="item_id"
+                value={selectedItem}
+                onChange={(e) => {
+                  setSelectedItem(e.target.value);
+                  handleInputChange(e);
+                }}
+                className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
+                  theme === "dark"
+                    ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
+                    : "bg-gray-100 border-gray-300 focus:ring-blue-500"
+                }`}
+              >
+                <option value="new">Add New Item</option>
+                {availableItems
+                  .filter((i) => i.Active !== "N")
+                  .map((i) => (
+                    <option key={i.ItemID} value={i.ItemID}>
+                      {i.ItemID}
+                    </option>
+                  ))}
+              </select>
             </div>
 
+            {/* New Item ID field for custom entry */}
             {selectedItem === "new" && (
               <div className="mb-8">
                 <label
@@ -1373,6 +1298,7 @@ const ItemsAnimation = ({
               </div>
             )}
 
+            {/* UOM */}
             <div className="mb-8">
               <label htmlFor="uom" className="block mb-2 font-semibold">
                 UOM:
@@ -1392,6 +1318,7 @@ const ItemsAnimation = ({
               />
             </div>
 
+            {/* Description */}
             <div className="mb-8">
               <label
                 htmlFor="item_description"
@@ -1414,82 +1341,75 @@ const ItemsAnimation = ({
               ></textarea>
             </div>
 
+            {/* Properties checkboxes */}
             <div className="mb-8">
               <fieldset>
                 <legend className="block mb-2 font-semibold">
                   Item Properties:
                 </legend>
                 <div className="flex gap-4">
-                  <div>
-                    <label
-                      className="inline-flex items-center"
-                      data-tooltip-id="lock-quantity-tooltip"
-                    >
-                      <input
-                        type="checkbox"
-                        name="use_quantity"
-                        checked={newItem.use_quantity === "N"}
-                        onChange={handleInputChange}
-                        className="form-checkbox"
-                      />
-                      <span className="ml-2">Lock Quantity</span>
-                    </label>
-                    <Tooltip
-                      id="lock-quantity-tooltip"
-                      place="top"
-                      effect="solid"
-                    >
-                      When Lock Quantity is set, the user cannot edit the
-                      quantity.
-                    </Tooltip>
-                  </div>
-                  <div>
-                    <label
-                      className="inline-flex items-center"
-                      data-tooltip-id="use-cost-tooltip"
-                    >
-                      <input
-                        type="checkbox"
-                        name="use_cost"
-                        checked={newItem.use_cost === "Y"}
-                        onChange={handleInputChange}
-                        className="form-checkbox"
-                      />
-                      <span className="ml-2">Use Cost</span>
-                    </label>
-                    <Tooltip id="use-cost-tooltip" place="top" effect="solid">
-                      If Use Cost is set, the item has a cost associated with
-                      it.
-                    </Tooltip>
-                  </div>
-                  {/* NEW CHECKBOX FOR USE START SHOP */}
-                  <div>
-                    <label
-                      className="inline-flex items-center"
-                      data-tooltip-id="use-start-shop-tooltip"
-                    >
-                      <input
-                        type="checkbox"
-                        name="use_start_stop"
-                        checked={newItem.use_start_stop === "Y"}
-                        onChange={handleInputChange}
-                        className="form-checkbox"
-                      />
-                      <span className="ml-2">Use Start Shop</span>
-                    </label>
-                    <Tooltip
-                      id="use-start-shop-tooltip"
-                      place="top"
-                      effect="solid"
-                    >
-                      If Use Start Shop is set, worker hours can be logged.
-                    </Tooltip>
-                  </div>
+                  {/* Use Quantity */}
+                  <label
+                    className="inline-flex items-center"
+                    data-tooltip-id="qty-tooltip"
+                  >
+                    <input
+                      type="checkbox"
+                      name="use_quantity"
+                      checked={newItem.use_quantity === "Y"}
+                      onChange={handleInputChange}
+                      className="form-checkbox"
+                      disabled={newItem.use_start_stop === "Y"}
+                    />
+                    <span className="ml-2">Use Quantity</span>
+                  </label>
+                  <Tooltip id="qty-tooltip" place="top" effect="solid">
+                    Enable a quantity field for this item. Disabled when Hours
+                    is on.
+                  </Tooltip>
+
+                  {/* Use Cost */}
+                  <label
+                    className="inline-flex items-center"
+                    data-tooltip-id="cost-tooltip"
+                  >
+                    <input
+                      type="checkbox"
+                      name="use_cost"
+                      checked={newItem.use_cost === "Y"}
+                      onChange={handleInputChange}
+                      className="form-checkbox"
+                    />
+                    <span className="ml-2">Use Cost</span>
+                  </label>
+                  <Tooltip id="cost-tooltip" place="top" effect="solid">
+                    If enabled, a cost field will be recorded.
+                  </Tooltip>
+
+                  {/* Hours */}
+                  <label
+                    className="inline-flex items-center"
+                    data-tooltip-id="hours-tooltip"
+                  >
+                    <input
+                      type="checkbox"
+                      name="use_start_stop"
+                      checked={newItem.use_start_stop === "Y"}
+                      onChange={handleInputChange}
+                      className="form-checkbox"
+                    />
+                    <span className="ml-2">Hours</span>
+                  </label>
+                  <Tooltip id="hours-tooltip" place="top" effect="solid">
+                    Log worker start/stop times (mutually exclusive with
+                    Quantity).
+                  </Tooltip>
                 </div>
               </fieldset>
             </div>
 
-            {newItem.use_quantity === "N" && newItem.use_start_stop !== "Y" && (
+            {/* Quantity input */}
+            {newItem.use_quantity === "Y" && newItem.use_start_stop !== "Y" && (
               <div className="mb-8">
                 <label
                   htmlFor="item_quantity"
@@ -1512,6 +1432,7 @@ const ItemsAnimation = ({
               </div>
             )}
 
+            {/* Cost input */}
             {newItem.use_cost === "Y" && (
               <div className="mb-8">
                 <label htmlFor="item_cost" className="block mb-2 font-semibold">
@@ -1542,6 +1463,7 @@ const ItemsAnimation = ({
               </div>
             )}
 
+            {/* Form actions */}
             <div className="flex justify-end space-x-4">
               <button
                 type="button"
@@ -1569,6 +1491,8 @@ const ItemsAnimation = ({
           </form>
         </div>
       </Modal>
+
+      {/* ───── INLINE STYLES ───── */}
       <style jsx>{`
         .modal-overlay {
           position: fixed;
@@ -1582,7 +1506,6 @@ const ItemsAnimation = ({
           justify-content: center;
           z-index: 50;
         }
-
         .modal {
           position: relative;
           max-width: 600px;
@@ -1593,37 +1516,9 @@ const ItemsAnimation = ({
           outline: none;
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
-
         .modal.dark {
           background-color: #1a202c;
           color: white;
-        }
-        .tooltip {
-          position: relative;
-          display: inline-block;
-          cursor: pointer;
-        }
-
-        .tooltip .tooltiptext {
-          visibility: hidden;
-          width: 220px;
-          background-color: black;
-          color: #fff;
-          text-align: center;
-          border-radius: 5px;
-          padding: 5px;
-          position: absolute;
-          z-index: 1;
-          bottom: 125%; /* Position above the element */
-          left: 50%;
-          margin-left: -110px; /* Center the tooltip */
-          opacity: 0;
-          transition: opacity 0.3s;
-        }
-
-        .tooltip:hover .tooltiptext {
-          visibility: visible;
-          opacity: 1;
         }
       `}</style>
     </div>
