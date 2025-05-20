@@ -178,16 +178,21 @@ function FieldTicketEntry() {
   const handleChange = (e, itemId) => {
     const { name, value } = e.target;
 
+    // plain note field ────────────────────────────────────────────────
     if (name === "note") {
       setFormFields((prev) => ({ ...prev, note: value }));
       return;
     }
 
-    // quantity changes
-    if (name === "quantity") {
-      const quantity = parseFloat(value) || 0;
-      setItems((prevItems) =>
-        prevItems.map((it) => (it.ItemID === itemId ? { ...it, quantity } : it))
+    // quantity field ─────────────────────────────────────────────────
+    if (name === "ItemQuantity") {
+      const qty = value === "" ? "" : parseFloat(value);
+      setItems((prev) =>
+        prev.map((it) =>
+          it.ItemID === itemId
+            ? { ...it, ItemQuantity: qty, quantity: qty || 0 } // <- add quantity too
+            : it
+        )
       );
     }
   };
@@ -358,7 +363,7 @@ function FieldTicketEntry() {
         // If your server expects these:
         start: toSqlDateTime(it.start), // ex: “2025‑04‑21 15:30:00”
         stop: toSqlDateTime(it.stop),
-        quantity: it.quantity || 0,
+        quantity: it.ItemQuantity || 0,
       }));
 
       // 3) Format the date as YYYY-MM-DD
@@ -397,7 +402,7 @@ function FieldTicketEntry() {
         UseStartStop: it.UseStartStop,
         start: it.start,
         stop: it.stop,
-        Quantity: it.quantity,
+        Quantity: it.ItemQuantity,
         Ticket: formFields.ticketNumber,
         TicketLine: idx.toString(),
         totalCost: (
@@ -887,8 +892,8 @@ function FieldTicketEntry() {
                       /* Otherwise, show normal quantity */
                       <div className="flex items-center justify-center md:justify-end">
                         <label className="block font-medium mr-4">Qty:</label>
-                        {item.UseQuantity === "N" &&
-                        item.ItemQuantity != null ? (
+
+                        {item.UseQuantity === "N" ? (
                           <span
                             className={`inline-block w-24 px-4 py-2 rounded-md ${
                               theme === "dark"
@@ -896,16 +901,18 @@ function FieldTicketEntry() {
                                 : "text-gray-700"
                             }`}
                           >
-                            {item.ItemQuantity}
+                            {item.ItemQuantity ?? ""}
                           </span>
                         ) : (
                           <input
                             type="number"
-                            name="quantity"
-                            value={item.quantity || 0}
+                            name="ItemQuantity"
+                            value={
+                              item.ItemQuantity === "" ? "" : item.ItemQuantity
+                            }
                             onChange={(e) => handleChange(e, item.ItemID)}
                             onClick={(e) => e.target.select()}
-                            className={`form-input w-24 px-4 py-2 rounded-md ${
+                            className={`form-input w-24 px-4 py-2 pl-7 rounded-md ${
                               theme === "dark"
                                 ? "bg-gray-800 border border-gray-700 focus:ring-gray-600 text-white"
                                 : "border border-gray-300 focus:ring-gray-500"

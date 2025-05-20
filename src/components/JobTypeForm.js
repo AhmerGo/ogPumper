@@ -789,7 +789,7 @@ const ItemsAnimation = ({
     }
   }, [editingItemId, stateItems]);
 
-  /* ───────────────────────── EDIT CHANGE HANDLER ─────────────────────── */
+  /* ---------- STATE UPDATE HANDLER ---------- */
   const handleChange = (e) => {
     const { name, type } = e.target;
     const value =
@@ -798,19 +798,28 @@ const ItemsAnimation = ({
     setItemEdits((prev) => {
       const next = { ...prev, [name]: value };
 
-      if (name === "UseStartStop" && value === "Y") {
-        next.UseQuantity = "N";
-        next.ItemQuantity = null;
+      /* --- inter-dependency rules ----------------------------------- */
+      // Hours ON ⇒ disable Quantity
+      if (name === "UseStartStop") {
+        if (value === "Y") {
+          next.UseQuantity = "N";
+          next.ItemQuantity = null; // keep this: Hours mode hides qty
+        }
       }
+
+      // Quantity ON ⇒ turn Hours OFF (but no longer clears ItemQuantity)
       if (name === "UseQuantity" && value === "Y") {
         next.UseStartStop = "N";
       }
+
+      // Cost toggle controls ItemCost
       if (name === "UseCost" && value === "N") {
         next.ItemCost = null;
       }
-      if (next.UseQuantity !== "Y") {
-        next.ItemQuantity = null;
-      }
+
+      /* --- safety clamp (keep only for cost) ------------------------ */
+      if (next.UseCost !== "Y") next.ItemCost = null;
+
       return next;
     });
   };
@@ -863,26 +872,52 @@ const ItemsAnimation = ({
   };
 
   /* ───────────────────────── NEW‑ITEM CHANGE HANDLER ─────────────────── */
+  // ---------------------------------------------------------------------------
+  // One-stop input handler: supports text/select + all check-boxes
+  // • ‘Lock Quantity’ inverts the usual Y/N logic
+  // • Keeps mutual-exclusion rules in one place
+  // ---------------------------------------------------------------------------
   const handleInputChange = (e) => {
-    const { name, type } = e.target;
+    const { name, type, checked, value: raw } = e.target;
+
+    // Resolve new value --------------------------------------------------------
     const value =
-      type === "checkbox" ? (e.target.checked ? "Y" : "N") : e.target.value;
+      type === "checkbox"
+        ? name === "use_quantity" // special-case “Lock Quantity”
+          ? checked
+            ? "N"
+            : "Y"
+          : checked
+          ? "Y"
+          : "N"
+        : raw;
 
     setNewItem((prev) => {
       let next = { ...prev, [name]: value };
 
-      if (name === "use_start_stop" && value === "Y") {
-        next.use_quantity = "N";
-        next.item_quantity = null;
+      // --- Mutual-exclusion helpers ------------------------------------------
+      if (name === "use_start_stop") {
+        next.use_quantity = value === "Y" ? "N" : prev.use_quantity;
+        if (value === "Y") next.item_quantity = null;
       }
-      if (name === "use_quantity" && value === "Y") {
-        next.use_start_stop = "N";
-      }
-      if (name === "use_cost" && value === "N") {
-        next.item_cost = null;
-      }
+      if (name === "use_quantity" && value === "Y") next.use_start_stop = "N";
+      if (name === "use_cost" && value === "N") next.item_cost = null;
 
-      if (name === "item_id" && value !== "new") {
+      // --- Item picker logic --------------------------------------------------
+      if (name === "item_id") {
+        if (value === "new") {
+          return {
+            item_id: "",
+            uom: "",
+            item_description: "",
+            item_quantity: null,
+            item_cost: null,
+            use_quantity: "Y",
+            use_cost: "Y",
+            use_start_stop: "N",
+          };
+        }
+
         const chosen = availableItems.find((i) => i.ItemID === value);
         if (chosen) {
           next = {
@@ -904,18 +939,6 @@ const ItemsAnimation = ({
             next.item_quantity = null;
           }
         }
-      }
-      if (name === "item_id" && value === "new") {
-        next = {
-          item_id: "",
-          uom: "",
-          item_description: "",
-          item_quantity: null,
-          item_cost: null,
-          use_quantity: "Y",
-          use_cost: "Y",
-          use_start_stop: "N",
-        };
       }
 
       return next;
@@ -1036,7 +1059,7 @@ const ItemsAnimation = ({
         >
           {editingItemId === item.ItemID ? (
             <>
-              {/* ───── EDIT MODE ───── */}
+              {/* ───── EDIT MODE ───── */}
               <textarea
                 name="ItemDescription"
                 value={itemEdits.ItemDescription || ""}
@@ -1062,7 +1085,11 @@ const ItemsAnimation = ({
 
               {/* Checkboxes */}
               <div className="flex gap-4 mb-2">
-                <label className="inline-flex items-center">
+                {/* Hours */}
+                <label
+                  className="inline-flex items-center"
+                  data-tooltip-id="hours-tooltip"
+                >
                   <input
                     type="checkbox"
                     name="UseStartStop"
@@ -1072,8 +1099,16 @@ const ItemsAnimation = ({
                   />
                   <span className="ml-1">Hours</span>
                 </label>
+                <Tooltip id="hours-tooltip" place="top" effect="solid">
+                  Log worker start/stop times (mutually exclusive with
+                  Quantity).
+                </Tooltip>
 
-                <label className="inline-flex items-center">
+                {/* Quantity */}
+                <label
+                  className="inline-flex items-center"
+                  data-tooltip-id="qty-tooltip"
+                >
                   <input
                     type="checkbox"
                     name="UseQuantity"
@@ -1084,8 +1119,15 @@ const ItemsAnimation = ({
                   />
                   <span className="ml-1">Quantity</span>
                 </label>
+                <Tooltip id="qty-tooltip" place="top" effect="solid">
+                  Allows user to edit quantity.
+                </Tooltip>
 
-                <label className="inline-flex items-center">
+                {/* Cost */}
+                <label
+                  className="inline-flex items-center"
+                  data-tooltip-id="cost-tooltip"
+                >
                   <input
                     type="checkbox"
                     name="UseCost"
@@ -1095,14 +1137,17 @@ const ItemsAnimation = ({
                   />
                   <span className="ml-1">Cost</span>
                 </label>
+                <Tooltip id="cost-tooltip" place="top" effect="solid">
+                  Item Cost.
+                </Tooltip>
               </div>
+
+              {/* Cost Input */}
               {itemEdits.UseCost === "Y" && (
                 <div className="relative mb-2">
-                  {(!itemEdits.ItemCost || itemEdits.ItemCost === "") && (
-                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-                      $
-                    </span>
-                  )}
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+                    $
+                  </span>
                   <input
                     type="number"
                     name="ItemCost"
@@ -1118,29 +1163,28 @@ const ItemsAnimation = ({
                 </div>
               )}
 
-              {itemEdits.UseQuantity === "Y" &&
-                itemEdits.UseStartStop !== "Y" && (
-                  <div className="relative mb-4">
-                    {(!itemEdits.ItemQuantity ||
-                      itemEdits.ItemQuantity === "") && (
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-                        #
-                      </span>
-                    )}
-                    <input
-                      type="number"
-                      name="ItemQuantity"
-                      value={itemEdits.ItemQuantity || ""}
-                      onChange={handleChange}
-                      className={`w-full p-2 pl-7 rounded ${
-                        theme === "dark"
-                          ? "bg-gray-700 text-white border-gray-600"
-                          : "bg-gray-100 text-gray-800 border-gray-300"
-                      }`}
-                    />
-                  </div>
-                )}
+              {/* Quantity Input */}
+              {itemEdits.UseStartStop !== "Y" && (
+                <div className="relative mb-4">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+                    #
+                  </span>
+                  <input
+                    type="number"
+                    name="ItemQuantity"
+                    placeholder="set quantity"
+                    value={itemEdits.ItemQuantity || ""}
+                    onChange={handleChange}
+                    className={`w-full p-2 pl-7 rounded ${
+                      theme === "dark"
+                        ? "bg-gray-700 text-white border-gray-600"
+                        : "bg-gray-100 text-gray-800 border-gray-300"
+                    }`}
+                  />
+                </div>
+              )}
 
+              {/* Action Icons */}
               <div className="flex justify-end space-x-2">
                 <FontAwesomeIcon
                   icon={faCheck}
@@ -1169,18 +1213,26 @@ const ItemsAnimation = ({
               </h3>
               <p className="text-sm mb-1">Item ID: {item.ItemID}</p>
 
+              {/* ── UseStartStop (show only when > 0) ── */}
+
+              {item.UseStartStop !== "Y" &&
+                item.ItemQuantity !== null &&
+                item.ItemQuantity !== "" &&
+                Number(item.ItemQuantity) > 0 && (
+                  <p className="text-sm mb-1">
+                    Quantity:&nbsp;
+                    {Number(item.ItemQuantity).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                    })}
+                  </p>
+                )}
+
               {item.UseCost === "Y" && (
-                <p className="text-sm mb-1">Cost: ${item.ItemCost}</p>
+                <p className="text-sm mb-1">Cost: ${item.ItemCost} </p>
               )}
               {item.UseStartStop === "Y" && (
                 <p className="text-sm mb-1">Hours Enabled</p>
               )}
-              {item.UseQuantity === "Y" &&
-                item.UseStartStop !== "Y" &&
-                item.ItemQuantity !== "" &&
-                item.ItemQuantity !== null && (
-                  <p className="text-sm mb-1">Quantity: {item.ItemQuantity}</p>
-                )}
 
               <div className="absolute top-2 right-2 flex space-x-2">
                 <FontAwesomeIcon
@@ -1285,8 +1337,8 @@ const ItemsAnimation = ({
                 </label>
                 <input
                   type="text"
-                  id="new_item_id"
-                  name="new_item_id"
+                  id="item_id" /* ← match the state field */
+                  name="item_id" /* ← was “new_item_id”, now aligns with handler */
                   value={newItem.item_id}
                   onChange={handleInputChange}
                   className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
@@ -1342,31 +1394,42 @@ const ItemsAnimation = ({
             </div>
 
             {/* Properties checkboxes */}
+            {/* ─────────────────────────────────────────────────────────────
+              ITEM PROPERTIES – (regen line-by-line, exact labels & rules)
+              ───────────────────────────────────────────────────────────── */}
             <div className="mb-8">
               <fieldset>
                 <legend className="block mb-2 font-semibold">
                   Item Properties:
                 </legend>
                 <div className="flex gap-4">
-                  {/* Use Quantity */}
-                  <label
-                    className="inline-flex items-center"
-                    data-tooltip-id="qty-tooltip"
-                  >
-                    <input
-                      type="checkbox"
-                      name="use_quantity"
-                      checked={newItem.use_quantity === "Y"}
-                      onChange={handleInputChange}
-                      className="form-checkbox"
-                      disabled={newItem.use_start_stop === "Y"}
-                    />
-                    <span className="ml-2">Use Quantity</span>
-                  </label>
-                  <Tooltip id="qty-tooltip" place="top" effect="solid">
-                    Enable a quantity field for this item. Disabled when Hours
-                    is on.
-                  </Tooltip>
+                  {/* --- Lock Quantity toggle (checked = locked) --- */}
+                  <div>
+                    <label
+                      className="inline-flex items-center"
+                      data-tooltip-id="lock-quantity-tooltip"
+                    >
+                      <input
+                        type="checkbox"
+                        name="use_quantity"
+                        /* When locked, use_quantity === 'N' */
+                        checked={newItem.use_quantity === "Y"}
+                        onChange={handleInputChange}
+                        className="form-checkbox"
+                        disabled={newItem.use_start_stop === "Y"}
+                      />
+                      <span className="ml-2">Use Quantity</span>
+                    </label>
+
+                    <Tooltip
+                      id="lock-quantity-tooltip"
+                      place="top"
+                      effect="solid"
+                    >
+                      When Use Quantity is set, the user can edit the quantity
+                      of this item.
+                    </Tooltip>
+                  </div>
 
                   {/* Use Cost */}
                   <label
@@ -1401,15 +1464,17 @@ const ItemsAnimation = ({
                     <span className="ml-2">Hours</span>
                   </label>
                   <Tooltip id="hours-tooltip" place="top" effect="solid">
-                    Log worker start/stop times (mutually exclusive with
+                    Log worker start/stop times (mutually exclusive with
                     Quantity).
                   </Tooltip>
                 </div>
               </fieldset>
             </div>
 
-            {/* Quantity input */}
-            {newItem.use_quantity === "Y" && newItem.use_start_stop !== "Y" && (
+            {/* ─────────────────────────────────────────────────────────────
+              QUANTITY INPUT – “#” always visible, disabled if locked/Hours
+              ───────────────────────────────────────────────────────────── */}
+            {newItem.use_start_stop !== "Y" && (
               <div className="mb-8">
                 <label
                   htmlFor="item_quantity"
@@ -1417,22 +1482,34 @@ const ItemsAnimation = ({
                 >
                   Quantity:
                 </label>
-                <input
-                  type="number"
-                  id="item_quantity"
-                  name="item_quantity"
-                  value={newItem.item_quantity || ""}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
-                    theme === "dark"
-                      ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
-                      : "bg-gray-100 border-gray-300 focus:ring-blue-500"
-                  }`}
-                />
+                <div className="relative">
+                  <span
+                    className={`absolute left-4 top-1/2 -translate-y-1/2 select-none pointer-events-none ${
+                      theme === "dark" ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
+                    #
+                  </span>
+                  <input
+                    type="number"
+                    id="item_quantity"
+                    name="item_quantity"
+                    value={newItem.item_quantity ?? ""}
+                    onChange={handleInputChange}
+                    placeholder="Item Quantiy will default to this value"
+                    className={`w-full pl-8 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
+                      theme === "dark"
+                        ? "bg-gray-700 border-gray-600 focus:ring-blue-400"
+                        : "bg-gray-100 border-gray-300 focus:ring-blue-500"
+                    }`}
+                  />
+                </div>
               </div>
             )}
 
-            {/* Cost input */}
+            {/* ─────────────────────────────────────────────────────────────
+              COST INPUT – “$” always visible, shown only if Use Cost = Y
+              ───────────────────────────────────────────────────────────── */}
             {newItem.use_cost === "Y" && (
               <div className="mb-8">
                 <label htmlFor="item_cost" className="block mb-2 font-semibold">
@@ -1440,7 +1517,7 @@ const ItemsAnimation = ({
                 </label>
                 <div className="relative">
                   <span
-                    className={`absolute left-4 top-1/2 transform -translate-y-1/2 text-lg ${
+                    className={`absolute left-4 top-1/2 -translate-y-1/2 select-none pointer-events-none ${
                       theme === "dark" ? "text-gray-400" : "text-gray-500"
                     }`}
                   >
@@ -1451,7 +1528,7 @@ const ItemsAnimation = ({
                     id="item_cost"
                     name="item_cost"
                     step="0.01"
-                    value={newItem.item_cost || ""}
+                    value={newItem.item_cost ?? ""}
                     onChange={handleInputChange}
                     className={`w-full pl-8 pr-4 py-2 rounded-lg focus:outline-none focus:ring-2 ${
                       theme === "dark"
@@ -1463,7 +1540,9 @@ const ItemsAnimation = ({
               </div>
             )}
 
-            {/* Form actions */}
+            {/* ─────────────────────────────────────────────────────────────
+              FORM ACTIONS
+              ───────────────────────────────────────────────────────────── */}
             <div className="flex justify-end space-x-4">
               <button
                 type="button"

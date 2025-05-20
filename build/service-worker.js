@@ -1,6 +1,6 @@
 importScripts("/idb.js");
 
-const CACHE_NAME = "my-app-cache-v1.4.9"; // Updated cache version
+const CACHE_NAME = "my-app-cache-v1.5.1"; // Updated cache version
 const DB_NAME = "request-queue";
 const STORE_NAME = "requests";
 const DB_VERSION = 2;
